@@ -32,12 +32,38 @@ function driveOptions(origin){
  }
  return [...guides,...locals];
 }
+async function findMappedRoads(origin,key){
+ const around='(around:55000,'+origin[0].toFixed(4)+','+origin[1].toFixed(4)+')';
+ const query='[out:json][timeout:8];way'+around+'["scenic"="yes"]["highway"~"^(primary|secondary|tertiary|unclassified)$"]["name"]["access"!~"^(private|no)$"];out geom 15;node'+around+'["tourism"="viewpoint"]["name"];out 30;';
+ try{
+  const response=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query),{signal:AbortSignal.timeout(11500)});
+  if(!response.ok)return;
+  const {elements}=await response.json();
+  if(driveShelf.key!==key)return;
+  const found=[];
+  for(const e of elements){
+   if(!e.tags?.name)continue;
+   let places;
+   if(e.type==='way'&&e.geometry?.length>=2){
+    const ends=[e.geometry[0],e.geometry.at(-1)].sort((a,b)=>kmBetween(origin,[a.lat,a.lon])-kmBetween(origin,[b.lat,b.lon]));
+    if(kmBetween([ends[0].lat,ends[0].lon],[ends[1].lat,ends[1].lon])<.4)continue;
+    const mid=e.geometry[Math.floor(e.geometry.length/2)];
+    places=[[e.tags.name+' · начало',ends[0].lat,ends[0].lon],...[mid].filter(p=>!ends.includes(p)).map(p=>[e.tags.name,p.lat,p.lon]),[e.tags.name+' · конец',ends[1].lat,ends[1].lon]];
+   }else if(e.type==='node')places=[[e.tags.name,e.lat,e.lon]];else continue;
+   found.push({name:e.tags.name,why:e.type==='way'?'Дорога отмечена как живописная в OpenStreetMap.':'Поездка к смотровой площадке из OpenStreetMap.',places,source:'OpenStreetMap',url:'https://www.openstreetmap.org/'+e.type+'/'+e.id,road:e.type==='way'});
+  }
+  found.sort((a,b)=>Number(b.road)-Number(a.road)||kmBetween(origin,a.places[0].slice(1))-kmBetween(origin,b.places[0].slice(1)));
+  const titles=new Set(driveShelf.options.map(o=>o.name)),more=found.filter(x=>{if(titles.has(x.name))return false;titles.add(x.name);return true}).slice(0,4);
+  const wasEmpty=!driveShelf.options.length;driveShelf.options.push(...more);
+  if(wasEmpty&&more.length&&!building&&!active&&!$('nearby').hidden&&actualOrigin()?.slice(0,2).join(',')===key&&['all','car'].includes(mode)){render()}
+ }catch{}
+}
 function activeDrive(){
  const origin=actualOrigin();
  if(!origin||!['all','car'].includes(mode)||building||pickStage||pickStop||viewingSaved)return null;
  const key=origin.slice(0,2).join(',');
  if(key!==driveShelf.key){
-  driveShelf.key=key;driveShelf.options=driveOptions(origin);driveShelf.index=0;
+  driveShelf.key=key;driveShelf.options=driveOptions(origin);driveShelf.index=0;findMappedRoads(origin,key);
  }
  return driveShelf.options[driveShelf.index]||null;
 }
