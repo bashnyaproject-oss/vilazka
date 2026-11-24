@@ -8,7 +8,7 @@ function candidatesFor(area){
  function add(name,lat,lon,photo,credit){
   if(Math.abs(lat-area.lat)>2)return;
   const km=kmBetween(origin,[lat,lon]);
-  if(km<1||km>165)return;
+  if(km<1||km>165||!allowsStop(area,lat,lon))return;
   const bearing=Math.atan2((lon-area.lon)*Math.cos(area.lat*Math.PI/180),lat-area.lat);
   candidates.push({name,lat,lon,photo,credit,km,sector:(Math.round(bearing*4/Math.PI)+8)%8});
  }
@@ -30,6 +30,7 @@ function makeLoops(area,points){
    const known=points.find(p=>kmBetween(xy(p),[lat,lon])<3&&p.photo);
    return {...known,name,lat,lon};
   });
+  if(!gp.every(p=>allowsStop(area,p.lat,p.lon)))continue;
   if(gp.every(p=>kmBetween(xy(area),xy(p))>75))continue;
   const stops=gp.filter(p=>kmBetween(xy(area),xy(p))>1);
   if(stops.length<2)continue;
@@ -51,18 +52,19 @@ function makeLoops(area,points){
 }
 async function osrmPath(points,round=false){
  const type=round?'trip':'route',coords=points.map(p=>p.lon.toFixed(5)+','+p.lat.toFixed(5)).join(';');
- const q='overview=simplified&geometries=geojson&radiuses='+points.map(()=>2200).join(';')+(round?'&source=first&roundtrip=true':'');
+ const q='overview=full&geometries=geojson&radiuses='+points.map(()=>2200).join(';')+(round?'&source=first&roundtrip=true':'');
  const r=await fetch('https://router.project-osrm.org/'+type+'/v1/driving/'+coords+'?'+q,{signal:AbortSignal.timeout(9000)});
  if(!r.ok)throw Error();const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];if(!path?.geometry?.coordinates?.length)throw Error();return {path,waypoints:j.waypoints};
 }
 const hours=seconds=>{const n=Math.max(1,Math.round(seconds/60));return (n>=60?Math.floor(n/60)+' ч ':'')+(n%60?n%60+' мин':'')};
 async function loadLoop(card){
  if(!card||card.pending||card.done)return;
- card.pending=true;
+ card.pending=true;const area=loopView.area;
  try{const {path,waypoints}=await osrmPath([loopView.area,...card.stops],true);
+  if(!area.crossBorder&&!domesticPath(area.country,path.geometry.coordinates))throw Error();
   card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
   card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
- }catch{card.length='Схема · дорожный расчёт недоступен'}
+ }catch{card.length='Дорога не подтверждена'}
  card.pending=false;card.done=true;if(loopView.open&&loopView.cards[loopView.index]===card){drawLoopCard();renderPins();paintRoute()}
 }
 function loopHome(){return cities[state.loopHomeCity]||actualOrigin()}
@@ -82,11 +84,11 @@ async function approachTo(area,serial){
  const air=km>280?flightEstimate(home,area):null;
  let info={home:name,label:'Считаем подъезд…'};loopView.approach=info;drawLoopCard();
  let road=null;
- try{const {path}=await osrmPath([{lat:home[0],lon:home[1]},area]);road={seconds:path.duration,label:'На авто · '+Math.round(path.distance/1000)+' км · '+hours(path.duration)}}catch{}
+ try{const {path}=await osrmPath([{lat:home[0],lon:home[1]},area]);if(area.crossBorder||domesticPath(area.country,path.geometry.coordinates))road={seconds:path.duration,label:'На авто · '+Math.round(path.distance/1000)+' км · '+hours(path.duration)}}catch{}
  if(loopView.serial!==serial)return;
  const best=[air,road].filter(Boolean).sort((a,b)=>a.seconds-b.seconds)[0];
  info.label=best?.label||'Маршрут подъезда уточняется';info.air=best&&best===air;
- info.link=info.air?'https://www.google.com/travel/flights?q='+encodeURIComponent(air.label):'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home.slice(0,2).join(',')+'&destination='+xy(area).join(',');
+ info.link=!best?null:info.air?'https://www.google.com/travel/flights?q='+encodeURIComponent(air.label):'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home.slice(0,2).join(',')+'&destination='+xy(area).join(',');
  if(loopView.open)drawLoopCard();
 }
 function loopPhoto(p,i){
@@ -100,8 +102,8 @@ function drawLoopCard(){
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
  (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>Кольцо '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong></div>':'<div class="loop-copy"><h2>Пока мало остановок рядом</h2><button data-loop="pick">Выбрать другую точку</button></div>')+
- '<div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
- (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="save">Выбрать кольцо</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+
+ '<div class="loop-border"><label><input type="checkbox" id="crossBorder" '+(area.crossBorder?'checked':'')+'> Разрешить пересечение границ</label></div><div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
+ (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="save" '+(!c.line?'disabled':'')+'>Выбрать кольцо</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+
  (itinerary.legs.length?'<button class="loop-saved" data-loop="saved">Мой маршрут ↗</button>':'');
 }
 function loopFrame(){
@@ -111,17 +113,19 @@ function loopFrame(){
  const mobile=innerWidth<680,w=map.clientWidth,h=map.clientHeight;
  atlas.fitBounds(b,{padding:{left:mobile?28:Math.min(375,w*.42),right:28,top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
 }
-function setLoopArea(lat,lon,name){
- loopView.area={lat,lon,name};lastLoopPoint=loopView.area;state.loopArea=loopView.area;persist();loopView.picking=false;$('pickTip').hidden=true;
+function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&&countryAt(lat,lon)===area.country)}
+function setLoopArea(lat,lon,name,crossBorder=false){
+ loopView.area={lat,lon,name,country:countryAt(lat,lon),crossBorder};lastLoopPoint=loopView.area;state.loopArea=loopView.area;state.selectedDestination={lat,lon,name};persist();loopView.picking=false;$('pickTip').hidden=true;
  loopView.serial++;loopView.approach=null;loopView.cards=makeLoops(loopView.area,candidatesFor(loopView.area));loopView.index=0;
  drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);approachTo(loopView.area,loopView.serial);
 }
 function launchLoops(point){
- const center=atlas?.getCenter(),home=loopHome(),selected=point||lastLoopPoint||state.loopArea||(active?{lat:active.lat,lon:active.lon,name:active.name}:null);
+ const center=atlas?.getCenter();
+ const selected=point||lastLoopPoint||state.selectedDestination||state.loopArea;
  if(building)leaveTrip();if(picking)finishPick();pickStop=pickStage=false;active=null;routeRequest++;route=[];
  setDrawer(false);closeLandmark();for(const id of ['builder','detail','nearby','portal','pickTip'])$(id).hidden=true;
  loopView.open=true;$('tripBuilder').setAttribute('aria-pressed','true');
- const p=selected||(home?{lat:home[0],lon:home[1],name:state.loopHomeCity||originName()}:{lat:center?.lat??55.75,lon:center?.lng??37.62,name:'Центр карты'});
+ const p=selected||{lat:center?.lat,lon:center?.lng,name:'Центр карты'};if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon)){closeLoops();return}
  setLoopArea(p.lat,p.lon,p.name);
 }
 function closeLoops(){
@@ -132,12 +136,12 @@ function stepLoop(delta){
  loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[loopView.index]);
 }
 function saveLoop(){
- const area=loopView.area,c=loopView.cards[loopView.index];if(!c)return;
- itinerary.legs.push({name:area.name,lat:area.lat,lon:area.lon,arrival:true,loopHome:loopHome()?.slice(0,2),approachByCar:!!loopView.approach&&!loopView.approach.air,stops:[...c.stops.map(({name,lat,lon})=>({name,lat,lon})),{...area}]});
+ const area=loopView.area,c=loopView.cards[loopView.index];if(!c?.line)return;
+ itinerary.legs.push({name:area.name,lat:area.lat,lon:area.lon,arrival:true,domesticLoop:!area.crossBorder,crossBorder:area.crossBorder,loopHome:loopHome()?.slice(0,2),approachByCar:!!loopView.approach&&!loopView.approach.air,stops:[...c.stops.map(({name,lat,lon})=>({name,lat,lon})),{...area}]});
  selectedLeg=itinerary.legs.length-1;persist();closeLoops();enterTrip();loopFrame();
 }
 function loopLine(){
- const c=loopView.cards[loopView.index];return c?[c.line||[loopView.area,...c.stops,loopView.area].map(p=>[p.lon,p.lat])]:[];
+ const c=loopView.cards[loopView.index];return c?.line?[c.line]:[];
 }
 function loopMarkers(at){
  const c=loopView.cards[loopView.index];return [loopView.area,...(c?.stops||[])].map((p,i)=>'<span class="drive-stop" title="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+(i||'⚑')+'</span>').join('');
@@ -147,7 +151,7 @@ function initLoops(){
  deck.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.target.closest('.loop-images'))dragX=e.clientX});
  deck.addEventListener('pointerup',e=>{if(dragX!==null&&Math.abs(e.clientX-dragX)>45)stepLoop(e.clientX<dragX?1:-1);dragX=null});
  deck.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)||Math.abs(e.deltaX)<8)return;e.preventDefault();const now=Date.now();if(now-wheelAt>400)stepLoop(e.deltaX>0?1:-1);wheelAt=now},{passive:false});
- deck.onchange=e=>{if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();approachTo(loopView.area,++loopView.serial)}};
+ deck.onchange=e=>{if(e.target.id==='crossBorder'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,e.target.checked);return}if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();approachTo(loopView.area,++loopView.serial)}};
  deck.addEventListener('touchstart',e=>{touch=e.touches[0]},{passive:true});
  deck.addEventListener('touchend',e=>{if(!touch)return;const t=e.changedTouches[0],dx=t.clientX-touch.clientX;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(t.clientY-touch.clientY)*1.4)stepLoop(dx<0?1:-1);touch=null},{passive:true});
  deck.onclick=e=>{const action=e.target.closest('button')?.dataset.loop;

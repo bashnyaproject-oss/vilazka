@@ -1,6 +1,8 @@
 'use strict';
 (() => {
  const phrases = `
+Дорога не подтверждена|Road unconfirmed
+Разрешить пересечение границ|Allow border crossings
 Язык интерфейса|Interface language
 Найти город или место|Search cities and places
 Выбери место|Choose a place

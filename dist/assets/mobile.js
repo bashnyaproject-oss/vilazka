@@ -71,10 +71,7 @@
  }
  $('phoneMap').onclick=()=>{closeSearch();menu(false);resetMap();lastCamera='';schedule()};
  $('phoneRoads').onclick=()=>{menu(false);closeSearch();if(!loopView.open){
-  const c=camera(),visible=atlas?.getBounds(),p=lastLoopPoint||state.loopArea;
-  const inside=p&&visible&&p.lon>=visible.getWest()&&p.lon<=visible.getEast()&&p.lat>=visible.getSouth()&&p.lat<=visible.getNorth();
-  const home=loopHome(),homeNear=home&&kmBetween(home,[c.lat,c.lng])<35;
-  launchLoops(inside?p:homeNear?{lat:home[0],lon:home[1],name:state.loopHomeCity||originName()}:{lat:c.lat,lon:c.lng,name:'Здесь на карте'});
+  launchLoops();
  }sync()};
  $('mobileOptions').onclick=()=>menu(settings.hidden);
  $('mobileCancel').onclick=()=>{field.value='';closeSearch()};

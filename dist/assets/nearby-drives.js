@@ -1,5 +1,8 @@
 // Coordinates are waypoints, not a surveyed road trace. OSRM supplies the driving geometry.
+const armeniaDayTrips='https://armenia.travel/articles/cant-miss-attractions-within-an-hour-of-yerevan/';
 const publishedDrives=[
+ {name:'Гарни и Гегард',why:'Храм Гарни и монастырь в ущелье реки Азат.',source:'Armenia Travel',url:armeniaDayTrips,places:[['Храм Гарни',40.1124,44.7301],['Монастырь Гегард',40.1404,44.8185]]},
+ {name:'Звартноц и Эчмиадзин',why:'Две остановки к западу от Еревана.',source:'Armenia Travel',url:armeniaDayTrips,places:[['Звартноц',40.1597,44.3365],['Эчмиадзинский собор',40.1615,44.2910]]},
  {name:'По правому берегу Волги',why:'Через Тутаев к Рыбинску. Выйди к Волге в обоих городах.',source:'Мои дороги',url:'https://moyidorogi.com/trassa-r151-marshrut-yaroslavl-rybinsk/',places:[['Ярославль',57.62987,39.87368],['Тутаев',57.87292,39.52969],['Рыбинск',58.04562,38.83811]]},
  {name:'К озёрам Русского Севера',why:'Из Вологды к Сиверскому озеру в Кириллове и монастырю в Ферапонтове.',source:'Турпортал Вологодской области',url:'https://travel-vologda.ru/news/avtomarshrutyi-po-vologodchine-poyavilis-na-naczionalnom-turisticheskom-portale-puteshestvuemrf',places:[['Вологда',59.2239,39.88398],['Кириллов',59.86299,38.38128],['Ферапонтово',59.95425,38.56745]]},
  {name:'Серпантин над Аурландс-фьордом',why:'Подъём из Аурланда к смотровой площадке Стегастейн. Перед выездом проверь состояние дороги.',source:'Norwegian Scenic Routes',url:'https://www.nasjonaleturistveger.no/en/routes/aurlandsfjellet/',places:[['Аурланд',60.910982,7.191303],['Стегастейн',60.9089,7.2126]]}
@@ -7,14 +10,16 @@ const publishedDrives=[
 const driveShelf={key:'',options:[],index:0,current:null};
 function driveOptions(origin){
  const km=p=>kmBetween(origin,p.slice(1));
+ const country=countryAt(...origin.slice(0,2));
+ const local=p=>country&&countryAt(p[1],p[2])===country;
  const guides=publishedDrives.map(g=>{
   const places=[...g.places];if(km(places.at(-1))<km(places[0]))places.reverse();
   return {...g,places,approach:km(places[0])};
- }).filter(g=>g.approach<=165).sort((a,b)=>a.approach-b.approach);
+ }).filter(g=>g.approach<=165&&g.places.every(local)).sort((a,b)=>a.approach-b.approach);
  const sites=[...russianPlaces.map(([n,,x,y])=>({p:[n,y,x],url:'https://www.openstreetmap.org/?mlat='+y+'&mlon='+x,source:'OpenStreetMap'})),
  ...heritage.map(([id,n,x,y])=>({p:[n,y,x],url:'https://whc.unesco.org/en/list/'+id+'/',source:'ЮНЕСКО'})),
  ...regionalSites.filter(r=>['Музей','Монастырь','Замок','Парк'].includes(r[4])&&r[0].startsWith('g')).map(([id,n,x,y])=>({p:[n,y,x],url:'https://www.geonames.org/'+id.slice(1),source:'GeoNames'}))];
- const nearby=sites.map(s=>({...s,km:km(s.p)})).filter(s=>s.km>1&&s.km<=90).sort((a,b)=>a.km-b.km);
+ const nearby=sites.map(s=>({...s,km:km(s.p)})).filter(s=>s.km>1&&s.km<=90&&local(s.p)).sort((a,b)=>a.km-b.km);
  const used=new Set(),locals=[];
  for(const site of nearby){
   if(used.has(site.p[0]))continue;
@@ -24,7 +29,7 @@ function driveOptions(origin){
   if(locals.length===3)break;
  }
  if(!guides.length&&!locals.length){
-  const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=110).sort((a,b)=>km(a)-km(b));
+  const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=110&&local(p)).sort((a,b)=>km(a)-km(b));
   for(const p of towns.slice(0,3)){
    const q=towns.find(t=>km(t)>km(p)&&kmBetween(p.slice(1),t.slice(1))<45);
    locals.push({name:p[0],why:'Поездка по окрестным городам.',source:'Посмотреть место в OpenStreetMap',url:'https://www.openstreetmap.org/?mlat='+p[1]+'&mlon='+p[2]+'#map=13/'+p[1]+'/'+p[2],places:q?[p,q]:[p]});
@@ -40,7 +45,7 @@ async function findMappedRoads(origin,key){
   if(!response.ok)return;
   const {elements}=await response.json();
   if(driveShelf.key!==key)return;
-  const found=[];
+  const found=[],country=countryAt(origin[0],origin[1]);
   for(const e of elements){
    if(!e.tags?.name)continue;
    let places;
@@ -50,6 +55,7 @@ async function findMappedRoads(origin,key){
     const mid=e.geometry[Math.floor(e.geometry.length/2)];
     places=[[e.tags.name+' · начало',ends[0].lat,ends[0].lon],...[mid].filter(p=>!ends.includes(p)).map(p=>[e.tags.name,p.lat,p.lon]),[e.tags.name+' · конец',ends[1].lat,ends[1].lon]];
    }else if(e.type==='node')places=[[e.tags.name,e.lat,e.lon]];else continue;
+   if(!country||!places.every(p=>countryAt(p[1],p[2])===country))continue;
    found.push({name:e.tags.name,why:e.type==='way'?'Дорога отмечена как живописная в OpenStreetMap.':'Поездка к смотровой площадке из OpenStreetMap.',places,source:'OpenStreetMap',url:'https://www.openstreetmap.org/'+e.type+'/'+e.id,road:e.type==='way'});
   }
   found.sort((a,b)=>Number(b.road)-Number(a.road)||kmBetween(origin,a.places[0].slice(1))-kmBetween(origin,b.places[0].slice(1)));
@@ -79,10 +85,12 @@ function frameDrive(d){
 function driveCard(d){
  if(!d.status){
   d.status='Считаем путь по дорогам…';
+  const origin=actualOrigin(),country=countryAt(origin[0],origin[1]);
   const coords=driveStops(d).map(([y,x])=>x.toFixed(5)+','+y.toFixed(5));
-  const url='https://router.project-osrm.org/route/v1/driving/'+coords.join(';')+'?overview=simplified&geometries=geojson&radiuses='+coords.map(()=>1500).join(';');
+  const url='https://router.project-osrm.org/route/v1/driving/'+coords.join(';')+'?overview=full&geometries=geojson&radiuses='+coords.map(()=>1500).join(';');
   fetch(url,{signal:AbortSignal.timeout(8000)}).then(r=>r.json()).then(j=>{
    const r=j.routes?.[0];if(!r?.geometry?.coordinates?.length)throw Error();
+   if(!domesticPath(country,r.geometry.coordinates))throw Error();
    d.line=r.geometry.coordinates;
    const minutes=Math.max(1,Math.round(r.duration/60)),h=Math.floor(minutes/60);
    d.status=Math.round(r.distance/1000)+' км · '+(h?h+' ч ':'')+(minutes%60)+' мин за рулём';

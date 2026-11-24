@@ -135,7 +135,7 @@ function browseStory(step){
  }
  if(!visible.length)return;
  const i=visible.findIndex(d=>d.id===storyId);
- const d=visible[(i+step+visible.length)%visible.length];storyId=d.id;
+ const d=visible[(i+step+visible.length)%visible.length];storyId=d.id;lastLoopPoint={name:d.name,lat:d.lat,lon:d.lon};
  $('quickCards').innerHTML=storyCard();flyTo([d.lat,d.lon],4);renderPins();
 }
 function render(){
@@ -635,7 +635,7 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
  if(b.closest('#seasonList')){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
- if(k.openLoops!==undefined){const home=actualOrigin();launchLoops(home?{lat:home[0],lon:home[1],name:originName()}:null);return}
+ if(k.openLoops!==undefined){launchLoops();return}
  if(k.takeDrive!==undefined&&activeDrive()){takeDrive(activeDrive());return}
  if(k.site!==undefined)openCatalogue(+k.site);
  if(k.arrivalRegion!==undefined){const d=data[+k.arrivalRegion];launchLoops({name:d.name,lat:d.lat,lon:d.lon})}
@@ -662,7 +662,7 @@ document.addEventListener('click',e=>{
  if(k.region!==undefined)open(data[Number(k.region)]);
  if(k.regionZoom!==undefined){
   const d=data[Number(k.regionZoom)];
-  active=null;setDrawer(false);render();flyTo([d.lat,d.lon],8);
+  lastLoopPoint={name:d.name,lat:d.lat,lon:d.lon};active=null;setDrawer(false);render();flyTo([d.lat,d.lon],8);
  }
  if(k.close!==undefined){active=null;render();fit()}
  if(k.setOrigin!==undefined){pendingDestination=active;showStart()}
@@ -752,6 +752,7 @@ function requestLocation(focus){
    if(request!==geoRequest)return;
    state.origin='auto';$('origin').value='auto';persist();
    gps=[coords.latitude,coords.longitude];gpsStatus='ready';
+   if(loopView.open||building||lastLoopPoint){updateLocation();return}
    $('portal').hidden=true;completeStart(gps,focus?5:3.8)
   },
   ()=>{if(request!==geoRequest)return;gpsStatus='failed';updateLocation();$('startHint').textContent='Геопозиция недоступна. Поставь точку пипеткой.'},
@@ -779,7 +780,7 @@ function selectStart(point){
  if(loopView.open){setLoopArea(point.lat,point.lng,'Точка прибытия');return}
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
  if(!picking)return;
- state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
+ lastLoopPoint={lat:point.lat,lon:point.lng,name:'Выбранная точка'};state.selectedDestination=lastLoopPoint;state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
  persist();finishPick();completeStart(state.point,Math.max(4,atlas.getZoom()));
 }
 function completeStart(point,zoom){
@@ -1061,6 +1062,7 @@ function drivingSegments(){
  for(const leg of itinerary.legs){
   if(leg.arrival)groups.push([]);
   const group=groups.at(-1);
+  if(leg.domesticLoop)group.domesticCountry=countryAt(leg.lat,leg.lon)||"unknown";
   for(const point of [leg,...leg.stops]){
    const coords=[point.lat,point.lon];
    if(!group.length||kmBetween(coords,group.at(-1))>.025)group.push(coords);
@@ -1074,19 +1076,19 @@ function approximateKm(points){
 let drivingLines=[];
 async function refreshTrip(){
  const segments=drivingSegments(),serial=++sequence;
- drivingLines=segments.map(group=>group.map(lngLat));roadKm=null;route=[];
+ drivingLines=segments.map(group=>group.domesticCountry?[]:group.map(lngLat));roadKm=null;route=[];
  roadMessage='Оценка по прямой × 1,28';paintRoute();renderPins();showLeg();
  if(!segments.length)return;
  const results=await Promise.all(segments.map(async group=>{
   if(group.length>100)return null;
   const coords=group.map(([y,x])=>x.toFixed(5)+','+y.toFixed(5)).join(';');
   try{
-   const response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=simplified&geometries=geojson',{signal:AbortSignal.timeout(8500)});
-   const result=(await response.json()).routes?.[0];return result?.geometry?.coordinates?.length?result:null;
+   const response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson',{signal:AbortSignal.timeout(8500)});
+   const result=(await response.json()).routes?.[0];const line=result?.geometry?.coordinates;return line?.length&&(!group.domesticCountry||domesticPath(group.domesticCountry,line))?result:null;
   }catch{return null}
  }));
  if(serial!==sequence||!building)return;
- drivingLines=results.map((r,i)=>r?r.geometry.coordinates:segments[i].map(lngLat));
+ drivingLines=results.map((r,i)=>r?r.geometry.coordinates:segments[i].domesticCountry?[]:segments[i].map(lngLat));
  roadKm=results.reduce((sum,r,i)=>sum+(r?r.distance/1000:approximateKm(segments[i])),0);
  roadMessage=results.every(Boolean)?'По автодорогам · OSRM':'Часть пути оценена по прямой × 1,28';
  paintRoute();showLeg();
@@ -1097,10 +1099,10 @@ function localPlaces(l){
  const key=legKey(l),cached=nearbyCache.get(key)||null;
  if(l===lastArea?.leg&&cached===lastArea.external)return lastArea.points;
  const options=[...landmarks.flat(),...russianPlaces.map(([n,,x,y])=>[n,y,x]),...catalogue.map(([,n,x,y])=>[n,y,x]),...(cached||[]),...atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x])];
- const seen=[];
+ const seen=[],areaCountry=countryAt(l.lat,l.lon);
  for(const [name,lat,lon] of options){
   const km=kmBetween([l.lat,l.lon],[lat,lon]);
-  if(km<.08||km>70||seen.some(p=>p.name===name&&Math.abs(p.lat-lat)<.01&&Math.abs(p.lon-lon)<.02))continue;
+  if(km<.08||km>70||(!l.crossBorder&&(!areaCountry||countryAt(lat,lon)!==areaCountry))||seen.some(p=>p.name===name&&Math.abs(p.lat-lat)<.01&&Math.abs(p.lon-lon)<.02))continue;
   seen.push({name,lat,lon,km});
  }
  const points=seen.sort((a,b)=>a.km-b.km).slice(0,70);
@@ -1164,7 +1166,7 @@ function chooseNext(byAir=false){
 }
 function pointChoice(lat,lon,name){
  if(loopView.open){setLoopArea(lat,lon,name);return true}
- lastLoopPoint={lat,lon,name};
+ lastLoopPoint={lat,lon,name};state.selectedDestination=lastLoopPoint;persist();
  if(pickStage){startLeg(name,lat,lon,nextArrivalByAir);return true}
  if(pickStop){pickStop=false;addStageStop({name,lat,lon});showLeg();return true}
  return false;
