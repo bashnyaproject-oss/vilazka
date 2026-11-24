@@ -91,7 +91,12 @@ function driveCard(d){
   });
  }
  driveShelf.current=d;
- return '<div class="drive-card"><small>На авто от твоего старта</small><h3>'+safe(d.name)+'</h3><p>'+safe(d.places.map(p=>p[0]).join(' → '))+'</p><p>'+safe(d.why)+'</p><strong>'+safe(d.status)+'</strong><button class="action" data-take-drive>Добавить в роад-трип</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
+ const stops=d.places.map(([name,lat,lon])=>{
+  const match=loopGallery.find(p=>kmBetween([lat,lon],p.slice(1,3))<1.5);
+  return {name,lat,lon,photo:match?.[3],credit:match?.[4]};
+ });
+ return '<div class="loop-images drive-strip">'+stops.map(loopPhoto).join('')+'</div><div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong><button class="action" data-open-loops>Кольца рядом →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
+
 }
 function takeDrive(d){
  const origin=actualOrigin();if(!origin)return;

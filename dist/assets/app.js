@@ -151,7 +151,7 @@ function render(){
  const m=defaultMode(d);
  return '<article class="card '+(active===d?'current':'')+'"><button class="card-open" data-open="'+d.id+'">'+photo(d,'thumb')+'<span><strong>'+d.name+'</strong><small>'+d.country+' · '+tripDays(d)+' дн. · '+names[m]+'</small><em>'+ (actualOrigin()?'≈ '+price(d,m).text:'Выбери старт') +'</em></span></button><button class="heart" data-save="'+d.id+'" aria-label="'+(state.saved.includes(d.id)?'Убрать из сохранённых':'Сохранить')+'">'+(state.saved.includes(d.id)?'♥':'♡')+'</button></article>';
  }).join('')||(viewingSaved?'<p class="empty">Нажми на сердечко у поездки, чтобы добавить её сюда.</p>':'<p class="empty">В демокаталоге нет совпадений. Попробуй другой месяц или способ поездки.</p>');
- const useRail=!building&&!pickStage&&!pickStop&&!active&&!picking&&!viewingSaved&&document.querySelector('aside').hidden&&$('landmark').hidden&&$('portal').hidden;
+ const useRail=!loopView.open&&!building&&!pickStage&&!pickStop&&!active&&!picking&&!viewingSaved&&document.querySelector('aside').hidden&&$('landmark').hidden&&$('portal').hidden;
  $('nearby').hidden=!useRail;
  const priorDrive=driveShelf.current;
  if(useRail)$('quickCards').innerHTML=storyCard();else driveShelf.current=null;
@@ -188,7 +188,7 @@ function renderDetail(){
  const lodging='https://www.booking.com/searchresults.ru.html?ss='+encodeURIComponent(stops[0]);
  const directions='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(tripMode==='car'?startQuery():stops[0])+'&destination='+encodeURIComponent(stops.at(-1))+'&waypoints='+encodeURIComponent(stops.slice(tripMode==='car'?0:1,-1).join('|'))+'&travelmode='+(tripMode==='train'?'transit':'driving');
  const transport=options(d).map(m=>'<button data-trip="'+m+'" class="'+(tripMode===m?'selected':'')+'">'+names[m]+'<small>'+price(d,m).text+' · '+travel(d,m)+'</small></button>').join('');
- const overview='<p class="destination-line">'+stops.join(' · ')+'</p><p>'+names[tripMode]+(actualOrigin()?' · ≈ '+p.text:'')+'</p><button class="action" data-choose>Хочу сюда</button><button class="action secondary" data-arrival-region="'+d.id+'">Отметить точку прибытия</button>'+(!actualOrigin()?'<button class="action secondary" data-set-origin>Маршрут отсюда</button>':'');
+ const overview='<p class="destination-line">'+stops.join(' · ')+'</p><p>'+names[tripMode]+(actualOrigin()?' · ≈ '+p.text:'')+'</p><button class="action" data-choose>Хочу сюда</button><button class="action secondary" data-arrival-region="'+d.id+'">Кольца отсюда</button>'+(!actualOrigin()?'<button class="action secondary" data-set-origin>Маршрут отсюда</button>':'');
  const costs='<h3>≈ '+p.text+' на человека</h3><p>Дорога · '+euro(p.move)+'</p><p>Жильё и еда · '+euro(p.living)+'</p>'+(p.rental?'<p>Аренда · '+euro(p.rental)+'</p>':'')+'<p class="note">Модельная оценка, не тариф. Депозит и визовые сборы отдельно.</p><div class="route-options">'+transport+'</div><button class="action" data-stage="ready">Что понадобится</button>';
  const ready='<h3>Въезд · '+visaFor(d)+'</h3><a class="secondary" href="'+d.official+'" target="_blank" rel="noopener">Официальные условия</a>'+requirements().map((label,i)=>'<label class="switch"><input type="checkbox" data-requirement="'+i+'" '+(checkedRequirements.has(String(i))?'checked':'')+'> '+label+'</label>').join('')+'<p><a href="'+(['plane','rent'].includes(tripMode)?flights:directions)+'" target="_blank" rel="noopener">'+(['plane','rent'].includes(tripMode)?'Проверить перелёты':'Открыть в картах')+'</a><a class="secondary" href="'+lodging+'" target="_blank" rel="noopener">Найти жильё</a>'+(tripMode==='rent'?'<a class="secondary" href="https://www.rentalcars.com/" target="_blank" rel="noopener">Найти авто</a>':'')+'</p><button class="action" id="confirmRoute" data-confirm-route '+(checkedRequirements.size<requirements().length?'disabled':'')+'>Выбрать маршрут</button>';
  node.innerHTML='<div class="cover photo" style="'+seasonPos(d.id)+'--px:'+((d.id%4)/3*100)+'%;--py:'+(Math.floor(d.id/4)*50)+'%"><button class="close" data-close aria-label="Закрыть">×</button></div><div class="panel"><span class="badge">'+d.country+' · '+n+' дн.</span><h2>'+d.name+'</h2>'+(tab==='plan'?'':steps())+({plan:overview,price:costs,ready,today,chosen:'<h3>Поездка сохранена</h3><button class="action" data-arrival-region="'+d.id+'">Отметить, куда приеду</button><p>'+stops.join(' · ')+'</p><button class="action secondary" data-stage="ready">Что взять и проверить</button><button class="action secondary" data-stage="today">Что делать по дням</button>'}[tab])+''+'</div>';
@@ -259,7 +259,7 @@ function openCatalogue(i){
  if(building)leaveTrip();active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
  const url=isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
- const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action" data-stage-site="'+i+'">Начать этап здесь</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
+ const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action" data-stage-site="'+i+'">Кольца отсюда</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
 
  flyTo([lat,lon],Math.max(atlas.getZoom(),6));
 }
@@ -408,6 +408,7 @@ function fitTransport(){
  atlas.fitBounds(bounds,{padding:{left:50,right:50,top:130,bottom:110},maxZoom:5,duration:reduced.matches?0:550});
 }
 function pickTransport(button){
+ if(loopView.open)closeLoops();
  if(building)leaveTrip();
  mode=button.dataset.mode;document.body.dataset.transport=mode;
  $('modes').querySelectorAll('button').forEach(el=>{el.classList.toggle('selected',el===button);el.setAttribute('aria-pressed',String(el===button))});
@@ -431,6 +432,7 @@ function renderPins(){
  const zoom=atlas.getZoom();
  tier=scaleTier(zoom);lastMarkerZoom=Math.round(zoom*5);
  const at=(lat,lon)=>' data-at="'+lon+','+lat+'"';
+ if(loopView.open&&!loopView.picking){pinLayer.innerHTML=loopMarkers(at);positionPins();return}
  if(building&&!pickStage){
   pinLayer.innerHTML=stagePins(at);positionPins();return;
  }
@@ -529,7 +531,7 @@ function openCity(i){
  if(building)leaveTrip();
  active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const box=$('landmark');
- box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2><button class="action secondary" data-leg-city="'+i+'">Начать этап здесь</button><button class="action" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
+ box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2><button class="action secondary" data-leg-city="'+i+'">Кольца отсюда</button><button class="action" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
  box.querySelector('.panel').insertAdjacentHTML('beforeend',reviews(name,y,x));
  const mediaKey=i>=russianStart?'p'+(i-russianStart):'c'+i;
  if(i<russianStart||placeMedia[mediaKey]?.[1])box.querySelector('h2').insertAdjacentHTML('afterend',photoFigure(mediaKey,name,x,y));
@@ -633,12 +635,13 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
  if(b.closest('#seasonList')){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
+ if(k.openLoops!==undefined){const home=actualOrigin();launchLoops(home?{lat:home[0],lon:home[1],name:originName()}:null);return}
  if(k.takeDrive!==undefined&&activeDrive()){takeDrive(activeDrive());return}
  if(k.site!==undefined)openCatalogue(+k.site);
- if(k.arrivalRegion!==undefined){const d=data[+k.arrivalRegion];chooseNext(['plane','rent'].includes(tripMode));flyTo([d.lat,d.lon],7)}
+ if(k.arrivalRegion!==undefined){const d=data[+k.arrivalRegion];launchLoops({name:d.name,lat:d.lat,lon:d.lon})}
  if(k.near!==undefined&&building){const p=localPlaces(itinerary.legs[selectedLeg])[+k.near];if(p)addStageStop(p);return}
  if(k.focusLeg!==undefined&&building){pickStop=false;selectedLeg=+k.focusLeg;enterTrip();return}
- if(k.stageSite!==undefined){const [,name,lon,lat]=catalogue[+k.stageSite];startLeg(name,lat,lon)}
+ if(k.stageSite!==undefined){const [,name,lon,lat]=catalogue[+k.stageSite];launchLoops({name,lat,lon})}
  if(k.city!==undefined)openCity(+k.city);
  if(k.citySave!==undefined){const i=+k.citySave;state.cityWishlist??=[];if(!state.cityWishlist.includes(i))state.cityWishlist.push(i);persist();openCity(i);$('count').textContent=state.saved.length+state.cityWishlist.length}
 
@@ -648,13 +651,13 @@ document.addEventListener('click',e=>{
   if(!actualOrigin()){state.point=[y,x];state.origin='pin';$('origin').value='pin';geoRequest++;gpsStatus='idle';persist()}
   closeLandmark();render();applyTransportLayer();fitTransport();
  }
- if(k.airStage){const [city,x,y]=airports[k.airStage];startLeg(city,y,x,true)}
+ if(k.airStage){const [city,x,y]=airports[k.airStage];launchLoops({name:city,lat:y,lon:x})}
  if(k.open!==undefined)open(data[Number(k.open)]);
  if(k.save!==undefined)save(data[Number(k.save)]);
  if(k.cluster&&atlas){const pts=k.cluster.split(',').map(i=>data[Number(i)]);$('portal').hidden=true;flyTo([pts.reduce((a,d)=>a+d.lat,0)/pts.length,pts.reduce((a,d)=>a+d.lon,0)/pts.length],Math.max(4,atlas.getZoom()+1))}
  if(k.poi){const [id,i]=k.poi.split(':').map(Number),[name,lat,lon]=landmarks[id][i];if(!pointChoice(lat,lon,name))openLandmark(k.poi)}
- if(k.legCity!==undefined){const [name,,lon,lat]=atlasCities[+k.legCity];startLeg(name,lat,lon)}
- if(k.legRegion!==undefined){const d=data[+k.legRegion];startLeg(d.name,d.lat,d.lon,['plane','rent'].includes(tripMode))}
+ if(k.legCity!==undefined){const [name,,lon,lat]=atlasCities[+k.legCity];launchLoops({name,lat,lon})}
+ if(k.legRegion!==undefined){const d=data[+k.legRegion];launchLoops({name:d.name,lat:d.lat,lon:d.lon})}
  if(k.landmarkClose!==undefined){closeLandmark();render()}
  if(k.region!==undefined)open(data[Number(k.region)]);
  if(k.regionZoom!==undefined){
@@ -680,6 +683,7 @@ $('detail').addEventListener('change',e=>{
 });
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||$('dialog').open)return;
+ if(loopView.open){closeLoops();return}
  if(picking){finishPick();return}
  if(!$('landmark').hidden){closeLandmark();return}
  if(active){active=null;render();return}
@@ -772,6 +776,7 @@ function finishPick(){
  $('cancelPick').hidden=true;$('pickStart').hidden=false;$('portal').hidden=!!actualOrigin();
 }
 function selectStart(point){
+ if(loopView.open){setLoopArea(point.lat,point.lng,'Точка прибытия');return}
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
  if(!picking)return;
  state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
@@ -798,7 +803,7 @@ function paintRoute(){
  if(!atlas)return;
  if(canvas){canvas.draw();return}
  if(!atlas.isStyleLoaded())return;
- const features=(building?drivingLines:previewLines()).filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{}}));
+ const features=(loopView.open?loopLine():building?drivingLines:previewLines()).filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{}}));
  const content={type:'FeatureCollection',features};
  if(atlas.getSource('trip-route'))atlas.getSource('trip-route').setData(content);
  else {atlas.addSource('trip-route',{type:'geojson',data:content});atlas.addLayer({id:'trip-route',type:'line',source:'trip-route',paint:{'line-color':'#cbbaff','line-width':3,'line-dasharray':[2,1]}})}
@@ -939,7 +944,7 @@ function bootOffline(){
    if(x>=0&&x<=w&&y>=0&&y<=h)ctx.fillText(name,x,y);
   }
   ctx.textAlign='start';
-  for(const line of building?drivingLines:previewLines()){
+  for(const line of loopView.open?loopLine():building?drivingLines:previewLines()){
    if(line.length<2)continue;
    ctx.strokeStyle='#cbbaff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();
    line.forEach((p,i)=>{const {x,y}=project(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});
@@ -1157,6 +1162,8 @@ function chooseNext(byAir=false){
  $('pickTip').hidden=false;renderPins();
 }
 function pointChoice(lat,lon,name){
+ if(loopView.open){setLoopArea(lat,lon,name);return true}
+ lastLoopPoint={lat,lon,name};
  if(pickStage){startLeg(name,lat,lon,nextArrivalByAir);return true}
  if(pickStop){pickStop=false;addStageStop({name,lat,lon});showLeg();return true}
  return false;
@@ -1167,15 +1174,15 @@ function totals(){
 }
 function showLeg(){
  if(!building||pickStop||pickStage)return;
- const l=itinerary.legs[selectedLeg], panel=$('builder'),scroll=panel.scrollTop,checklistOpen=panel.querySelector('details')?.open;
+ const l=itinerary.legs[selectedLeg], panel=$('builder'),scroll=panel.scrollTop,checklistOpen=panel.querySelector('.trip-extra')?.open,packOpen=panel.querySelector('details details')?.open;
  if(panel.contains(document.activeElement)&&document.activeElement.matches('input[type=number]')){if($('fuelTotal'))$('fuelTotal').textContent=totals();return}
  panel.hidden=false;$('pickTip').hidden=true;
  const choices=localPlaces(l).filter(p=>!l.stops.some(s=>legKey(s)===legKey(p)));
- panel.innerHTML='<div class="panel"><button class="close" data-build="close" aria-label="Закрыть">×</button><small>Этап '+(selectedLeg+1)+' · точка прибытия</small><h2>'+safe(l.name)+'</h2><div class="chips">'+itinerary.legs.map((e,i)=>'<button data-leg="'+i+'" class="'+(i===selectedLeg?'selected':'')+'">'+(i+1)+'. '+safe(e.name)+'</button>').join('')+'</div><h3>Остановки по порядку</h3><ol><li>'+safe(l.name)+'</li>'+l.stops.map((s,i)=>'<li>'+safe(s.name)+' <button data-drop="'+i+'" aria-label="Убрать остановку">×</button></li>').join('')+'</ol><h3>Места рядом</h3><div class="near-picks">'+choices.slice(0,4).map(p=>'<button data-near="'+localPlaces(l).indexOf(p)+'"><strong>'+safe(p.name)+'</strong><small>'+p.km.toLocaleString('ru',{maximumFractionDigits:1})+' км</small><b>+</b></button>').join('')+'</div>'+(!choices.length?'<p class="note">В радиусе 70 км пока нет других мест в каталоге. Можно поставить свою остановку.</p>':'')+'<label>Все места в радиусе 70 км<select id="nearStop"><option value="">Выбери место</option>'+choices.map(p=>'<option value="'+safe(JSON.stringify([p.name,p.lat,p.lon]))+'">'+safe(p.name)+' · '+Math.round(p.km)+' км</option>').join('')+'</select></label><button class="action secondary" data-build="pin">Указать остановку на карте</button><button class="action" data-build="next">Добавить следующий этап</button><h3 id="fuelTotal">'+totals()+'</h3><p class="note">'+roadMessage+' · весь маршрут в одну сторону</p><div class="fuel"><label>Расход, л/100 км<input id="fuelRate" type="number" min=".1" step=".1" value="'+itinerary.consumption+'"></label><label>Цена топлива, €/л<input id="fuelPrice" type="number" min=".01" step=".01" value="'+itinerary.price+'"></label></div><h3>Сегодня в районе этапа</h3><p>'+safe(forecasts.get(legKey(l))||'Получаем прогноз…')+'</p><small>Open-Meteo</small><details><summary>Готовность · '+pack.filter(x=>itinerary.checks[x]).length+'/'+pack.length+'</summary>'+pack.map((x,i)=>'<label class="switch"><input type="checkbox" data-pack="'+i+'" '+(itinerary.checks[x]?'checked':'')+'>'+x+'</label>').join('')+'</details><button class="action secondary" data-build="remove">Убрать этап</button></div>';
- panel.querySelector('details').open=!!checklistOpen;panel.scrollTop=scroll;
+ panel.innerHTML='<div class="panel"><button class="close" data-build="close" aria-label="Закрыть">×</button><small>Этап '+(selectedLeg+1)+' · точка прибытия</small><h2>'+safe(l.name)+'</h2><div class="chips">'+itinerary.legs.map((e,i)=>'<button data-leg="'+i+'" class="'+(i===selectedLeg?'selected':'')+'">'+(i+1)+'. '+safe(e.name)+'</button>').join('')+'</div><h3>Остановки по порядку</h3><ol><li>'+safe(l.name)+'</li>'+l.stops.map((s,i)=>'<li>'+safe(s.name)+' <button data-drop="'+i+'" aria-label="Убрать остановку">×</button></li>').join('')+'</ol><details class="trip-extra"><summary>Изменить остановки и параметры</summary><h3>Места рядом</h3><div class="near-picks">'+choices.slice(0,4).map(p=>'<button data-near="'+localPlaces(l).indexOf(p)+'"><strong>'+safe(p.name)+'</strong><small>'+p.km.toLocaleString('ru',{maximumFractionDigits:1})+' км</small><b>+</b></button>').join('')+'</div>'+(!choices.length?'<p class="note">В радиусе 70 км пока нет других мест в каталоге. Можно поставить свою остановку.</p>':'')+'<label>Все места в радиусе 70 км<select id="nearStop"><option value="">Выбери место</option>'+choices.map(p=>'<option value="'+safe(JSON.stringify([p.name,p.lat,p.lon]))+'">'+safe(p.name)+' · '+Math.round(p.km)+' км</option>').join('')+'</select></label><button class="action secondary" data-build="pin">Указать остановку на карте</button><button class="action" data-build="next">Добавить следующий этап</button><h3 id="fuelTotal">'+totals()+'</h3><p class="note">'+roadMessage+' · весь маршрут в одну сторону</p><div class="fuel"><label>Расход, л/100 км<input id="fuelRate" type="number" min=".1" step=".1" value="'+itinerary.consumption+'"></label><label>Цена топлива, €/л<input id="fuelPrice" type="number" min=".01" step=".01" value="'+itinerary.price+'"></label></div><h3>Сегодня в районе этапа</h3><p>'+safe(forecasts.get(legKey(l))||'Получаем прогноз…')+'</p><small>Open-Meteo</small><details><summary>Готовность · '+pack.filter(x=>itinerary.checks[x]).length+'/'+pack.length+'</summary>'+pack.map((x,i)=>'<label class="switch"><input type="checkbox" data-pack="'+i+'" '+(itinerary.checks[x]?'checked':'')+'>'+x+'</label>').join('')+'</details><button class="action secondary" data-build="remove">Убрать этап</button></details></div>';
+ panel.querySelector('.trip-extra').open=!!checklistOpen;panel.querySelector('details details').open=!!packOpen;panel.scrollTop=scroll;
 }
-$('tripBuilder').onclick=enterTrip;
-$('pickTip').onclick=()=>itinerary.legs.length?enterTrip():leaveTrip();
+initLoops();
+$('pickTip').onclick=()=>{if(loopView.open){loopView.picking=false;$('pickTip').hidden=true;drawLoopCard();renderPins()}else if(itinerary.legs.length)enterTrip();else leaveTrip()};
 $('builder').onclick=e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.dataset.leg!==undefined){selectedLeg=+b.dataset.leg;const l=itinerary.legs[selectedLeg];enterTrip();flyTo([l.lat,l.lon],8)}
