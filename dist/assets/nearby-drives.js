@@ -1,0 +1,82 @@
+// Coordinates are waypoints, not a surveyed road trace. OSRM supplies the driving geometry.
+const publishedDrives=[
+ {name:'По правому берегу Волги',why:'Через Тутаев к Рыбинску. Выйди к Волге в обоих городах.',source:'Мои дороги',url:'https://moyidorogi.com/trassa-r151-marshrut-yaroslavl-rybinsk/',places:[['Ярославль',57.62987,39.87368],['Тутаев',57.87292,39.52969],['Рыбинск',58.04562,38.83811]]},
+ {name:'К озёрам Русского Севера',why:'Из Вологды к Сиверскому озеру в Кириллове и монастырю в Ферапонтове.',source:'Турпортал Вологодской области',url:'https://travel-vologda.ru/news/avtomarshrutyi-po-vologodchine-poyavilis-na-naczionalnom-turisticheskom-portale-puteshestvuemrf',places:[['Вологда',59.2239,39.88398],['Кириллов',59.86299,38.38128],['Ферапонтово',59.95425,38.56745]]},
+ {name:'Серпантин над Аурландс-фьордом',why:'Подъём из Аурланда к смотровой площадке Стегастейн. Перед выездом проверь состояние дороги.',source:'Norwegian Scenic Routes',url:'https://www.nasjonaleturistveger.no/en/routes/aurlandsfjellet/',places:[['Аурланд',60.910982,7.191303],['Стегастейн',60.9089,7.2126]]}
+];
+const driveShelf={key:'',options:[],index:0,current:null};
+function driveOptions(origin){
+ const km=p=>kmBetween(origin,p.slice(1));
+ const guides=publishedDrives.map(g=>{
+  const places=[...g.places];if(km(places.at(-1))<km(places[0]))places.reverse();
+  return {...g,places,approach:km(places[0])};
+ }).filter(g=>g.approach<=165).sort((a,b)=>a.approach-b.approach);
+ const sites=[...russianPlaces.map(([n,,x,y])=>({p:[n,y,x],url:'https://www.openstreetmap.org/?mlat='+y+'&mlon='+x,source:'OpenStreetMap'})),
+ ...heritage.map(([id,n,x,y])=>({p:[n,y,x],url:'https://whc.unesco.org/en/list/'+id+'/',source:'ЮНЕСКО'})),
+ ...regionalSites.filter(r=>['Музей','Монастырь','Замок','Парк'].includes(r[4])&&r[0].startsWith('g')).map(([id,n,x,y])=>({p:[n,y,x],url:'https://www.geonames.org/'+id.slice(1),source:'GeoNames'}))];
+ const nearby=sites.map(s=>({...s,km:km(s.p)})).filter(s=>s.km>1&&s.km<=90).sort((a,b)=>a.km-b.km);
+ const used=new Set(),locals=[];
+ for(const site of nearby){
+  if(used.has(site.p[0]))continue;
+  const next=nearby.find(s=>!used.has(s.p[0])&&s.km>=site.km&&kmBetween(s.p.slice(1),site.p.slice(1))>3&&kmBetween(s.p.slice(1),site.p.slice(1))<35);
+  const places=next?[site.p,next.p]:[site.p];places.forEach(p=>used.add(p[0]));
+  locals.push({name:site.p[0],why:'Подборка ближайших остановок от твоего старта.',source:site.source,url:site.url,places});
+  if(locals.length===3)break;
+ }
+ if(!guides.length&&!locals.length){
+  const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=110).sort((a,b)=>km(a)-km(b));
+  for(const p of towns.slice(0,3)){
+   const q=towns.find(t=>km(t)>km(p)&&kmBetween(p.slice(1),t.slice(1))<45);
+   locals.push({name:p[0],why:'Поездка по окрестным городам.',source:'Посмотреть место в OpenStreetMap',url:'https://www.openstreetmap.org/?mlat='+p[1]+'&mlon='+p[2]+'#map=13/'+p[1]+'/'+p[2],places:q?[p,q]:[p]});
+  }
+ }
+ return [...guides,...locals];
+}
+function activeDrive(){
+ const origin=actualOrigin();
+ if(!origin||!['all','car'].includes(mode)||building||pickStage||pickStop||viewingSaved)return null;
+ const key=origin.slice(0,2).join(',');
+ if(key!==driveShelf.key){
+  driveShelf.key=key;driveShelf.options=driveOptions(origin);driveShelf.index=0;
+ }
+ return driveShelf.options[driveShelf.index]||null;
+}
+function driveStops(d){
+ return [actualOrigin().slice(0,2),...d.places.map(p=>p.slice(1))].filter((p,i,a)=>!i||kmBetween(p,a[i-1])>.08);
+}
+function frameDrive(d){
+ if(!atlas)return;
+ const bounds=new (window.maplibregl?.LngLatBounds||OfflineBounds)();
+ driveStops(d).forEach(p=>bounds.extend(lngLat(p)));
+ atlas.fitBounds(bounds,{padding:{top:140,right:45,bottom:innerWidth<650?200:90,left:innerWidth<650?40:300},maxZoom:11,duration:reduced.matches?0:450});
+}
+function driveCard(d){
+ if(!d.status){
+  d.status='Считаем путь по дорогам…';
+  const coords=driveStops(d).map(([y,x])=>x.toFixed(5)+','+y.toFixed(5));
+  const url='https://router.project-osrm.org/route/v1/driving/'+coords.join(';')+'?overview=simplified&geometries=geojson&radiuses='+coords.map(()=>1500).join(';');
+  fetch(url,{signal:AbortSignal.timeout(8000)}).then(r=>r.json()).then(j=>{
+   const r=j.routes?.[0];if(!r?.geometry?.coordinates?.length)throw Error();
+   d.line=r.geometry.coordinates;
+   const minutes=Math.max(1,Math.round(r.duration/60)),h=Math.floor(minutes/60);
+   d.status=Math.round(r.distance/1000)+' км · '+(h?h+' ч ':'')+(minutes%60)+' мин за рулём';
+  }).catch(()=>{d.status='Дорожный расчёт недоступен · показаны остановки'}).finally(()=>{
+   if(driveShelf.current===d&&!$('nearby').hidden){$('quickCards').innerHTML=driveCard(d);paintRoute()}
+  });
+ }
+ driveShelf.current=d;
+ return '<div class="drive-card"><small>На авто от твоего старта</small><h3>'+safe(d.name)+'</h3><p>'+safe(d.places.map(p=>p[0]).join(' → '))+'</p><p>'+safe(d.why)+'</p><strong>'+safe(d.status)+'</strong><button class="action" data-take-drive>Добавить в роад-трип</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
+}
+function takeDrive(d){
+ const origin=actualOrigin();if(!origin)return;
+ const places=d.places.filter((p,i)=>i||kmBetween(origin,p.slice(1))>.08);
+ if(!places.length)return;
+ const points=places.map(([name,lat,lon])=>({name,lat,lon}));
+ if(itinerary.legs.length)points.unshift({name:originName(),lat:origin[0],lon:origin[1]});
+ itinerary.legs.push({...points[0],arrival:itinerary.legs.length>0,stops:points.slice(1)});
+ selectedLeg=itinerary.legs.length-1;persist();enterTrip();frameDrive(d);
+}
+function previewLines(){
+ const d=driveShelf.current;
+ return d&&!active&&!$('nearby').hidden&&d.line?[d.line]:[route];
+}

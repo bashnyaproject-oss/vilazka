@@ -114,6 +114,7 @@ function matches(d){
 }
 let storyId=0;
 function storyCard(){
+ const drive=activeDrive();if(drive)return driveCard(drive);driveShelf.current=null;
  if(flying())return airportCard();
  const d=visible.find(item=>item.id===storyId)||visible[0];
  if(!d)return '<p class="empty">Для этих фильтров мест пока нет.</p>';
@@ -123,6 +124,10 @@ function storyCard(){
  return '<button class="story-card" data-open="'+d.id+'"><span class="story-image photo'+scenic+'" style="'+seasonPos(d.id)+'--px:'+((d.id%4)/3*100)+'%;--py:'+(Math.floor(d.id/4)*50)+'%"></span><span class="story-copy"><small>'+d.country+'</small><strong>'+d.name+'</strong><span>'+label+'</span><b>Посмотреть место</b></span></button>';
 }
 function browseStory(step){
+ if(activeDrive()){
+  driveShelf.index=(driveShelf.index+step+driveShelf.options.length)%driveShelf.options.length;
+  const d=activeDrive();$('quickCards').innerHTML=driveCard(d);renderPins();paintRoute();frameDrive(d);return;
+ }
  if(flying()){
   const items=airChoices();if(!items.length)return;
   const p=items[(items.findIndex(x=>x.code===airportSelection)+step+items.length)%items.length];airportSelection=p.code;
@@ -146,9 +151,11 @@ function render(){
  const m=defaultMode(d);
  return '<article class="card '+(active===d?'current':'')+'"><button class="card-open" data-open="'+d.id+'">'+photo(d,'thumb')+'<span><strong>'+d.name+'</strong><small>'+d.country+' · '+tripDays(d)+' дн. · '+names[m]+'</small><em>'+ (actualOrigin()?'≈ '+price(d,m).text:'Выбери старт') +'</em></span></button><button class="heart" data-save="'+d.id+'" aria-label="'+(state.saved.includes(d.id)?'Убрать из сохранённых':'Сохранить')+'">'+(state.saved.includes(d.id)?'♥':'♡')+'</button></article>';
  }).join('')||(viewingSaved?'<p class="empty">Нажми на сердечко у поездки, чтобы добавить её сюда.</p>':'<p class="empty">В демокаталоге нет совпадений. Попробуй другой месяц или способ поездки.</p>');
- const useRail=!active&&!picking&&!viewingSaved&&document.querySelector('aside').hidden&&$('landmark').hidden&&$('portal').hidden;
+ const useRail=!building&&!pickStage&&!pickStop&&!active&&!picking&&!viewingSaved&&document.querySelector('aside').hidden&&$('landmark').hidden&&$('portal').hidden;
  $('nearby').hidden=!useRail;
- if(useRail)$('quickCards').innerHTML=storyCard();
+ const priorDrive=driveShelf.current;
+ if(useRail)$('quickCards').innerHTML=storyCard();else driveShelf.current=null;
+ if(priorDrive!==driveShelf.current)paintRoute();
  if(viewingSaved&&state.cityWishlist?.length){if(!visible.length)$('cards').innerHTML='';$('cards').innerHTML+=state.cityWishlist.map(i=>'<button class="card-open" data-city="'+i+'">'+atlasCities[i][0]+' · '+atlasCities[i][1]+'</button>').join('')}
  $('count').textContent=state.saved.length+(state.cityWishlist?.length||0);
  renderPins();renderDetail();if(!active)clearRoute();
@@ -387,6 +394,7 @@ function openAirport(code){
  $('landmark').hidden=false;flyTo([y,x],5.7);
 }
 function fitTransport(){
+ if(mode==='car'&&activeDrive()){frameDrive(activeDrive());return}
  if(mode==='all'){fit();return}
  const origin=actualOrigin(),bounds=new (window.maplibregl?.LngLatBounds||OfflineBounds)();
  const places=flying()?airChoices().map(p=>[p.x,p.y]):[
@@ -457,7 +465,7 @@ function renderPins(){
   const [d]=items;
   if(items.length>1)return '<button class="cluster" data-cluster="'+items.map(i=>i.id).join(',')+'" aria-label="'+items.length+' направления"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<b>'+items.length+'</b></button>';
   return '<button class="pin '+(active===d?'current':'')+'" data-open="'+d.id+'" aria-label="'+d.name+'"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<small>'+d.name+'</small></button>';
- }).join('')+minorDots.join('')+nearbyCatalogue(at,zoom)+pois+cityPins(at,regions)+(flying()?airportPins(at,zoom):'');
+ }).join('')+minorDots.join('')+nearbyCatalogue(at,zoom)+pois+cityPins(at,regions)+(flying()?airportPins(at,zoom):'')+(!active&&!$('nearby').hidden&&driveShelf.current?driveShelf.current.places.map(([name,lat,lon],i)=>'<span class="drive-stop" aria-label="'+safe(name)+'"'+at(lat,lon)+'>'+ (i+1)+'</span>').join(''):'');
 
  positionPins();
 }
@@ -619,12 +627,13 @@ $('filters').onchange=e=>{
   state.origin=$('origin').value;geoRequest++;persist();
   if(state.origin==='auto')requestLocation(true);else flyTo(baseOrigin(),4);
  }
- active=null;closeLandmark();render();if(e.target.id!=='origin')fit();
+ active=null;closeLandmark();render();if(e.target.id!=='origin')fit();else if(actualOrigin()){setDrawer(false);completeStart(actualOrigin(),4)}
 };
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
  if(b.closest('#seasonList')){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
+ if(k.takeDrive!==undefined&&activeDrive()){takeDrive(activeDrive());return}
  if(k.site!==undefined)openCatalogue(+k.site);
  if(k.arrivalRegion!==undefined){const d=data[+k.arrivalRegion];chooseNext(['plane','rent'].includes(tripMode));flyTo([d.lat,d.lon],7)}
  if(k.near!==undefined&&building){const p=localPlaces(itinerary.legs[selectedLeg])[+k.near];if(p)addStageStop(p);return}
@@ -770,6 +779,7 @@ function selectStart(point){
 }
 function completeStart(point,zoom){
  const destination=pendingDestination;pendingDestination=null;render();applyTransportLayer();
+ if(!destination&&activeDrive()){frameDrive(activeDrive());return}
  if(mode!=='all'&&!destination){fitTransport();return}
  if(destination&&visible.includes(destination)){open(destination);return}
  flyTo(point,zoom);
@@ -788,7 +798,7 @@ function paintRoute(){
  if(!atlas)return;
  if(canvas){canvas.draw();return}
  if(!atlas.isStyleLoaded())return;
- const features=(building?drivingLines:[route]).filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{}}));
+ const features=(building?drivingLines:previewLines()).filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{}}));
  const content={type:'FeatureCollection',features};
  if(atlas.getSource('trip-route'))atlas.getSource('trip-route').setData(content);
  else {atlas.addSource('trip-route',{type:'geojson',data:content});atlas.addLayer({id:'trip-route',type:'line',source:'trip-route',paint:{'line-color':'#cbbaff','line-width':3,'line-dasharray':[2,1]}})}
@@ -929,7 +939,7 @@ function bootOffline(){
    if(x>=0&&x<=w&&y>=0&&y<=h)ctx.fillText(name,x,y);
   }
   ctx.textAlign='start';
-  for(const line of building?drivingLines:[route]){
+  for(const line of building?drivingLines:previewLines()){
    if(line.length<2)continue;
    ctx.strokeStyle='#cbbaff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();
    line.forEach((p,i)=>{const {x,y}=project(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});
