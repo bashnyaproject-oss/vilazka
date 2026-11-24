@@ -1,0 +1,29 @@
+.ui-language{display:inline-flex;align-items:center;gap:5px;color:#c9c8c3;font:550 13px system-ui}
+.ui-language select{font:inherit;color:inherit;width:auto;min-width:0;border:0;border-radius:9px;background:#141414;padding:7px 4px;cursor:pointer;color-scheme:dark}
+@media(min-width:761px){
+ #modes{top:76px;gap:6px;padding:5px;border-radius:26px;align-items:center}
+ #modes button{min-height:36px;padding:0 15px;line-height:1.2}
+ #seasonDock{top:138px;align-items:center;gap:8px;padding:0;background:transparent;border:0;box-shadow:none}
+ #seasonDock>select,#seasonDock>#thermalToggle,#seasonDock>#recommend,#seasonDock>#popFilter{box-sizing:border-box;border:1px solid #383838;border-radius:20px;background:#101010f5;color:#ddd;box-shadow:0 2px 8px #0004}
+ #seasonDock>select,#seasonDock>#thermalToggle,#seasonDock>#recommend,#seasonDock>#popFilter summary{min-height:36px;padding:7px 12px;font:550 13px/20px system-ui}
+ #seasonDock>select{width:auto;min-width:0;max-width:155px}
+ #seasonDock>#popFilter summary{display:flex;align-items:center;gap:5px;border-radius:20px}
+ #seasonDock>#popFilter output:empty{display:none}
+ #seasonDock>#thermalToggle[aria-pressed=true],#seasonDock>#popFilter[open]{background:#2d3438;border-color:#616d72;color:white}
+ header>.ui-language{margin-left:8px}
+}
+@media(max-width:760px){
+ #mobileSettings #phoneControls{display:grid;gap:10px;padding:5px}
+ #mobileSettings #modes,#mobileSettings #seasonDock{gap:7px;padding:0}
+ #mobileSettings #modes button,#mobileSettings #seasonDock>select,#mobileSettings #seasonDock>#thermalToggle,#mobileSettings #seasonDock>#popFilter,#mobileSettings #seasonDock>#recommend{border:1px solid #363636;background:#191919;border-radius:16px;min-width:0}
+ #mobileSettings #modes .selected{color:#131313;background:#eceae4}
+ #mobileSettings #seasonDock>select,#mobileSettings #seasonDock>button,#mobileSettings #modes button,#mobileSettings #seasonDock summary{min-height:44px;padding:8px 11px}
+ #mobileSettings #seasonDock{align-items:center;max-width:100%}
+ #mobileSettings #seasonDock:has(#popFilter[open]),#mobileSettings #seasonDock:has(#seasonMenu:not([hidden])){padding-bottom:0}
+ #mobileSettings #popFilter[open]{position:static}
+ #mobileSettings #popFilter[open] .pop-sheet{position:static;width:100%;padding:9px 12px;transform:none}
+ #mobileSettings #seasonDock:has(#popFilter[open]) #popFilter{width:100%}
+ #mobileSettings #seasonMenu{position:static;width:100%}
+ #mobileSettings .ui-language{padding:4px 10px;justify-content:space-between;width:100%;border-top:1px solid #2b2b2b}
+ #mobileSettings .ui-language select{min-height:44px;font-size:14px}
+}

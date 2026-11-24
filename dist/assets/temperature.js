@@ -63,7 +63,7 @@
     });
   }
   function describe() {
-    const period=names[state.seasonMode] || new Intl.DateTimeFormat('ru',{month:'long'}).format(new Date());
+    const period=names[state.seasonMode] || new Intl.DateTimeFormat(document.documentElement.lang,{month:'long'}).format(new Date());
     caption.textContent=live?'Сейчас · '+live.time.slice(11,16)+' UTC · Open-Meteo':normals?period+' · норма 1991–2020 · NOAA':'Загружаем температуру…';
   }
   async function getLive(ticket) {

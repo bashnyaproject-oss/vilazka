@@ -52,7 +52,7 @@ state.season=state.seasonMode==='now'?currentSeason():state.seasonMode;
 function applySeason(){
  document.body.dataset.season=state.season;
  $('season').value=state.seasonMode;
- $('season').options[0].textContent='Сейчас · '+new Intl.DateTimeFormat('ru',{day:'numeric',month:'short'}).format(new Date());
+ $('season').options[0].textContent='Сейчас · '+new Intl.DateTimeFormat(document.documentElement.lang,{day:'numeric',month:'short'}).format(new Date());
 }
 applySeason();
 $('season').onchange=e=>{state.seasonMode=e.target.value;state.season=state.seasonMode==='now'?currentSeason():state.seasonMode;applySeason();persist();storyId=-1;render();canvas?.draw();updateSeasonPanel();$('seasonMenu').hidden=false;$('recommend').setAttribute('aria-expanded','true')};
@@ -210,7 +210,7 @@ function seasonalChoices(){
  return choices.sort((a,b)=>actualOrigin()?a.km-b.km:0);
 }
 function updateSeasonPanel(){
- const now=state.seasonMode==='now',day=new Intl.DateTimeFormat('ru',{day:'numeric',month:'long'}).format(new Date());
+ const now=state.seasonMode==='now',day=new Intl.DateTimeFormat(document.documentElement.lang,{day:'numeric',month:'long'}).format(new Date());
  $('seasonDate').textContent=now?'На '+day:'Подборка сезона';
  $('seasonList').innerHTML=seasonalChoices().slice(0,6).map(x=>'<button data-'+x.key+'="'+x.id+'"><strong>'+safe(x.name)+'</strong><small>'+safe(x.why)+'</small></button>').join('');
 }
