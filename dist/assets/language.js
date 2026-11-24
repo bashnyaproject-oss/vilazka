@@ -22,6 +22,14 @@
 Без лимита|No limit
 Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.|Your visa map and road trip preferences are saved on this device.
 По твоему лимиту|At your driving limit
+Где я|My location
+Поставить старт|Set start
+Дороги|Roads
+Перемешать ↻|Shuffle ↻
+Показать весь путь|Show full route
+Ищем подъезд по дорогам…|Finding a driving route…
+Поставь старт для расчёта дороги|Set a start to see the driving route
+Подъезд от старта не подтверждён. Можно посмотреть дороги рядом.|No driving route confirmed. Explore the nearby roads.
 Язык интерфейса|Interface language
 Найти город или место|Search cities and places
 Выбери место|Choose a place

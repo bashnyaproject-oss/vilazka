@@ -116,6 +116,7 @@ function takeDrive(d){
  selectedLeg=itinerary.legs.length-1;persist();enterTrip();frameDrive(d);
 }
 function previewLines(){
+ if(siteLine?.el.isConnected&&!$('landmark').hidden)return [siteLine.line];
  const d=driveShelf.current;
  return d&&!active&&!$('nearby').hidden&&d.line?[d.line]:[route];
 }

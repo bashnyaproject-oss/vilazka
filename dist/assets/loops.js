@@ -5,10 +5,11 @@ const loopDirections=['на север','на северо-восток','на �
 const xy=p=>[p.lat,p.lon];
 // Papua New Guinea settlement centres. GeoNames, CC BY 4.0.
 const pngCentres=[["Wewak", -3.54964, 143.63229], ["Wapenamanda", -5.6265, 143.9109], ["Wabag", -5.49119, 143.72151], ["Vanimo", -2.68372, 141.30195], ["Tari", -5.845, 142.94667], ["Port Moresby", -9.47723, 147.15089], ["Porgera", -5.463, 143.148], ["Popondetta", -8.76536, 148.23252], ["Mount Hagen", -5.85746, 144.23058], ["Minj", -5.90752, 144.69159], ["Mendi", -6.14755, 143.65633], ["Madang", -5.22152, 145.78695], ["Lorengau", -2.0341, 147.27173], ["Laiagam", -5.33105, 143.79052], ["Lae", -6.72333, 146.99611], ["Kwikila", -9.81847, 147.65968], ["Kurumul", -5.855, 144.63111], ["Kundiawa", -6.01972, 144.96917], ["Kokopo", -4.3432, 152.26867], ["Kokoda", -8.87778, 147.73642], ["Kimbe", -5.55085, 150.13766], ["Kerema", -7.96028, 145.77278], ["Kavieng", -2.57337, 150.79516], ["Ihu", -7.89569, 145.39405], ["Goroka", -6.085, 145.38667], ["Daru", -9.07786, 143.20893], ["Arawa", -6.22977, 155.56598], ["Angoram Village", -4.0518, 144.0728], ["Alotau", -10.31509, 150.45742], ["Laiagam", -5.48918, 143.49078], ["Buka", -5.43261, 154.67098], ["Rauna", -5.7359, 144.28834]];
+const townFiles=new Map();
 function nearbyBases(area){
  const towns=atlasCities.slice(0,russianStart).map(([name,,lon,lat])=>[name,lat,lon]);
  const found=[];
- for(const [name,lat,lon] of [...pngCentres,...towns]){
+ for(const [name,lat,lon] of [...pngCentres,...towns,...(area.extraTowns||[])]){
   if(Math.abs(area.lat-lat)>2)continue;
   const km=kmBetween(xy(area),[lat,lon]);
   if(km<1||km>165||!allowsStop(area,lat,lon))continue;
@@ -32,7 +33,7 @@ function candidatesFor(area){
   add(name,lat,lon,img||m?.[1],img?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
  });
  russianPlaces.forEach(([n,,x,y],i)=>{const m=placeMedia['p'+i];add(n,y,x,m?.[1],m?.[1]?'https://ru.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null)});
- if(candidates.length<5)for(const p of area.bases)add(p.name,p.lat,p.lon,null,null,true);
+ if(candidates.length<8||area.extraTowns)for(const p of area.bases.slice(0,60))add(p.name,p.lat,p.lon,null,null,true);
  const valid=candidates.sort((a,b)=>(a.photo?0:55)+a.km-(b.photo?0:55)-b.km);
  const unique=[];for(const p of valid){if(!unique.some(q=>kmBetween(xy(p),xy(q))<2))unique.push(p);if(unique.length>=100)break}
  return unique;
@@ -67,9 +68,9 @@ function makeLoops(area,points){
  }
  return cards;
 }
-async function osrmPath(points,round=false){
+async function osrmPath(points,round=false,radius=2200){
  const type=round?'trip':'route',coords=points.map(p=>p.lon.toFixed(5)+','+p.lat.toFixed(5)).join(';');
- const q='overview=full&geometries=geojson&radiuses='+points.map(()=>2200).join(';')+(round?'&source=first&roundtrip=true':'');
+ const q='overview=full&geometries=geojson&radiuses='+points.map(()=>radius).join(';')+(round?'&source=first&roundtrip=true':'');
  const r=await fetch('https://router.project-osrm.org/'+type+'/v1/driving/'+coords+'?'+q,{signal:AbortSignal.timeout(9000)});
  if(!r.ok)throw Error();const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];if(!path?.geometry?.coordinates?.length)throw Error();return {path,waypoints:j.waypoints};
 }
@@ -127,7 +128,7 @@ function drawLoopCard(){
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+
  '<div class="loop-border"><label><input type="checkbox" id="crossBorder" '+(area.crossBorder?'checked':'')+'> Разрешить пересечение границ</label></div><div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
  (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="save" '+(!c.line?'disabled':'')+'>Выбрать кольцо</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+
- (c?.stops.some(p=>p.town)&&area.country==='PNG'?'<a class="loop-source" href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames · CC BY 4.0</a>':'')+
+ (c?.stops.some(p=>p.town)?'<a class="loop-source" href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames · CC BY 4.0</a>':'')+
  (itinerary.legs.length?'<button class="loop-saved" data-loop="saved">Мой маршрут ↗</button>':'');
 }
 function loopFrame(){
@@ -141,6 +142,18 @@ function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&
 function setLoopArea(lat,lon,name,crossBorder=false){
  loopView.area={lat,lon,name,country:countryAt(lat,lon),crossBorder};lastLoopPoint={lat,lon,name};state.loopArea=lastLoopPoint;state.selectedDestination={lat,lon,name};persist();loopView.picking=false;$('pickTip').hidden=true;
  loopView.area.bases=nearbyBases(loopView.area);loopView.serial++;loopView.approach=null;loopView.cards=makeLoops(loopView.area,candidatesFor(loopView.area));loopView.index=0;
+ const area=loopView.area,code=visaData.iso2[area.country];
+ if(loopView.cards.length<4&&/^[A-Z]{2}$/.test(code)){
+  if(!townFiles.has(code))townFiles.set(code,fetch('assets/towns/'+code+'.json').then(r=>{if(!r.ok)throw Error();return r.json()}).catch(()=>{townFiles.delete(code);return []}));
+  townFiles.get(code).then(rows=>{
+   if(!loopView.open||loopView.area!==area||!rows.length)return;
+   area.extraTowns=rows;area.bases=nearbyBases(area);
+   const existing=new Set(loopView.cards.map(c=>c.title)),more=makeLoops(area,candidatesFor(area)).filter(c=>!existing.has(c.title));
+   const empty=!loopView.cards.length;loopView.cards.push(...more);
+   if(empty&&more.length){loopFrame();renderPins();paintRoute();loadLoop(more[0])}
+   drawLoopCard();
+  });
+ }
  drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);approachTo(loopView.area,loopView.serial);
 }
 function launchLoops(point){

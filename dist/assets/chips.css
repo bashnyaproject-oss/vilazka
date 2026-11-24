@@ -44,3 +44,16 @@
 #visaLegend{position:absolute;z-index:5;right:16px;top:190px;max-width:min(280px,84vw);padding:9px 12px;border:1px solid #383838;border-radius:14px;color:#ddd;background:#111;font:13px/1.5 system-ui}
 #visaLegend summary{cursor:pointer}#visaLegend small{display:block;color:#aaa}#visaLegend select{max-width:100%}.visa-key{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}.visa-key i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.entry-info{padding:7px 0}.loop-limit{display:block;margin-top:4px}#profileForm label{display:grid;gap:4px}#profileForm input[name=driveKm]{width:100%;color:inherit;background:#191919;border:1px solid #383838;border-radius:9px;padding:9px;font:inherit}
 @media(max-width:760px){#visaLegend{right:10px;top:70px;max-height:52dvh;overflow:auto}#mobileSettings:not([hidden])~#visaLegend{visibility:hidden}#mobileSettings #visaLayer{min-height:44px}}
+#originTools{position:absolute;z-index:5;left:16px;top:77px;display:flex;gap:5px}
+#originTools button,#seasonDock #roadLayer{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #44413d;border-radius:20px;background:#121212f7;color:#efeeea;padding:8px 13px;font:550 13px/20px system-ui}
+#originTools button:first-child span{color:#76b9ff;font-size:19px}
+#roadLayer[aria-pressed=true]{background:#453d2f!important}
+#location{top:122px;max-width:215px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;transform:translateX(-50%);width:min(900px,calc(100vw - 36px));max-width:none;box-sizing:border-box;border:1px solid #393939;border-radius:20px;background:#101010;padding:16px;box-shadow:0 8px 35px #0008}
+.ideas-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}.ideas-head>div{margin-right:auto}.ideas-head h2{margin:2px 0;font-size:21px}.ideas-head small,#seasonList small{color:#b1b0ac}.ideas-head button{background:#292929;border-radius:18px;padding:8px 12px;color:#eee}
+#seasonMenu #seasonList{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding-bottom:4px}
+#seasonMenu #seasonList button{display:grid;grid-template-rows:100px auto auto;gap:3px;align-content:start;text-align:left;overflow:hidden;flex:0 0 155px;padding:0 0 8px;border:0;border-radius:11px;background:#1c1c1c;color:#eee;scroll-snap-align:start}
+#seasonList img,#seasonList .idea-img{display:block;width:100%;height:100px;object-fit:cover}#seasonList strong,#seasonList small{margin:4px 9px 0;font-size:13px;line-height:1.22}#seasonList small{font-size:11px}
+.site-drive{padding:9px 0;color:#ded9cb;font:550 13px/1.5 system-ui}.site-drive button{display:block;color:#a5caff;padding:6px 0}
+@media(max-width:1050px) and (min-width:761px){#originTools{top:189px}#location{top:232px}}
+@media(max-width:760px){#originTools{left:10px;top:calc(var(--phone-top) + 54px)}#originTools button{min-height:42px}#location{top:calc(var(--phone-top) + 102px)!important}body #seasonMenu{bottom:calc(66px + env(safe-area-inset-bottom));width:calc(100vw - 16px);padding:12px}.phone-roads #originTools{display:flex}#seasonMenu #seasonList button{flex-basis:140px}body:has(#mobileSettings:not([hidden])) #originTools{visibility:hidden}}

@@ -56,9 +56,9 @@ function applySeason(){
  $('season').options[0].textContent='Сейчас · '+new Intl.DateTimeFormat(document.documentElement.lang,{day:'numeric',month:'short'}).format(new Date());
 }
 applySeason();
-$('season').onchange=e=>{state.seasonMode=e.target.value;state.season=state.seasonMode==='now'?currentSeason():state.seasonMode;applySeason();persist();storyId=-1;render();canvas?.draw();updateSeasonPanel();$('seasonMenu').hidden=false;$('recommend').setAttribute('aria-expanded','true')};
-$('recommend').onclick=()=>{updateSeasonPanel();$('seasonMenu').hidden=!$('seasonMenu').hidden;$('recommend').setAttribute('aria-expanded',String(!$('seasonMenu').hidden))};
-document.addEventListener('pointerdown',e=>{if(!e.target.closest('#seasonDock')){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}});
+$('season').onchange=e=>{state.seasonMode=e.target.value;state.season=state.seasonMode==='now'?currentSeason():state.seasonMode;applySeason();persist();storyId=-1;render();canvas?.draw();if(!$('seasonMenu').hidden)updateSeasonPanel()};
+$('recommend').onclick=()=>{updateSeasonPanel();if(!$('mobileSettings').hidden)$('mobileOptions').click();$('seasonMenu').hidden=!$('seasonMenu').hidden;$('recommend').setAttribute('aria-expanded',String(!$('seasonMenu').hidden))};
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('#seasonDock,#seasonMenu')){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}});
 
 function seasonPos(i){return '--sx:'+(i%8*100/7)+'%;--sy:'+(Math.floor(i/8)*12.5)+'%;'}
 const photo=(d,cl)=>'<span class="'+cl+' photo" style="'+seasonPos(d.id)+'--px:'+((d.id%4)/3*100)+'%;--py:'+(Math.floor(d.id/4)*50)+'%"></span>';
@@ -211,7 +211,13 @@ function seasonalChoices(){
 function updateSeasonPanel(){
  const now=state.seasonMode==='now',day=new Intl.DateTimeFormat(document.documentElement.lang,{day:'numeric',month:'long'}).format(new Date());
  $('seasonDate').textContent=now?'На '+day:'Подборка сезона';
- $('seasonList').innerHTML=seasonalChoices().slice(0,6).map(x=>'<button data-'+x.key+'="'+x.id+'"><strong>'+safe(x.name)+'</strong><small>'+safe(x.why)+'</small></button>').join('');
+ const list=seasonalChoices().map(p=>({...p,pic:p.key==='city'?placeMedia['p'+(p.id-russianStart)]?.[1]:null})).filter(p=>p.pic||p.key==='open');
+ for(let i=0;i<catalogue.length;i++){
+  const [id,name,,,kind,,photo]=catalogue[i],rank=popularity.score(id),pic=photo||placeMedia[id]?.[1];
+  if(pic&&rank>=Math.max(6,popularity.minimum))list.push({key:'site',id:i,name,pic,why:({Natural:'Природа',Cultural:'Культура',Mixed:'Наследие'})[kind]||kind});
+ }
+ for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[j],list[i]]=[list[i],list[j]]}
+ $('seasonList').innerHTML=list.slice(0,10).map(p=>'<button data-'+p.key+'="'+p.id+'">'+(p.pic?'<img loading="lazy" alt="" src="'+safe(p.pic)+'">':photo(data[p.id],'idea-img'))+'<strong>'+safe(p.name)+'</strong><small>'+safe(p.why)+'</small></button>').join('')||'<p>Нет мест для выбранных фильтров.</p>';
 }
 const knownYandex={'Горный парк Рускеала':'166151252559','Ростовский кремль':'56729512994','Ипатьевский монастырь':'1029487485','Коломенское':'129437528946'};
 function reviews(name,lat,lon){
@@ -253,6 +259,23 @@ function nearbyCatalogue(at,z){
  }
  return out.join('');
 }
+let siteLine=null;
+async function showSiteDrive(lat,lon){
+ siteLine=null;paintRoute();
+ const panel=$('landmark').querySelector('.panel'),el=document.createElement('div');el.className='site-drive';panel.querySelector('.action').before(el);
+ const origin=actualOrigin();if(!origin){el.textContent='Поставь старт для расчёта дороги';return}
+ el.textContent='Ищем подъезд по дорогам…';
+ try{
+  const {path,waypoints}=await osrmPath([{lat:origin[0],lon:origin[1]},{lat,lon}],false,15000);
+  if(!el.isConnected||$('landmark').hidden)return;
+  const country=countryAt(origin[0],origin[1]);
+  if(!domesticPath(country,path.geometry.coordinates))throw Error();
+  const gap=Math.round(waypoints.at(-1).distance||0),startGap=Math.round(waypoints[0].distance||0);
+  el.textContent=Math.round(path.distance/1000)+' км · '+hours(path.duration)+(gap>50?' · от дороги до места '+gap+' м':'')+(startGap>100?' · от старта до дороги '+startGap+' м':'');
+  siteLine={el,line:path.geometry.coordinates};paintRoute();
+  const button=document.createElement('button');button.textContent='Показать весь путь';button.onclick=()=>{const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();for(const pt of path.geometry.coordinates)b.extend(pt);atlas.fitBounds(b,{padding:innerWidth>760?{left:45,right:390,top:180,bottom:55}:48,maxZoom:12})};el.append(button);
+ }catch{if(el.isConnected)el.textContent='Подъезд от старта не подтверждён. Можно посмотреть дороги рядом.'}
+}
 function openCatalogue(i){
  const [id,name,lon,lat,cat,country,img,credit]=catalogue[i];if(pointChoice(lat,lon,name))return;
  if(building)leaveTrip();active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
@@ -260,7 +283,8 @@ function openCatalogue(i){
  const url=isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
  const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action" data-stage-site="'+i+'">Кольца отсюда</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
 
- flyTo([lat,lon],Math.max(atlas.getZoom(),6));
+ showSiteDrive(lat,lon);
+ flyTo([lat,lon],Math.max(atlas.getZoom(),7));
 }
 
 const map=$('map'), pinLayer=$('pins');
@@ -345,10 +369,16 @@ let requestModeNetwork=()=>{
 };
 function applyTransportLayer(){
  updateVisaMap();
- if(mode!=='plane')requestModeNetwork();
+ if(state.showRoads||mode!=='plane')requestModeNetwork();
  if(!atlas)return;
  if(canvas){canvas.draw();return}
  if(!atlas.getStyle()?.layers)return;
+ const roadId='road-emphasis',transport=atlas.getStyle().layers.find(l=>l['source-layer']==='transportation');
+ if(state.showRoads&&transport&&!atlas.getLayer(roadId)){
+  const before=atlas.getStyle().layers.find(l=>l.type==='symbol');
+  atlas.addLayer({id:roadId,type:'line',source:transport.source,'source-layer':'transportation',filter:['in','class','motorway','trunk','primary','secondary','tertiary','minor','service','track'],paint:{'line-color':'#b6aa92','line-opacity':.68,'line-width':['interpolate',['linear'],['zoom'],4,.65,9,1.25,15,2.6]}},before?.id);
+ }
+ if(atlas.getLayer(roadId))atlas.setLayoutProperty(roadId,'visibility',state.showRoads?'visible':'none');
  const id='transport-network';
  if(atlas.getLayer(id))atlas.removeLayer(id);
  if(atlas.getSource(id))atlas.removeSource(id);
@@ -358,7 +388,7 @@ function applyTransportLayer(){
   atlas.addLayer({id,type:'line',source:id,paint:{'line-color':mode==='train'?'#c6a57e':'#7eaebf','line-opacity':.74,'line-width':mode==='train'?1.25:1.1}});
  }
  for(const layer of atlas.getStyle().layers){
-  if(layer.type!=='line'||layer['source-layer']!=='transportation')continue;
+  if(layer.id===roadId||layer.type!=='line'||layer['source-layer']!=='transportation')continue;
   if(!savedLinePaint.has(layer.id))savedLinePaint.set(layer.id,layer.paint?.['line-opacity']??1);
   atlas.setPaintProperty(layer.id,'line-opacity',mode==='plane'?.14:mode==='train'?.32:savedLinePaint.get(layer.id));
  }
@@ -638,7 +668,7 @@ $('filters').onchange=e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
- if(b.closest('#seasonList')){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
+ if(b.closest('#seasonList')){if(loopView.open)closeLoops();if(building)leaveTrip();$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
  if(k.openLoops!==undefined){launchLoops();return}
  if(k.takeDrive!==undefined&&activeDrive()){takeDrive(activeDrive());return}
  if(k.site!==undefined)openCatalogue(+k.site);
@@ -687,6 +717,7 @@ $('detail').addEventListener('change',e=>{
 });
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape'||$('dialog').open)return;
+ if(!$('seasonMenu').hidden){$('closeIdeas').click();return}
  if(loopView.open){closeLoops();return}
  if(picking){finishPick();return}
  if(!$('landmark').hidden){closeLandmark();return}
@@ -727,7 +758,7 @@ function markDiscovered(d){
  const toast=$('toast');toast.textContent=state.discovered.length===data.length?'Атлас пройден!':'✦ Открыто место · '+d.name;toast.hidden=false;
  clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,2500);
 }
-function closeLandmark(){$('landmark').hidden=true}
+function closeLandmark(){$('landmark').hidden=true;if(siteLine){siteLine=null;paintRoute()}}
 function openLandmark(key){
  const [id,i]=key.split(':').map(Number),d=data[id],[name,la,lo]=landmarks[id][i];
  active=null;setDrawer(false);render();markDiscovered(d);
@@ -756,6 +787,7 @@ function requestLocation(focus){
    if(request!==geoRequest)return;
    state.origin='auto';$('origin').value='auto';persist();
    gps=[coords.latitude,coords.longitude];gpsStatus='ready';
+   if(focus){updateLocation();renderPins();flyTo(gps,9);return}
    if(loopView.open||building||lastLoopPoint){updateLocation();return}
    $('portal').hidden=true;completeStart(gps,focus?5:3.8)
   },
@@ -898,8 +930,8 @@ function bootOffline(){
  }
  const overviewImages=new Map();
  requestModeNetwork=()=>{
-  if(!canvas||z>=5.8){loadNetwork(mode==='train'?'rail':'roads');return}
-  const key=mode==='train'?'railways':'highways';if(overviewImages.has(key))return;
+  if(!canvas||z>=5.8){loadNetwork(mode==='train'?'rail':'roads');if(state.showRoads)loadNetwork('roads');return}
+  const key=mode==='train'&&!state.showRoads?'railways':'highways';if(overviewImages.has(key))return;
   const img=new Image();overviewImages.set(key,img);img.onload=()=>{if(canvas&&!moving)draw()};img.src='assets/'+key+'.webp';
  };
 
@@ -926,15 +958,15 @@ function bootOffline(){
   const nw=unproject(0,0),se=unproject(w,h);
   paintOfflineVisa(ctx,nw,se);
   ctx.lineJoin='round';ctx.lineCap='round';
-  const overview=overviewImages.get(mode==='train'?'railways':'highways');
-  if(z<5.8&&overview?.naturalWidth&&mode!=='plane'){
+  const overview=overviewImages.get(mode==='train'&&!state.showRoads?'railways':'highways');
+  if(z<5.8&&overview?.naturalWidth&&(state.showRoads||mode!=='plane')){
    ctx.save();ctx.scale(1,-1);ctx.globalAlpha=mode==='all'?.55:.86;ctx.drawImage(overview,-180,-90,360,180);ctx.restore();
   }
   if(z>=5.8)for(const b of buckets.values()){
    const rail=b.level===3;
-   if(rail&&mode!=='train'||!rail&&mode==='plane'||!rail&&mode==='train')continue;
+   if(rail&&mode!=='train'||!rail&&!state.showRoads&&(mode==='plane'||mode==='train'))continue;
    if(!rail&&z<(mode==='car'?.9:1.35)+b.level*1.55||b.east<nw.lng||b.west>se.lng||b.north<se.lat||b.south>nw.lat)continue;
-   ctx.strokeStyle=rail?'#bc9b74':(mode==='car'||mode==='rent'?['#b7aa94','#827b6e','#59574e']:['#797369','#595851','#484947'])[b.level];
+   ctx.strokeStyle=rail?'#bc9b74':state.showRoads?'#a2967e':(mode==='car'||mode==='rent'?['#b7aa94','#827b6e','#59574e']:['#797369','#595851','#484947'])[b.level];
    ctx.lineWidth=(rail?.95:b.level===0?1:.65)/scale();ctx.stroke(b.path);
   }
   if(flying()){
@@ -963,7 +995,7 @@ function bootOffline(){
   cancelAnimationFrame(frame);clearTimeout(settle);frame=0;moving=false;
   el.style.transform='';pinLayer.style.transform='';
   $('thermalCanvas').style.transform='';window.temperatureLayer?.refresh();draw();renderPins();anchor={center:[...center],zoom:z};
-  if(mode!=='plane')requestModeNetwork();
+  if(state.showRoads||mode!=='plane')requestModeNetwork();
 
  }
  function animateGesture(){
@@ -1023,6 +1055,12 @@ function bootOffline(){
  status.textContent='Natural Earth · офлайн-карта';
  refresh();
 }
+$('moreIdeas').onclick=updateSeasonPanel;
+$('closeIdeas').onclick=()=>{$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')};
+$('myPosition').onclick=()=>{if(picking)finishPick();requestLocation(true)};
+$('manualOrigin').onclick=()=>{if(loopView.open)closeLoops();if(building)leaveTrip();beginPick()};
+$('roadLayer').setAttribute('aria-pressed',String(!!state.showRoads));
+$('roadLayer').onclick=()=>{state.showRoads=!state.showRoads;persist();$('roadLayer').setAttribute('aria-pressed',String(state.showRoads));applyTransportLayer()};
 $('location').onclick=showStart;
 $('locate').onclick=()=>actualOrigin()?flyTo(actualOrigin(),5):showStart();
 $('gpsStart').onclick=()=>{finishPick();$('portal').hidden=false;$('startHint').textContent='Запрашиваем геопозицию…';requestLocation(true)};
