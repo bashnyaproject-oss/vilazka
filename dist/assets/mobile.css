@@ -1,0 +1,40 @@
+.phone-ui{display:none}
+@media(max-width:760px){
+ :root{--phone-top:max(9px,env(safe-area-inset-top));--phone-bottom:max(9px,env(safe-area-inset-bottom));--phone-sheet:calc(var(--phone-bottom) + 65px)}
+ body{overscroll-behavior:none}
+ header,#nearby,#progressBox,#zoomHint{display:none!important}
+ .phone-ui:not([hidden]){display:block}
+ #mobileTop,#mobileSettings,#phoneTabs,#mobilePlaces{position:fixed}
+ #mobileTop{z-index:12;top:var(--phone-top);left:10px;right:10px}
+ .phone-search,#mobileSettings,#mobileResults,#phoneTabs{background:#101010f5;border:1px solid #ffffff26;box-shadow:0 4px 20px #0006}
+ .phone-search{display:flex;align-items:center;border-radius:16px;min-height:48px;padding:0 4px 0 14px}
+ .phone-search label{display:flex;align-items:center;gap:10px;flex:1;min-width:0;color:#bcb9b1}
+ .phone-search input{appearance:none;color:#fff;background:transparent;border:0;padding:0;min-width:0;width:100%;height:46px;font:500 16px system-ui;outline:0}
+ .phone-search input::placeholder{color:#c4c2bc}.phone-search button,#mobileSettings button,#mobileResults button,#phoneTabs button{font-family:system-ui;color:#eee;border:0}
+ .phone-search button{width:44px;height:44px;background:transparent;display:grid;place-items:center;border-radius:12px}.phone-search button:focus-visible,#phoneTabs button:focus-visible{outline:2px solid #cbdcc7}
+ #mobileCancel{display:none;font-size:22px}.searching #mobileCancel{display:block}.searching #mobileOptions{display:none}
+ #mobileResults,#mobileSettings{border-radius:16px;padding:6px;overflow:auto;overscroll-behavior:contain}
+ #mobileResults{margin-top:5px;max-height:48dvh}#mobileResults button{display:grid;gap:2px;text-align:left;width:100%;min-height:46px;padding:6px 12px;background:none;border-radius:8px;font-size:14px}
+ #mobileResults small,.phone-caption,#mobileResults p{color:#a8a69f;font:12px system-ui}.phone-caption,#mobileResults p{padding:7px 12px}
+ #mobileSettings{z-index:11;top:calc(var(--phone-top) + 56px);left:10px;right:10px;max-height:60dvh}
+ #mobileSettings #modes,#mobileSettings #seasonDock{position:static;display:flex;transform:none;translate:none;max-width:100%;width:auto;justify-content:flex-start;flex-wrap:wrap;margin:0;border:0;border-radius:0;background:transparent}
+ #mobileSettings #seasonDock{position:relative}#mobileSettings #modes button,#mobileSettings #seasonDock button,#mobileSettings select,#mobileSettings summary,.phone-shortcuts button{min-height:42px;padding:8px;font-size:12px}
+ #mobileSettings #seasonDock:has(#popFilter[open]),#mobileSettings #seasonDock:has(#seasonMenu:not([hidden])){padding-bottom:152px}
+ #mobileSettings #popFilter{position:static}#mobileSettings .pop-sheet,#mobileSettings #seasonMenu{top:46px;left:5px;right:5px;transform:none;width:auto;max-height:145px;overflow:auto}
+ .phone-shortcuts{display:flex;gap:3px;padding-top:5px;border-top:1px solid #333}.phone-shortcuts button{background:transparent}
+ #phoneTabs{left:10px;right:10px;bottom:var(--phone-bottom);z-index:12;display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:19px;padding:4px}
+ #phoneTabs button{display:flex;justify-content:center;align-items:center;gap:8px;height:47px;min-width:0;border-radius:14px;background:none;font-size:14px;font-weight:580}
+ #phoneTabs button[aria-pressed=true]{color:#141612;background:#e3e8dd}
+ #mobilePlaces:not([hidden]){display:flex;gap:6px;z-index:4;bottom:var(--phone-sheet);left:0;right:0;padding:0 10px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none}
+ #mobilePlaces button{scroll-snap-align:center;flex:0 0 119px;height:78px;border:1px solid #ffffff3b;position:relative;color:white;background:#212121;border-radius:12px;overflow:hidden;padding:0;text-align:left}
+ #mobilePlaces img{width:100%;height:100%;object-fit:cover}#mobilePlaces span{position:absolute;inset:auto 0 0;background:linear-gradient(transparent,#000e);padding:15px 6px 5px;font:600 11px/1.15 system-ui}
+ body.phone-roads #mobilePlaces,body:has(#mobileResults:not([hidden]),#mobileSettings:not([hidden]),#landmark:not([hidden]),#builder:not([hidden]),#detail:not([hidden]),aside:not([hidden]),#portal:not([hidden]),#pickTip:not([hidden])) #mobilePlaces{display:none}
+ #location{top:calc(var(--phone-top) + 56px)!important;left:10px;max-width:calc(100vw - 80px);min-height:34px;padding:5px 9px;font-size:12px}
+ .phone-roads #location{display:none}.map-tools{right:8px;bottom:calc(var(--phone-sheet) + 90px)}
+ #loopDeck,#builder,#detail,#landmark,aside,#portal{left:8px!important;right:8px!important;top:auto!important;bottom:var(--phone-sheet)!important;width:auto!important;max-width:none!important;max-height:55dvh;overflow-y:auto;overscroll-behavior:contain}
+ #loopDeck{border-radius:17px;max-height:54dvh}#loopDeck .loop-images{height:clamp(74px,13vh,118px)}#loopDeck .loop-actions button,#loopDeck .loop-bar button{min-height:42px}#loopDeck .loop-saved{min-height:32px}
+ #pickTip{bottom:var(--phone-sheet)}#mapDetail{bottom:calc(var(--phone-sheet) + 93px);right:56px}#thermalKey{bottom:auto;top:calc(var(--phone-top) + 100px)}
+ .phone-roads .map-tools{bottom:auto;top:calc(var(--phone-top) + 61px)}.phone-roads .map-tools button{min-height:32px}
+ .maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left{bottom:calc(var(--phone-sheet) + 83px)}
+ @media(max-height:520px){#mobilePlaces{visibility:hidden}#loopDeck{width:55%!important;max-height:64dvh}.phone-roads .map-tools{top:60px}}
+}

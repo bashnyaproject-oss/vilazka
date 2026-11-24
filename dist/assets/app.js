@@ -428,7 +428,7 @@ function positionPins(){
  }
 }
 function renderPins(){
- if(!atlas)return;
+ if(!atlas)return;window.refreshPhoneMap?.();
  const zoom=atlas.getZoom();
  tier=scaleTier(zoom);lastMarkerZoom=Math.round(zoom*5);
  const at=(lat,lon)=>' data-at="'+lon+','+lat+'"';
@@ -784,6 +784,7 @@ function selectStart(point){
 }
 function completeStart(point,zoom){
  const destination=pendingDestination;pendingDestination=null;render();applyTransportLayer();
+ if(!destination&&matchMedia('(max-width: 760px)').matches){if(!loopView.open&&!building)flyTo(point,Math.max(6,zoom));return}
  if(!destination&&activeDrive()){frameDrive(activeDrive());return}
  if(mode!=='all'&&!destination){fitTransport();return}
  if(destination&&visible.includes(destination)){open(destination);return}
