@@ -6,9 +6,13 @@ const visaIndexes=new Map(visaData.codes.map((v,i)=>[v,i]));
 const regionNames=new Intl.DisplayNames([document.documentElement.lang||'ru'],{type:'region'});
 const visaPaths=new Map();
 let visaGeo=null,visaRequested=false;
+function usablePassport(code){
+ const rank=p=>{const k=p===code?7:Number(visaData.rows[p]?.[visaIndexes.get(code)]||0);return [9,1,3,2,4,5,6,0][k]};
+ return state.passport2&&visaIndexes.has(state.passport2)&&rank(state.passport2)<rank(state.passport)?state.passport2:state.passport;
+}
 function visaKind(code){
  if(!visaIndexes.has(state.passport)||!visaIndexes.has(code))return 0;
- return state.passport===code?7:Number(visaData.rows[state.passport][visaIndexes.get(code)]);
+ const p=usablePassport(code);return p===code?7:Number(visaData.rows[p][visaIndexes.get(code)]);
 }
 function visaVisible(){return visaIndexes.has(state.passport)&&(state.visaLayer??flying())}
 function entryOptions(){
@@ -16,13 +20,13 @@ function entryOptions(){
 }
 function entryInfo(code){
  if(!visaIndexes.has(state.passport))return '';
- const ref=visaData.refs[state.passport+code];
+ const ref=visaData.refs[usablePassport(code)+code];
  const link=ref?visaData.sources[ref[0]]:visaSource;
- return '<div class="entry-info"><b>'+visaLabels[visaKind(code)]+'</b> · '+regionNames.of(state.passport)+' → '+(visaIndexes.has(code)?regionNames.of(code):'—')+'<br><small>Туризм · '+(ref?.[1]||'срез 17.02.2026')+' · <a target="_blank" rel="noopener" href="'+safe(link)+'">Источник ↗</a></small></div>';
+ return '<div class="entry-info"><b>'+visaLabels[visaKind(code)]+'</b> · '+regionNames.of(usablePassport(code))+' → '+(visaIndexes.has(code)?regionNames.of(code):'—')+'<br><small>Туризм · '+(ref?.[1]||'срез 17.02.2026')+' · <a target="_blank" rel="noopener" href="'+safe(link)+'">Источник ↗</a></small></div>';
 }
 function updateVisaMap(){
  const on=visaVisible();$('visaLayer').setAttribute('aria-pressed',String(on));$('visaLegend').hidden=!on;
- if(on)$('visaPassport').textContent=regionNames.of(state.passport);
+ if(on)$('visaPassport').textContent=[state.passport,state.passport2].filter(p=>visaIndexes.has(p)).map(p=>regionNames.of(p)).join(' / ');
  if(!atlas||canvas||!atlas.getStyle()?.layers)return;
  const id='passport-entry';
  if(!on){if(atlas.getLayer(id))atlas.setLayoutProperty(id,'visibility','none');return}

@@ -438,7 +438,8 @@ function fitTransport(){
  atlas.fitBounds(bounds,{padding:{left:50,right:50,top:130,bottom:110},maxZoom:5,duration:reduced.matches?0:550});
 }
 function pickTransport(button){
- const stayInLoop=loopView.open;
+ const stayInLoop=loopView.open&&button.dataset.mode==='car';
+ if(loopView.open&&!stayInLoop)closeLoops();
  if(building)leaveTrip();
  mode=button.dataset.mode;document.body.dataset.transport=mode;
  $('modes').querySelectorAll('button').forEach(el=>{el.classList.toggle('selected',el===button);el.setAttribute('aria-pressed',String(el===button))});
@@ -636,13 +637,20 @@ $('mapDetail').onclick=loadDetailedMap;
 $('plus').onclick=()=>atlas?.zoomIn({duration:reduced.matches?0:230});
 $('minus').onclick=()=>atlas?.zoomOut({duration:reduced.matches?0:230});
 $('fit').onclick=()=>{ if(actualOrigin()&&!picking)$('portal').hidden=true;fit() };
+function limitChips(name,title,values,unit){
+ const current=String(state[name]||'');if(current&&!values.includes(current))values.push(current);
+ return '<fieldset class="limit-chips"><legend>'+title+'</legend>'+values.map(v=>'<label><input type="radio" name="'+name+'" value="'+safe(v)+'" '+(v===current?'checked':'')+'><span>'+(v?safe(v)+' '+unit:'Без лимита')+'</span></label>').join('')+'</fieldset>';
+}
 function showProfile(){
- $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Профиль путешественника</h2><p>Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.</p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label><label>КОМФОРТНО ЗА РУЛЁМ В ДЕНЬ<select name="drive"><option value="2">До 2 часов</option><option value="3">До 3 часов</option><option value="5">До 5 часов</option><option value="8">До 8 часов</option></select></label><label>КИЛОМЕТРОВ ЗА РУЛЁМ В ДЕНЬ<input name="driveKm" type="number" min="1" max="3000" step="1" inputmode="numeric" placeholder="Без лимита"></label><button class="action">Сохранить профиль</button></form>';
+ $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Профиль путешественника</h2><p>Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.</p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><details id="secondPassport" '+(state.passport2?'open':'')+'><summary>Второй паспорт</summary><label>Страна второго паспорта<select name="passport2"><option value="">Не указан</option>'+entryOptions()+'</select></label></details><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label>'+limitChips('drive','Время за рулём в день',['2','3','4','5','6','8'],'ч')+limitChips('driveKm','Расстояние в день',['','100','200','300','500','700'],'км')+'<button class="action">Сохранить профиль</button></form>';
  const form=$('profileForm');
- for(const key of ['passport','taste','drive','driveKm'])form.elements[key].value=state[key]||'';
+ for(const key of ['passport','passport2','taste','drive','driveKm'])form.elements[key].value=state[key]||'';
  if(!visaIndexes.has(state.passport))form.elements.passport.value='';
- form.onsubmit=e=>{e.preventDefault();for(const key of ['passport','taste','drive','driveKm'])state[key]=form.elements[key].value;
- if(visaRequested&&state.passport){state.visaLayer=true;$('visaLegend').open=true}visaRequested=false;persist();$('dialog').close();$('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';updateVisaMap();canvas?.draw();if(loopView.open)drawLoopCard();else render()};
+ form.onchange=()=>form.elements.passport2.setCustomValidity('');
+ form.onsubmit=e=>{e.preventDefault();
+ if(form.elements.passport2.value&&(!form.elements.passport.value||form.elements.passport.value===form.elements.passport2.value)){form.elements.passport2.setCustomValidity('Укажи два разных паспорта');form.elements.passport2.reportValidity();return}
+ for(const key of ['passport','passport2','taste','drive','driveKm'])state[key]=form.elements[key].value;
+ if(visaRequested&&state.passport){state.visaLayer=true;$('visaLegend').open=true}visaRequested=false;persist();$('dialog').close();$('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';updateVisaMap();canvas?.draw();if(loopView.open)drawLoopCard();else render();accountOffer()};
  if(!$('dialog').open)$('dialog').showModal();
 }
 function compare(){

@@ -57,3 +57,12 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .site-drive{padding:9px 0;color:#ded9cb;font:550 13px/1.5 system-ui}.site-drive button{display:block;color:#a5caff;padding:6px 0}
 @media(max-width:1050px) and (min-width:761px){#originTools{top:189px}#location{top:232px}}
 @media(max-width:760px){#originTools{left:10px;top:calc(var(--phone-top) + 54px)}#originTools button{min-height:42px}#location{top:calc(var(--phone-top) + 102px)!important}body #seasonMenu{bottom:calc(66px + env(safe-area-inset-bottom));width:calc(100vw - 16px);padding:12px}.phone-roads #originTools{display:flex}#seasonMenu #seasonList button{flex-basis:140px}body:has(#mobileSettings:not([hidden])) #originTools{visibility:hidden}}
+#profileForm .limit-chips{border:0;padding:0;margin:14px 0;display:flex;flex-wrap:wrap;gap:6px}
+.limit-chips legend{margin-bottom:7px;font:550 13px system-ui;color:#aaa}
+#profileForm .limit-chips label{margin:0;display:block;position:relative}
+.limit-chips input{position:absolute;opacity:0;width:1px;height:1px}
+.limit-chips span{display:block;padding:9px 13px;border-radius:18px;background:#222;color:#dad9d5;font:550 14px system-ui;cursor:pointer}
+.limit-chips input:checked+span{background:#eee8dc;color:#161616}.limit-chips input:focus-visible+span{outline:2px solid #99c7ff}
+#secondPassport{margin:10px 0}#secondPassport summary{cursor:pointer;color:#c9bdac}
+#loopDeck .loop-generate{display:block;margin:5px 12px 9px;color:#ded0b5;font:550 13px system-ui;background:#211e19;border-radius:16px;padding:9px 13px}
+#accountPanel form{display:grid;gap:8px;margin-top:16px}#accountPanel label{display:grid;gap:6px}#accountPanel input{padding:10px}#accountPanel .action{margin:4px 4px 4px 0}

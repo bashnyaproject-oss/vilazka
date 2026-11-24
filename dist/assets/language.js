@@ -30,6 +30,22 @@
 Ищем подъезд по дорогам…|Finding a driving route…
 Поставь старт для расчёта дороги|Set a start to see the driving route
 Подъезд от старта не подтверждён. Можно посмотреть дороги рядом.|No driving route confirmed. Explore the nearby roads.
+Второй паспорт|Second passport
+Страна второго паспорта|Second passport country
+Время за рулём в день|Driving time per day
+Расстояние в день|Daily distance
+К готовым маршрутам|Browse published routes
+Собрать свой маршрут|Build my own route
+Готовый маршрут|Published itinerary
+В радиусе 165 км нет готовых маршрутов|No published itineraries within 165 km
+Выбрать маршрут|Choose route
+Профиль сохранён|Profile saved
+Хочешь открыть эти настройки на другом устройстве?|Use these preferences on another device?
+Зарегистрироваться в 5apps ↗|Sign up with 5apps ↗
+Подключить аккаунт|Connect account
+Адрес хранилища|Storage address
+Сохранить настройки в аккаунт|Save preferences to account
+Загрузить настройки из аккаунта|Load preferences from account
 Язык интерфейса|Interface language
 Найти город или место|Search cities and places
 Выбери место|Choose a place

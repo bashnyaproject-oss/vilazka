@@ -6,3 +6,4 @@
 .loop-bases small{width:100%;color:#aaa}
 #loopDeck .loop-bases button{background:#222;border-radius:12px;padding:6px 10px}
 .loop-source{display:block;color:#aaa;font-size:10px;margin:4px 14px}
+.loop-images{overflow-x:auto;scrollbar-width:thin}.loop-images figure{min-width:70px}
