@@ -3,6 +3,9 @@
  const phrases = `
 Дорога не подтверждена|Road unconfirmed
 Разрешить пересечение границ|Allow border crossings
+Начать ближе к дороге|Start near a town
+По окрестным городам|Nearby towns
+Туда и обратно|Out and back
 Язык интерфейса|Interface language
 Найти город или место|Search cities and places
 Выбери место|Choose a place

@@ -2,3 +2,7 @@
 @media(max-width:650px){#loopDeck{bottom:10px;left:8px;width:min(350px,calc(100vw - 64px))}.loop-images{height:82px}.loop-copy,.loop-home{padding:5px 10px}.loop-copy h2{font-size:18px}}
 .loop-home label{display:flex;align-items:center;gap:6px;font:11px system-ui;color:#aaa}.loop-home select{font:550 11px system-ui;color:#ddd;background:#191919;border:0;border-radius:12px;padding:3px 5px;max-width:80%}
 .drive-strip{height:76px}.loop-images img{user-select:none;-webkit-user-drag:none}
+.loop-bases{display:flex;gap:6px;flex-wrap:wrap;padding:4px 14px}
+.loop-bases small{width:100%;color:#aaa}
+#loopDeck .loop-bases button{background:#222;border-radius:12px;padding:6px 10px}
+.loop-source{display:block;color:#aaa;font-size:10px;margin:4px 14px}

@@ -408,10 +408,11 @@ function fitTransport(){
  atlas.fitBounds(bounds,{padding:{left:50,right:50,top:130,bottom:110},maxZoom:5,duration:reduced.matches?0:550});
 }
 function pickTransport(button){
- if(loopView.open)closeLoops();
+ const stayInLoop=loopView.open;
  if(building)leaveTrip();
  mode=button.dataset.mode;document.body.dataset.transport=mode;
  $('modes').querySelectorAll('button').forEach(el=>{el.classList.toggle('selected',el===button);el.setAttribute('aria-pressed',String(el===button))});
+ if(stayInLoop){applyTransportLayer();return}
  active=null;airportSelection=null;storyId=-1;viewingSaved=false;
  closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();fitTransport();
 }
@@ -777,7 +778,7 @@ function finishPick(){
  $('cancelPick').hidden=true;$('pickStart').hidden=false;$('portal').hidden=!!actualOrigin();
 }
 function selectStart(point){
- if(loopView.open){setLoopArea(point.lat,point.lng,'Точка прибытия');return}
+ if(loopView.open){if(loopView.picking)setLoopArea(point.lat,point.lng,'Точка прибытия');return}
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
  if(!picking)return;
  lastLoopPoint={lat:point.lat,lon:point.lng,name:'Выбранная точка'};state.selectedDestination=lastLoopPoint;state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
@@ -1151,12 +1152,13 @@ function startLeg(name,lat,lon,arrival=false){
  const l={name,lat,lon,arrival,stops:[]};itinerary.legs.push(l);selectedLeg=itinerary.legs.length-1;persist();enterTrip();flyTo([lat,lon],8);
 }
 function enterTrip(){
+ $('tripBuilder').setAttribute('aria-pressed','true');
  if(!itinerary.legs.length){chooseNext();return}
  selectedLeg=Math.min(selectedLeg,itinerary.legs.length-1);
  active=null;routeRequest++;setDrawer(false);closeLandmark();$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  building=true;pickStage=false;pickStop=false;refreshTrip();fetchArea(itinerary.legs[selectedLeg]);
 }
-function leaveTrip(){building=false;drivingLines=[];paintRoute();sequence++;pickStop=false;pickStage=false;$('builder').hidden=true;$('pickTip').hidden=true;clearRoute();render()}
+function leaveTrip(){$('tripBuilder').setAttribute('aria-pressed',String(loopView.open));building=false;drivingLines=[];paintRoute();sequence++;pickStop=false;pickStage=false;$('builder').hidden=true;$('pickTip').hidden=true;clearRoute();render()}
 let nextArrivalByAir=false;
 function chooseNext(byAir=false){
  nextArrivalByAir=byAir||(!itinerary.legs.length&&flying());
