@@ -329,11 +329,19 @@ function transportGeometry(){
  }
  return [];
 }
-let requestModeNetwork=()=>{};
+let railRequested=false;
+let requestModeNetwork=()=>{
+ if(mode!=='train'||railRequested||typeof railLines!=='undefined')return;
+ railRequested=true;
+ const script=document.createElement('script');script.src='assets/rail.js';
+ script.onload=()=>{if(mode==='train')applyTransportLayer()};
+ script.onerror=()=>{railRequested=false};document.head.append(script);
+};
 function applyTransportLayer(){
  if(mode!=='plane')requestModeNetwork();
  if(!atlas)return;
  if(canvas){canvas.draw();return}
+ if(!atlas.getStyle()?.layers)return;
  const id='transport-network';
  if(atlas.getLayer(id))atlas.removeLayer(id);
  if(atlas.getSource(id))atlas.removeSource(id);
@@ -399,8 +407,11 @@ function pickTransport(button){
  closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();fitTransport();
 }
 
+let pinAnchor=null;
 function positionPins(){
  if(!atlas)return;
+ pinLayer.style.transform='';
+ pinAnchor={center:atlas.getCenter(),zoom:atlas.getZoom()};
  for(const node of pinLayer.children){
   const point=node.mapPoint??=node.dataset.at.split(',').map(Number);
   const {x,y}=atlas.project(point);
@@ -533,37 +544,32 @@ function fit(duration=reduced.matches?0:650){
 async function loadDetailedMap(){
  const button=$('mapDetail'),status=$('mapStatus'),target=$('onlineMap');
  button.disabled=true;button.textContent='Загрузка…';
+ const previous=atlas;
  let detailed;
  try{
-  if(!window.maplibregl){
-   await new Promise((resolve,reject)=>{
-    const script=document.createElement('script');
-    const timeout=setTimeout(()=>{script.remove();reject(Error('Timeout'))},5500);
-    script.src='https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js';
-    script.onload=()=>{clearTimeout(timeout);resolve()};
-    script.onerror=()=>{clearTimeout(timeout);reject(Error('MapLibre'))};
-    document.head.append(script);
-   });
-  }
-  const css=document.createElement('link');
-  css.rel='stylesheet';css.href='https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css';document.head.append(css);
   target.hidden=false;
-  const {lng,lat}=atlas.getCenter();
-  detailed=new maplibregl.Map({container:target,style:'https://tiles.openfreemap.org/styles/dark',center:[lng,lat],zoom:atlas.getZoom(),minZoom:1.5,maxZoom:17,renderWorldCopies:false,attributionControl:false,pitch:0,bearing:0,minPitch:0,maxPitch:0,dragRotate:false,pitchWithRotate:false,touchPitch:false});
+  const center=previous?.getCenter()||{lng:18,lat:51};
+  detailed=new maplibregl.Map({container:target,style:'https://tiles.openfreemap.org/styles/dark',center:[center.lng,center.lat],zoom:previous?.getZoom()??3,minZoom:1.5,maxZoom:17,renderWorldCopies:false,attributionControl:false,pitch:0,bearing:0,minPitch:0,maxPitch:0,dragRotate:false,pitchWithRotate:false,touchPitch:false,canvasContextAttributes:{antialias:false}});
+  if(!previous){
+   atlas=detailed;target.classList.add('loaded');$('tiles').hidden=true;pinLayer.style.visibility='hidden';
+   status.hidden=false;status.textContent='Загружаем карту…';button.hidden=true;
+  }
   await new Promise((resolve,reject)=>{
-   const timeout=setTimeout(()=>reject(Error('Timeout')),6500);
-   detailed.once('load',()=>{clearTimeout(timeout);resolve()});
-   detailed.once('error',()=>{clearTimeout(timeout);reject(Error('Tiles'))});
+   const timer=setTimeout(()=>reject(Error('Timeout')),18000);
+   detailed.once('load',()=>{clearTimeout(timer);resolve()});
+   detailed.on('error',e=>{if(!e.sourceId&&!detailed.getStyle()?.layers){clearTimeout(timer);reject(e.error)}});
   });
  }catch{
-  detailed?.remove();target.hidden=true;
-  status.textContent='Обзорная карта · Natural Earth';
-  button.disabled=false;button.textContent='Детальная карта';return;
+  const center=detailed?.getCenter(),zoom=detailed?.getZoom();
+  pinLayer.style.visibility='';detailed?.remove();target.hidden=true;target.classList.remove('loaded');$('tiles').hidden=false;
+  if(!previous){atlas=null;bootOffline();if(center)atlas.jumpTo({center:[center.lng,center.lat],zoom})}
+  status.hidden=false;status.textContent='Обзорная карта · Natural Earth';
+  button.hidden=false;button.disabled=false;button.textContent='Детальная карта';return;
  }
- const {lng:lngLast,lat:latLast}=atlas.getCenter(),zoomLast=atlas.getZoom();
- atlas=detailed;canvas=null;pinLayer.style.transform='';
+ if(previous){const c=previous.getCenter();detailed.jumpTo({center:[c.lng,c.lat],zoom:previous.getZoom()})}
+ atlas=detailed;canvas=null;pinLayer.style.transform='';pinLayer.style.visibility='';
  $('tiles').hidden=true;target.classList.add('loaded');
- status.hidden=true;button.hidden=true;detailed.jumpTo({center:[lngLast,latLast],zoom:zoomLast});
+ status.hidden=true;button.hidden=true;
  detailed.touchZoomRotate.disableRotation();detailed.keyboard.disableRotation();
  for(const layer of detailed.getStyle().layers){
   if(layer.type==='fill-extrusion')detailed.setLayoutProperty(layer.id,'visibility','none');
@@ -573,12 +579,14 @@ async function loadDetailedMap(){
  }
  detailed.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
  detailed.on('click',e=>selectStart(e.lngLat));
+ let lastWeatherPaint=0;
  detailed.on('move',()=>{
-  if(markerFrame)return;
-  markerFrame=requestAnimationFrame(()=>{
-   markerFrame=0;
-   positionPins();window.temperatureLayer?.paint();
-  });
+  if(!pinAnchor)return;
+  const point=detailed.project(pinAnchor.center),dx=point.x-map.clientWidth/2,dy=point.y-map.clientHeight/2;
+  const scale=2**(detailed.getZoom()-pinAnchor.zoom);
+  if(Math.abs(dx)>map.clientWidth*.45||Math.abs(dy)>map.clientHeight*.45||scale>1.65||scale<.62){renderPins()}
+  else pinLayer.style.transform='translate3d('+dx+'px,'+dy+'px,0) scale('+scale+')';
+  const now=performance.now();if(now-lastWeatherPaint>100){lastWeatherPaint=now;window.temperatureLayer?.paint()}
  });
  detailed.on('moveend',()=>{renderPins();window.temperatureLayer?.refresh()});window.temperatureLayer?.refresh();
  applyTransportLayer();renderPins();paintRoute();
@@ -873,7 +881,7 @@ function bootOffline(){
   const key=mode==='train'?'railways':'highways';if(overviewImages.has(key))return;
   const img=new Image();overviewImages.set(key,img);img.onload=()=>{if(canvas&&!moving)draw()};img.src='assets/'+key+'.webp';
  };
- let attemptedStreets=false;
+
  let center=previous?[previous.lng,previous.lat]:[18,51], z=3, drag=null;
  let width=el.clientWidth,height=el.clientHeight;
  const scale=()=>2**z*1.5;
@@ -934,7 +942,7 @@ function bootOffline(){
   el.style.transform='';pinLayer.style.transform='';
   $('thermalCanvas').style.transform='';window.temperatureLayer?.refresh();draw();renderPins();anchor={center:[...center],zoom:z};
   if(mode!=='plane')requestModeNetwork();
-  if(z>=5&&!attemptedStreets&&!$('mapDetail').disabled){attemptedStreets=true;loadDetailedMap()}
+
  }
  function animateGesture(){
   if(!canvas||!anchor)return;
@@ -1176,7 +1184,7 @@ $('builder').onchange=e=>{
  if(t.dataset.pack!==undefined){itinerary.checks[pack[+t.dataset.pack]]=t.checked;persist();t.closest('details').querySelector('summary').textContent='Готовность · '+pack.filter(x=>itinerary.checks[x]).length+'/'+pack.length}
 };
 
-$('portal').hidden=true;bootOffline();setDrawer(false);render();fit(0);
+$('portal').hidden=true;loadDetailedMap();setDrawer(false);render();fit(0);
 
 if(state.origin==='auto')requestLocation(false);else if(actualOrigin())flyTo(actualOrigin(),4.4);
 
