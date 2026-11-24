@@ -1,5 +1,5 @@
 'use strict';
-// The account is optional. Only the five travel preferences are sent when saved.
+// Signed-in trips are stored as individual private documents.
 let profileRemote=null,profileSdk=null;
 const profilePath='/vilazka/preferences.json';
 const prefKeys=['passport','passport2','drive','driveKm','taste'];
@@ -16,27 +16,59 @@ function profileStorage(){
   };document.head.append(script);
  });return profileSdk;
 }
-function accountOffer(){
+function accountOffer(forTrips=false){
  const dialog=$('dialog'),connected=profileRemote?.remote.connected;
- dialog.innerHTML='<div class="panel" id="accountPanel"><button class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Профиль сохранён</h2>'+
- (connected?'<p>Личное хранилище · '+safe(profileRemote.remote.userAddress)+'</p><button class="action" id="backupPrefs">Сохранить настройки в аккаунт</button><button class="action secondary" id="restorePrefs">Загрузить настройки из аккаунта</button><button id="disconnectPrefs">Выйти</button>':'<p>Хочешь открыть эти настройки на другом устройстве?</p><a class="action" href="https://5apps.com/storage" target="_blank" rel="noopener">Зарегистрироваться в 5apps ↗</a><form id="connectPrefs"><label>Адрес хранилища<input name="address" type="email" required placeholder="name@5apps.com"></label><button class="action secondary">Подключить аккаунт</button></form>')+
+ dialog.innerHTML='<div class="panel" id="accountPanel"><button class="close" data-dialog-close aria-label="Закрыть">×</button><h2>'+(forTrips?'Мои поездки':'Профиль сохранён')+'</h2>'+
+ (connected?'<p>Личное хранилище · '+safe(profileRemote.remote.userAddress)+'</p><button class="action" id="backupPrefs">Сохранить настройки в аккаунт</button><button class="action secondary" id="restorePrefs">Загрузить настройки из аккаунта</button><button id="disconnectPrefs">Выйти</button>':'<p>'+(forTrips?'Войди или зарегистрируйся, чтобы сохранять и открывать свои поездки.':'Хочешь открыть эти настройки на другом устройстве?')+'</p><a class="action" href="https://5apps.com/storage" target="_blank" rel="noopener">Зарегистрироваться в 5apps ↗</a><form id="connectPrefs"><label>Адрес хранилища<input name="address" type="email" required placeholder="name@5apps.com"></label><button class="action secondary">Подключить аккаунт</button></form>')+
  '<p id="accountStatus" role="status"></p><button data-dialog-close>Готово</button></div>';
  if(!dialog.open)dialog.showModal();
  const status=$('accountStatus');
  if(!connected){
-  $('connectPrefs').onsubmit=async e=>{e.preventDefault();const address=e.target.elements.address.value.trim();try{localStorage.setItem('vilazka-storage','1');sessionStorage.setItem('vilazka-return','1');const rs=await profileStorage();if(!rs.remote.connected)await rs.connect(address)}catch{status.textContent='Не удалось подключить хранилище.'}};
+  $('connectPrefs').onsubmit=async e=>{e.preventDefault();const address=e.target.elements.address.value.trim();try{localStorage.setItem('vilazka-storage','1');sessionStorage.setItem('vilazka-return',forTrips?'trips':'profile');const rs=await profileStorage();if(!rs.remote.connected)await rs.connect(address)}catch{status.textContent='Не удалось подключить хранилище.'}};
   return;
  }
  $('disconnectPrefs').onclick=async()=>{await profileRemote.disconnect();localStorage.removeItem('vilazka-storage');accountOffer()};
  $('backupPrefs').onclick=async()=>{
-  try{const prefs=Object.fromEntries(prefKeys.map(k=>[k,state[k]||'']));const r=await profileRemote.remote.put(profilePath,JSON.stringify(prefs),'application/json');if(r.status<200||r.status>=300)throw Error();status.textContent='Настройки сохранены в аккаунте.'}catch{status.textContent='Не удалось сохранить в аккаунте.'}
+  try{const prefs=Object.fromEntries(prefKeys.map(k=>[k,state[k]||'']));const r=await profileRemote.remote.put(profilePath,JSON.stringify(prefs),'application/json');if(r.statusCode<200||r.statusCode>=300)throw Error();status.textContent='Настройки сохранены в аккаунте.'}catch{status.textContent='Не удалось сохранить в аккаунте.'}
  };
  $('restorePrefs').onclick=async()=>{
-  try{const r=await profileRemote.remote.get(profilePath);if(r.status===404){status.textContent='В аккаунте пока нет настроек.';return}if(r.status!==200)throw Error();
+  try{const r=await profileRemote.remote.get(profilePath);if(r.statusCode===404){status.textContent='В аккаунте пока нет настроек.';return}if(r.statusCode!==200)throw Error();
    const p=typeof r.body==='string'?JSON.parse(r.body):r.body;
    if(!p||![p.passport,p.passport2].every(c=>c===''||visaIndexes.has(c))||!['2','3','4','5','6','8'].includes(p.drive)||!(p.driveKm===''||(/^\d+$/.test(p.driveKm)&&+p.driveKm>=1&&+p.driveKm<=3000))||!['Город','Природа','Роад-трип'].includes(p.taste))throw Error();
    for(const k of prefKeys)state[k]=p[k];persist();updateVisaMap();canvas?.draw();showProfile();
   }catch{status.textContent='Не удалось загрузить настройки.'}
  };
 }
-window.addEventListener('load',()=>{if(localStorage.getItem('vilazka-storage'))profileStorage().then(()=>{if(profileRemote.remote.connected&&sessionStorage.getItem('vilazka-return')){sessionStorage.removeItem('vilazka-return');accountOffer()}}).catch(()=>{})});
+window.addEventListener('load',()=>{if(localStorage.getItem('vilazka-storage'))profileStorage().then(()=>{if(profileRemote.remote.connected&&sessionStorage.getItem('vilazka-return')){const next=sessionStorage.getItem('vilazka-return');sessionStorage.removeItem('vilazka-return');if(next==='trips')openAccountTrips();else accountOffer()}}).catch(()=>{})});
+const tripFolder='/vilazka/trips/';
+const pendingTripWrites=new Map();
+function saveAccountItem(key,item,remove=false){
+ const remote=profileRemote?.remote;if(!remote?.connected)return;
+ const path=tripFolder+key+'.json';
+ const pendingKey=remote.userAddress+path;
+ const task=(pendingTripWrites.get(pendingKey)||Promise.resolve()).then(async()=>{
+  const r=remove?await remote.delete(path):await remote.put(path,JSON.stringify(item),'application/json');
+  if(!(r.statusCode>=200&&r.statusCode<300)&&!(remove&&r.statusCode===404))throw Error();
+ }).catch(()=>{const el=$('toast');el.textContent='Не удалось сохранить изменение в аккаунте';el.hidden=false;setTimeout(()=>el.hidden=true,3500)}).finally(()=>{if(pendingTripWrites.get(pendingKey)===task)pendingTripWrites.delete(pendingKey)});
+ pendingTripWrites.set(pendingKey,task);
+}
+async function openAccountTrips(){
+ if(!profileRemote?.remote.connected&&localStorage.getItem('vilazka-storage')){try{await profileStorage()}catch{}}
+ const remote=profileRemote?.remote;if(!remote?.connected){accountOffer(true);return}
+ const dialog=$('dialog');dialog.innerHTML='<div class="panel"><button data-dialog-close class="close" aria-label="Закрыть">×</button><h2>Мои поездки</h2><div id="cloudTrips" role="status">Загружаем поездки…</div></div>';
+ if(!dialog.open)dialog.showModal();const box=$('cloudTrips');
+ try{
+  await Promise.all(pendingTripWrites.values());const r=await remote.get(tripFolder);
+  if(r.statusCode!==404&&r.statusCode!==200)throw Error();
+  const keys=r.statusCode===404?[]:Object.keys(r.body).filter(k=>/^(place-\d+|city-\d+|road-[\da-f-]+)\.json$/.test(k));
+  const trips=await Promise.all(keys.map(async key=>{const v=await remote.get(tripFolder+key);if(v.statusCode!==200)throw Error();return {key,item:typeof v.body==='string'?JSON.parse(v.body):v.body}}));
+  box.replaceChildren();
+  if(!trips.length){box.textContent='Здесь появятся сохранённые места и маршруты.';return}
+  for(const {key,item} of trips){
+   const btn=document.createElement('button');btn.className='account-trip';btn.textContent=item.name;
+   btn.onclick=()=>{if(key.startsWith('road-')){const list=document.createElement('ol');for(const p of item.stops||[]){const li=document.createElement('li');li.textContent=p.name;list.append(li)}const heading=document.createElement('h3');heading.textContent=item.name;const back=document.createElement('button');back.textContent='Все поездки';back.onclick=openAccountTrips;box.replaceChildren(heading,list,back);return}
+    dialog.close();const i=parseInt(key.split('-')[1],10);if(key.startsWith('city-')&&atlasCities[i])openCity(i);else if(data[i])open(data[i])};
+   box.append(btn);
+  }
+ }catch{box.textContent='Не удалось загрузить поездки. ';const retry=document.createElement('button');retry.textContent='Повторить';retry.onclick=openAccountTrips;box.append(retry)}
+}

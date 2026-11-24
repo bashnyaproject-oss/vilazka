@@ -46,6 +46,10 @@
 Адрес хранилища|Storage address
 Сохранить настройки в аккаунт|Save preferences to account
 Загрузить настройки из аккаунта|Load preferences from account
+Радиус поиска от старта|Search radius from start
+Рядом нет готовых маршрутов|No published routes within this radius
+Войди или зарегистрируйся, чтобы сохранять и открывать свои поездки.|Sign in or create an account to save and open your trips.
+Здесь появятся сохранённые места и маршруты.|Your saved places and routes will appear here.
 Язык интерфейса|Interface language
 Найти город или место|Search cities and places
 Выбери место|Choose a place

@@ -15,11 +15,11 @@ function driveOptions(origin){
  const guides=publishedDrives.map(g=>{
   const places=[...g.places];if(km(places.at(-1))<km(places[0]))places.reverse();
   return {...g,places,approach:km(places[0])};
- }).filter(g=>g.approach<=165&&g.places.every(local)).sort((a,b)=>a.approach-b.approach);
+ }).filter(g=>g.approach<=driveRadius()&&g.places.every(local)).sort((a,b)=>a.approach-b.approach);
  const sites=[...russianPlaces.map(([n,,x,y])=>({p:[n,y,x],url:'https://www.openstreetmap.org/?mlat='+y+'&mlon='+x,source:'OpenStreetMap'})),
  ...heritage.map(([id,n,x,y])=>({p:[n,y,x],url:'https://whc.unesco.org/en/list/'+id+'/',source:'ЮНЕСКО'})),
  ...regionalSites.filter(r=>['Музей','Монастырь','Замок','Парк'].includes(r[4])&&r[0].startsWith('g')).map(([id,n,x,y])=>({p:[n,y,x],url:'https://www.geonames.org/'+id.slice(1),source:'GeoNames'}))];
- const nearby=sites.map(s=>({...s,km:km(s.p)})).filter(s=>s.km>1&&s.km<=90&&local(s.p)).sort((a,b)=>a.km-b.km);
+ const nearby=sites.map(s=>({...s,km:km(s.p)})).filter(s=>s.km>1&&s.km<=driveRadius()&&local(s.p)).sort((a,b)=>a.km-b.km);
  const used=new Set(),locals=[];
  for(const site of nearby){
   if(used.has(site.p[0]))continue;
@@ -29,7 +29,7 @@ function driveOptions(origin){
   if(locals.length===3)break;
  }
  if(!guides.length&&!locals.length){
-  const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=110&&local(p)).sort((a,b)=>km(a)-km(b));
+  const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=driveRadius()&&local(p)).sort((a,b)=>km(a)-km(b));
   for(const p of towns.slice(0,3)){
    const q=towns.find(t=>km(t)>km(p)&&kmBetween(p.slice(1),t.slice(1))<45);
    locals.push({name:p[0],why:'Поездка по окрестным городам.',source:'Посмотреть место в OpenStreetMap',url:'https://www.openstreetmap.org/?mlat='+p[1]+'&mlon='+p[2]+'#map=13/'+p[1]+'/'+p[2],places:q?[p,q]:[p]});
@@ -61,13 +61,13 @@ async function findMappedRoads(origin,key){
   found.sort((a,b)=>Number(b.road)-Number(a.road)||kmBetween(origin,a.places[0].slice(1))-kmBetween(origin,b.places[0].slice(1)));
   const titles=new Set(driveShelf.options.map(o=>o.name)),more=found.filter(x=>{if(titles.has(x.name))return false;titles.add(x.name);return true}).slice(0,4);
   const wasEmpty=!driveShelf.options.length;driveShelf.options.push(...more);
-  if(wasEmpty&&more.length&&!building&&!active&&!$('nearby').hidden&&actualOrigin()?.slice(0,2).join(',')===key&&['all','car'].includes(mode)){render()}
+  if(wasEmpty&&more.length&&!building&&!active&&!$('nearby').hidden&&actualOrigin()?.slice(0,2).join(',')+'/'+driveRadius()===key&&['all','car'].includes(mode)){render()}
  }catch{}
 }
 function activeDrive(){
  const origin=actualOrigin();
  if(!origin||!['all','car'].includes(mode)||building||pickStage||pickStop||viewingSaved)return null;
- const key=origin.slice(0,2).join(',');
+ const key=origin.slice(0,2).join(',')+'/'+driveRadius();
  if(key!==driveShelf.key){
   driveShelf.key=key;driveShelf.options=driveOptions(origin);driveShelf.index=0;findMappedRoads(origin,key);
  }

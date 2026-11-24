@@ -6,13 +6,15 @@ const xy=p=>[p.lat,p.lon];
 // Papua New Guinea settlement centres. GeoNames, CC BY 4.0.
 const pngCentres=[["Wewak", -3.54964, 143.63229], ["Wapenamanda", -5.6265, 143.9109], ["Wabag", -5.49119, 143.72151], ["Vanimo", -2.68372, 141.30195], ["Tari", -5.845, 142.94667], ["Port Moresby", -9.47723, 147.15089], ["Porgera", -5.463, 143.148], ["Popondetta", -8.76536, 148.23252], ["Mount Hagen", -5.85746, 144.23058], ["Minj", -5.90752, 144.69159], ["Mendi", -6.14755, 143.65633], ["Madang", -5.22152, 145.78695], ["Lorengau", -2.0341, 147.27173], ["Laiagam", -5.33105, 143.79052], ["Lae", -6.72333, 146.99611], ["Kwikila", -9.81847, 147.65968], ["Kurumul", -5.855, 144.63111], ["Kundiawa", -6.01972, 144.96917], ["Kokopo", -4.3432, 152.26867], ["Kokoda", -8.87778, 147.73642], ["Kimbe", -5.55085, 150.13766], ["Kerema", -7.96028, 145.77278], ["Kavieng", -2.57337, 150.79516], ["Ihu", -7.89569, 145.39405], ["Goroka", -6.085, 145.38667], ["Daru", -9.07786, 143.20893], ["Arawa", -6.22977, 155.56598], ["Angoram Village", -4.0518, 144.0728], ["Alotau", -10.31509, 150.45742], ["Laiagam", -5.48918, 143.49078], ["Buka", -5.43261, 154.67098], ["Rauna", -5.7359, 144.28834]];
 const townFiles=new Map();
+function driveRadius(){const n=Number(state.driveRadius);return Number.isFinite(n)&&n>=100&&n<=2000?n:200}
+
 function nearbyBases(area){
  const towns=atlasCities.slice(0,russianStart).map(([name,,lon,lat])=>[name,lat,lon]);
  const found=[];
  for(const [name,lat,lon] of [...pngCentres,...towns,...(area.extraTowns||[])]){
-  if(Math.abs(area.lat-lat)>2)continue;
+  if(Math.abs(area.lat-lat)>driveRadius()/110+0.05)continue;
   const km=kmBetween(xy(area),[lat,lon]);
-  if(km<1||km>165||!allowsStop(area,lat,lon))continue;
+  if(km<1||km>driveRadius()||!allowsStop(area,lat,lon))continue;
   found.push({name,lat,lon,km,town:true});
  }
  return found.sort((a,b)=>a.km-b.km);
@@ -20,9 +22,9 @@ function nearbyBases(area){
 function candidatesFor(area){
  const candidates=[],origin=xy(area);
  function add(name,lat,lon,photo,credit,town=false){
-  if(Math.abs(lat-area.lat)>2)return;
+  if(Math.abs(lat-area.lat)>driveRadius()/110+0.05)return;
   const km=kmBetween(origin,[lat,lon]);
-  if(km<1||km>165||!allowsStop(area,lat,lon))return;
+  if(km<1||km>driveRadius()||!allowsStop(area,lat,lon))return;
   const bearing=Math.atan2((lon-area.lon)*Math.cos(area.lat*Math.PI/180),lat-area.lat);
   candidates.push({name,lat,lon,photo,credit,town,km,sector:(Math.round(bearing*4/Math.PI)+8)%8});
  }
@@ -46,7 +48,7 @@ function makeLoops(area,points,generated=false){
    return {...known,name,lat,lon};
   });
   if(!gp.every(p=>allowsStop(area,p.lat,p.lon)))continue;
-  const approach=kmBetween(xy(area),xy(gp[0]));if(approach>165)continue;
+  const approach=kmBetween(xy(area),xy(gp[0]));if(approach>driveRadius())continue;
   const stops=gp.filter(p=>kmBetween(xy(area),xy(p))>1);
   if(!stops.length)continue;
   const end=stops[stops.length-1],sector=(Math.round(Math.atan2((end.lon-area.lon)*Math.cos(area.lat*Math.PI/180),end.lat-area.lat)*4/Math.PI)+8)%8;
@@ -125,7 +127,8 @@ function drawLoopCard(){
  box.hidden=picking;if(picking)return;
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?'Готовый маршрут':c.outAndBack?'Туда и обратно':c.stops.every(p=>p.town)?'По окрестным городам':'Кольцо')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.generated?'Пока мало остановок рядом':'В радиусе 165 км нет готовых маршрутов')+'</h2><button data-loop="pick">Выбрать другую точку</button></div>')+
+ '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
+ (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?'Готовый маршрут':c.outAndBack?'Туда и обратно':c.stops.every(p=>p.town)?'По окрестным городам':'Кольцо')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.generated?'Пока мало остановок рядом':'Рядом нет готовых маршрутов')+'</h2><button data-loop="pick">Выбрать другую точку</button></div>')+
  (c?.source?'<a class="loop-source" target="_blank" rel="noopener" href="'+safe(c.source)+'">'+safe(c.publisher)+' ↗</a>':'')+
  '<button class="loop-generate" data-loop="generate">'+(area.generated?'К готовым маршрутам':'Собрать свой маршрут')+'</button>'+
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+
@@ -178,6 +181,7 @@ function stepLoop(delta){
 function saveLoop(){
  const area=loopView.area,c=loopView.cards[loopView.index];if(!c?.line)return;
  itinerary.legs.push({name:area.name,lat:area.lat,lon:area.lon,arrival:true,domesticLoop:!area.crossBorder,crossBorder:area.crossBorder,loopHome:loopHome()?.slice(0,2),approachByCar:!!loopView.approach&&!loopView.approach.air,stops:[...c.stops.map(({name,lat,lon})=>({name,lat,lon})),...(c.source?[]:[{name:area.name,lat:area.lat,lon:area.lon}])]});
+ saveAccountItem('road-'+crypto.randomUUID(),{name:c.title,lat:area.lat,lon:area.lon,stops:c.stops.map(({name,lat,lon})=>({name,lat,lon}))});
  selectedLeg=itinerary.legs.length-1;persist();closeLoops();enterTrip();loopFrame();
 }
 function loopLine(){
@@ -191,7 +195,8 @@ function initLoops(){
  deck.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.target.closest('.loop-images'))dragX=e.clientX});
  deck.addEventListener('pointerup',e=>{if(dragX!==null&&Math.abs(e.clientX-dragX)>45)stepLoop(e.clientX<dragX?1:-1);dragX=null});
  deck.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)||Math.abs(e.deltaX)<8)return;e.preventDefault();const now=Date.now();if(now-wheelAt>400)stepLoop(e.deltaX>0?1:-1);wheelAt=now},{passive:false});
- deck.onchange=e=>{if(e.target.id==='crossBorder'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,e.target.checked,a.generated);return}if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();approachTo(loopView.area,++loopView.serial)}};
+ deck.oninput=e=>{if(e.target.id==='driveRadius')e.target.previousElementSibling.textContent=e.target.value+' км'};
+ deck.onchange=e=>{if(e.target.id==='driveRadius'){state.driveRadius=Number(e.target.value);const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated);return}if(e.target.id==='crossBorder'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,e.target.checked,a.generated);return}if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();approachTo(loopView.area,++loopView.serial)}};
  deck.addEventListener('touchstart',e=>{touch=e.touches[0]},{passive:true});
  deck.addEventListener('touchend',e=>{if(!touch)return;const t=e.changedTouches[0],dx=t.clientX-touch.clientX;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(t.clientY-touch.clientY)*1.4)stepLoop(dx<0?1:-1);touch=null},{passive:true});
  deck.onclick=e=>{const action=e.target.closest('button')?.dataset.loop;
@@ -201,7 +206,7 @@ function initLoops(){
  if(action==='close')closeLoops();if(action==='save')saveLoop();if(action==='saved'){closeLoops();enterTrip()}
  if(action==='pick'){loopView.picking=true;drawLoopCard();renderPins();$('pickTip').textContent='Поставь точку прибытия · Отмена';$('pickTip').hidden=false}
  };
- deck.onkeydown=e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepLoop(e.key==='ArrowRight'?1:-1)}};
+ deck.onkeydown=e=>{if(e.target.id==='driveRadius')return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepLoop(e.key==='ArrowRight'?1:-1)}};
  document.addEventListener('click',e=>{if(loopView.open&&e.target.closest('#explore,#saved,#browseRussia,#location'))closeLoops()},true);
  $('tripBuilder').onclick=()=>{if(!loopView.open)launchLoops()};
 }

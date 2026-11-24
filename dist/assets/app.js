@@ -143,7 +143,6 @@ function render(){
  $('resultTitle').textContent=viewingSaved?'Мои поездки':'Направления';
  updateLocation(); updateProgress();
  $('total').textContent=visible.length+' из '+data.length;
- $('count').textContent=state.saved.length;
  $('explore').classList.toggle('active',!viewingSaved&&!document.querySelector('aside').hidden);
  $('saved').classList.toggle('active',viewingSaved&&!document.querySelector('aside').hidden);
  $('cards').innerHTML=visible.map(d=>{
@@ -156,12 +155,11 @@ function render(){
  if(useRail)$('quickCards').innerHTML=storyCard();else driveShelf.current=null;
  if(priorDrive!==driveShelf.current)paintRoute();
  if(viewingSaved&&state.cityWishlist?.length){if(!visible.length)$('cards').innerHTML='';$('cards').innerHTML+=state.cityWishlist.map(i=>'<button class="card-open" data-city="'+i+'">'+atlasCities[i][0]+' · '+atlasCities[i][1]+'</button>').join('')}
- $('count').textContent=state.saved.length+(state.cityWishlist?.length||0);
  renderPins();renderDetail();if(!active)clearRoute();
 }
 function save(d){
  state.saved=state.saved.includes(d.id)?state.saved.filter(id=>id!==d.id):[...state.saved,d.id];
- persist();render();
+ persist();saveAccountItem('place-'+d.id,{name:d.name,lat:d.lat,lon:d.lon},!state.saved.includes(d.id));render();
 }
 function open(d){
  if(pointChoice(d.lat,d.lon,d.name))return;
@@ -662,7 +660,7 @@ function compare(){
 $('profile').onclick=showProfile;
 $('dialog').addEventListener('close',()=>{visaRequested=false});
 $('explore').onclick=()=>{const show=document.querySelector('aside').hidden||viewingSaved;viewingSaved=false;setDrawer(show);render()};
-$('saved').onclick=()=>{viewingSaved=true;setDrawer(true);render();fit()};
+$('saved').onclick=openAccountTrips;
 $('filters').onsubmit=e=>e.preventDefault();
 $('filters').onchange=e=>{
  if(e.target.id==='visa'&&$('visa').checked&&!state.passport){$('visa').checked=false;showProfile();return}
@@ -685,7 +683,7 @@ document.addEventListener('click',e=>{
  if(k.focusLeg!==undefined&&building){pickStop=false;selectedLeg=+k.focusLeg;enterTrip();return}
  if(k.stageSite!==undefined){const [,name,lon,lat]=catalogue[+k.stageSite];launchLoops({name,lat,lon})}
  if(k.city!==undefined)openCity(+k.city);
- if(k.citySave!==undefined){const i=+k.citySave;state.cityWishlist??=[];if(!state.cityWishlist.includes(i))state.cityWishlist.push(i);persist();openCity(i);$('count').textContent=state.saved.length+state.cityWishlist.length}
+ if(k.citySave!==undefined){const i=+k.citySave;state.cityWishlist??=[];if(!state.cityWishlist.includes(i))state.cityWishlist.push(i);persist();const [name,,lon,lat]=atlasCities[i];saveAccountItem('city-'+i,{name,lat,lon});openCity(i)}
 
  if(k.mode)pickTransport(b);
  if(k.airport)openAirport(k.airport);
@@ -708,10 +706,10 @@ document.addEventListener('click',e=>{
  }
  if(k.close!==undefined){active=null;render();fit()}
  if(k.setOrigin!==undefined){pendingDestination=active;showStart()}
- if(k.choose!==undefined&&active){if(!state.saved.includes(active.id))state.saved.push(active.id);persist();tab='chosen';render()}
+ if(k.choose!==undefined&&active){saveAccountItem('place-'+active.id,{name:active.name,lat:active.lat,lon:active.lon});if(!state.saved.includes(active.id))state.saved.push(active.id);persist();tab='chosen';render()}
  if(k.trip){tripMode=k.trip;checkedRequirements.clear();renderDetail();drawRoute(false)}
  if(k.stage){tab=k.stage;renderDetail()}
- if(k.confirmRoute!==undefined&&active){if(!state.saved.includes(active.id))state.saved.push(active.id);(state.plans[active.id]??={day:0,checks:[]}).transport=tripMode;tab='today';persist();render()}
+ if(k.confirmRoute!==undefined&&active){saveAccountItem('place-'+active.id,{name:active.name,lat:active.lat,lon:active.lon});if(!state.saved.includes(active.id))state.saved.push(active.id);(state.plans[active.id]??={day:0,checks:[]}).transport=tripMode;tab='today';persist();render()}
  if(k.tab){tab=k.tab;renderDetail()}
  if(k.day&&active){const plan=state.plans[active.id]??={day:0,checks:[]};plan.day=Math.max(0,Math.min(plan.day,tripDays(active)-1)+Number(k.day));persist();renderDetail()}
  if(k.dialogClose!==undefined)$('dialog').close();
@@ -776,8 +774,9 @@ function openLandmark(key){
  $('landmark').hidden=false;
 }
 function updateLocation(){
- $('locationText').textContent=gpsStatus==='pending'?'Определяем старт…':originName();
- $('location').title=gpsStatus==='failed'?'Геопозиция недоступна. Можно выбрать город вручную.':'Изменить точку старта';
+ const chosen=actualOrigin();
+ $('locationText').textContent=gpsStatus==='pending'?'Ищем местоположение…':gpsStatus==='failed'&&!chosen?'Геолокация недоступна':chosen?'Старт · '+originName():'';
+ $('location').hidden=!$('locationText').textContent;
  map.classList.toggle('locating',gpsStatus==='pending');
 }
 function flyTo(point,target){
@@ -1069,7 +1068,7 @@ $('myPosition').onclick=()=>{if(picking)finishPick();requestLocation(true)};
 $('manualOrigin').onclick=()=>{if(loopView.open)closeLoops();if(building)leaveTrip();beginPick()};
 $('roadLayer').setAttribute('aria-pressed',String(!!state.showRoads));
 $('roadLayer').onclick=()=>{state.showRoads=!state.showRoads;persist();$('roadLayer').setAttribute('aria-pressed',String(state.showRoads));applyTransportLayer()};
-$('location').onclick=showStart;
+
 $('locate').onclick=()=>actualOrigin()?flyTo(actualOrigin(),5):showStart();
 $('gpsStart').onclick=()=>{finishPick();$('portal').hidden=false;$('startHint').textContent='Запрашиваем геопозицию…';requestLocation(true)};
 $('pickStart').onclick=beginPick;
