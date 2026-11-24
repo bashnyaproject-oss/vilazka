@@ -19,6 +19,7 @@ const storeKey='vylazka-profile-v1';
 const defaults={origin:'auto',discovered:[],passport:'',taste:'Природа',drive:'3',saved:[],plans:{}};
 let state={...defaults};
 try{state={...defaults,...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{}
+if(!visaIndexes.has(state.passport))state.passport='';
 if(!['auto','pin'].includes(state.origin)&&!Object.hasOwn(cities,state.origin))state.origin=defaults.origin;
 let gps=null;
 let gpsStatus='idle';
@@ -96,10 +97,8 @@ function price(d,m){
  return {move:range(move),living:range(living),rental:range(rental),text:euro(range(total*.85))+'–'+euro(range(total*1.25))};
 }
 function visaFor(d){
- if(!state.passport)return 'Добавь паспорт';
- if(state.passport==='RU')return d.visa;
- if(state.passport==='EU'&&['IT','NO','IS','PT'].includes(d.code))return 'без визы';
- return 'уточнить';
+ if(!visaIndexes.has(state.passport))return 'Добавь паспорт';
+ const kind=visaKind(d.code);return kind===1?'без визы':kind===7?'внутри страны':visaLabels[kind];
 }
 const defaultMode=d=>options(d).includes(mode)?mode:options(d)[0];
 function matches(d){
@@ -345,6 +344,7 @@ let requestModeNetwork=()=>{
  script.onerror=()=>{railRequested=false};document.head.append(script);
 };
 function applyTransportLayer(){
+ updateVisaMap();
  if(mode!=='plane')requestModeNetwork();
  if(!atlas)return;
  if(canvas){canvas.draw();return}
@@ -390,7 +390,7 @@ function openAirport(code){
  airportSelection=code;active=null;setDrawer(false);render();applyTransportLayer();$('nearby').hidden=true;$('portal').hidden=true;
  const q=encodeURIComponent('Flights '+(from&&from!==code?'from '+from+' ':'')+'to '+code);
  $('landmark').innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+code+'</span><h2>'+safe(city)+'</h2><p class="note">'+(from&&from!==code?from+' → '+code+' · ':'')+'Схема направлений на 25.09.2026. Проверь рейсы на свои даты.</p><a href="https://www.google.com/travel/flights?q='+q+'" target="_blank" rel="noopener">Проверить перелёты</a><button class="action secondary" data-air-stage="'+code+'">'+(mode==='rent'?'Собрать маршрут на авто':'Исследовать рядом')+'</button>'+(canDepart&&code!==from?'<button class="action secondary" data-depart="'+code+'">Вылетать отсюда</button>':'')+'<p><a class="secondary" href="https://github.com/Jonty/airline-route-data" target="_blank" rel="noopener">Источник направлений</a></p></div>';
- $('landmark').querySelector('h2').insertAdjacentHTML('afterend',photoFigure('',city,x,y));
+ $('landmark').querySelector('h2').insertAdjacentHTML('afterend',photoFigure('',city,x,y)+entryInfo(visaData.iso2[countryAt(y,x)]));
  $('landmark').hidden=false;flyTo([y,x],5.7);
 }
 function fitTransport(){
@@ -607,10 +607,12 @@ $('plus').onclick=()=>atlas?.zoomIn({duration:reduced.matches?0:230});
 $('minus').onclick=()=>atlas?.zoomOut({duration:reduced.matches?0:230});
 $('fit').onclick=()=>{ if(actualOrigin()&&!picking)$('portal').hidden=true;fit() };
 function showProfile(){
- $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Профиль путешественника</h2><p>Город старта меняется на карте. Предпочтения и паспорт сохраняются в этом браузере.</p><label>ПАСПОРТ<select name="passport"><option value="">Не указан</option><option value="RU">Россия</option><option value="EU">Страна ЕС</option><option value="OTHER">Другой</option></select></label><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label><label>КОМФОРТНО ЗА РУЛЁМ В ДЕНЬ<select name="drive"><option value="2">До 2 часов</option><option value="3">До 3 часов</option><option value="5">До 5 часов</option><option value="8">До 8 часов</option></select></label><button class="action">Сохранить профиль</button></form>';
+ $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Профиль путешественника</h2><p>Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.</p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label><label>КОМФОРТНО ЗА РУЛЁМ В ДЕНЬ<select name="drive"><option value="2">До 2 часов</option><option value="3">До 3 часов</option><option value="5">До 5 часов</option><option value="8">До 8 часов</option></select></label><label>КИЛОМЕТРОВ ЗА РУЛЁМ В ДЕНЬ<input name="driveKm" type="number" min="1" max="3000" step="1" inputmode="numeric" placeholder="Без лимита"></label><button class="action">Сохранить профиль</button></form>';
  const form=$('profileForm');
- for(const key of ['passport','taste','drive'])form.elements[key].value=state[key];
- form.onsubmit=e=>{e.preventDefault();for(const key of ['passport','taste','drive'])state[key]=form.elements[key].value;persist();$('dialog').close();render();fit()};
+ for(const key of ['passport','taste','drive','driveKm'])form.elements[key].value=state[key]||'';
+ if(!visaIndexes.has(state.passport))form.elements.passport.value='';
+ form.onsubmit=e=>{e.preventDefault();for(const key of ['passport','taste','drive','driveKm'])state[key]=form.elements[key].value;
+ if(visaRequested&&state.passport){state.visaLayer=true;$('visaLegend').open=true}visaRequested=false;persist();$('dialog').close();$('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';updateVisaMap();canvas?.draw();if(loopView.open)drawLoopCard();else render()};
  if(!$('dialog').open)$('dialog').showModal();
 }
 function compare(){
@@ -620,6 +622,7 @@ function compare(){
  $('dialog').showModal();
 }
 $('profile').onclick=showProfile;
+$('dialog').addEventListener('close',()=>{visaRequested=false});
 $('explore').onclick=()=>{const show=document.querySelector('aside').hidden||viewingSaved;viewingSaved=false;setDrawer(show);render()};
 $('saved').onclick=()=>{viewingSaved=true;setDrawer(true);render();fit()};
 $('filters').onsubmit=e=>e.preventDefault();
@@ -921,6 +924,7 @@ function bootOffline(){
   ctx.fillStyle=gradient;ctx.strokeStyle='#686967';ctx.lineWidth=.9/scale();
   ctx.fill(landShape,'nonzero');ctx.stroke(landShape);
   const nw=unproject(0,0),se=unproject(w,h);
+  paintOfflineVisa(ctx,nw,se);
   ctx.lineJoin='round';ctx.lineCap='round';
   const overview=overviewImages.get(mode==='train'?'railways':'highways');
   if(z<5.8&&overview?.naturalWidth&&mode!=='plane'){
@@ -1186,7 +1190,7 @@ function showLeg(){
  panel.innerHTML='<div class="panel"><button class="close" data-build="close" aria-label="Закрыть">×</button><small>Этап '+(selectedLeg+1)+' · точка прибытия</small><h2>'+safe(l.name)+'</h2><div class="chips">'+itinerary.legs.map((e,i)=>'<button data-leg="'+i+'" class="'+(i===selectedLeg?'selected':'')+'">'+(i+1)+'. '+safe(e.name)+'</button>').join('')+'</div><h3>Остановки по порядку</h3><ol><li>'+safe(l.name)+'</li>'+l.stops.map((s,i)=>'<li>'+safe(s.name)+' <button data-drop="'+i+'" aria-label="Убрать остановку">×</button></li>').join('')+'</ol><details class="trip-extra"><summary>Изменить остановки и параметры</summary><h3>Места рядом</h3><div class="near-picks">'+choices.slice(0,4).map(p=>'<button data-near="'+localPlaces(l).indexOf(p)+'"><strong>'+safe(p.name)+'</strong><small>'+p.km.toLocaleString('ru',{maximumFractionDigits:1})+' км</small><b>+</b></button>').join('')+'</div>'+(!choices.length?'<p class="note">В радиусе 70 км пока нет других мест в каталоге. Можно поставить свою остановку.</p>':'')+'<label>Все места в радиусе 70 км<select id="nearStop"><option value="">Выбери место</option>'+choices.map(p=>'<option value="'+safe(JSON.stringify([p.name,p.lat,p.lon]))+'">'+safe(p.name)+' · '+Math.round(p.km)+' км</option>').join('')+'</select></label><button class="action secondary" data-build="pin">Указать остановку на карте</button><button class="action" data-build="next">Добавить следующий этап</button><h3 id="fuelTotal">'+totals()+'</h3><p class="note">'+roadMessage+' · весь маршрут в одну сторону</p><div class="fuel"><label>Расход, л/100 км<input id="fuelRate" type="number" min=".1" step=".1" value="'+itinerary.consumption+'"></label><label>Цена топлива, €/л<input id="fuelPrice" type="number" min=".01" step=".01" value="'+itinerary.price+'"></label></div><h3>Сегодня в районе этапа</h3><p>'+safe(forecasts.get(legKey(l))||'Получаем прогноз…')+'</p><small>Open-Meteo</small><details><summary>Готовность · '+pack.filter(x=>itinerary.checks[x]).length+'/'+pack.length+'</summary>'+pack.map((x,i)=>'<label class="switch"><input type="checkbox" data-pack="'+i+'" '+(itinerary.checks[x]?'checked':'')+'>'+x+'</label>').join('')+'</details><button class="action secondary" data-build="remove">Убрать этап</button></details></div>';
  panel.querySelector('.trip-extra').open=!!checklistOpen;panel.querySelector('details details').open=!!packOpen;panel.scrollTop=scroll;
 }
-initLoops();
+initVisa();initLoops();updateVisaMap();
 $('pickTip').onclick=()=>{if(loopView.open){loopView.picking=false;$('pickTip').hidden=true;drawLoopCard();renderPins()}else if(itinerary.legs.length)enterTrip();else leaveTrip()};
 $('builder').onclick=e=>{
  const b=e.target.closest('button');if(!b)return;

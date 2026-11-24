@@ -6,6 +6,22 @@
 Начать ближе к дороге|Start near a town
 По окрестным городам|Nearby towns
 Туда и обратно|Out and back
+Визы|Visas
+Условия въезда|Entry rules
+Куда едешь?|Destination
+Выбери страну|Select a country
+Своя страна|Home country
+Виза заранее|Visa in advance
+Разрешение ETA|Travel authorisation
+Въезд ограничен|Admission restricted
+Электронная виза|eVisa
+По прибытии|Visa on arrival
+Нет данных|No data
+КИЛОМЕТРОВ ЗА РУЛЁМ В ДЕНЬ|DAILY DRIVING DISTANCE (KM)
+СТРАНА ПАСПОРТА|PASSPORT COUNTRY
+Без лимита|No limit
+Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.|Your visa map and road trip preferences are saved on this device.
+По твоему лимиту|At your driving limit
 Язык интерфейса|Interface language
 Найти город или место|Search cities and places
 Выбери место|Choose a place

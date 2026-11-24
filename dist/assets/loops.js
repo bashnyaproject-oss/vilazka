@@ -80,7 +80,7 @@ async function loadLoop(card){
  try{const {path,waypoints}=await osrmPath([loopView.area,...card.stops],true);
   if(!area.crossBorder&&!domesticPath(area.country,path.geometry.coordinates))throw Error();
   card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
-  card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
+  card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
  }catch{card.length='Дорога не подтверждена'}
  card.pending=false;card.done=true;if(loopView.open&&loopView.cards[loopView.index]===card){drawLoopCard();renderPins();paintRoute()}
 }
@@ -112,13 +112,18 @@ function loopPhoto(p,i){
  const url=p.photo||aerial(p.lon,p.lat,320);
  return '<figure><img src="'+safe(url)+'" alt="'+safe(p.name)+'" data-aerial="'+safe(aerial(p.lon,p.lat,320))+'"><figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption><a aria-label="Источник изображения" title="'+(p.photo?'Источник фотографии':'Спутниковый вид')+'" href="'+safe(p.credit||'https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9')+'" target="_blank" rel="noopener">'+(p.photo?'©':'Спутник')+'</a></figure>';
 }
+function loopDrivingDays(c){
+ if(!c?.line)return '';
+ const days=Math.max(1,Math.ceil(c.durationHours/Number(state.drive||3)),state.driveKm?Math.ceil(c.distanceKm/Number(state.driveKm)):1);
+ return '<small class="loop-limit">По твоему лимиту · '+days+' '+(days===1?'день':days%10>=2&&days%10<=4&&!(days%100>=12&&days%100<=14)?'дня':'дней')+'</small>';
+}
 function drawLoopCard(){
  if(!loopView.open)return;
  const {cards,index,area,approach,picking}=loopView,c=cards[index],box=$('loopDeck');
  box.hidden=picking;if(picking)return;
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.outAndBack?'Туда и обратно':c.stops.every(p=>p.town)?'По окрестным городам':'Кольцо')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong></div>':'<div class="loop-copy"><h2>Пока мало остановок рядом</h2><button data-loop="pick">Выбрать другую точку</button></div>')+
+ (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.outAndBack?'Туда и обратно':c.stops.every(p=>p.town)?'По окрестным городам':'Кольцо')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>Пока мало остановок рядом</h2><button data-loop="pick">Выбрать другую точку</button></div>')+
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+
  '<div class="loop-border"><label><input type="checkbox" id="crossBorder" '+(area.crossBorder?'checked':'')+'> Разрешить пересечение границ</label></div><div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
  (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="save" '+(!c.line?'disabled':'')+'>Выбрать кольцо</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+

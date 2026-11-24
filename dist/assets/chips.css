@@ -39,3 +39,8 @@
 .loop-border{padding:4px 12px;color:#c7c7c7;font:12px system-ui}
 .loop-border label{display:inline-flex;align-items:center;gap:6px;min-height:32px;cursor:pointer}
 .loop-actions button:disabled{opacity:.45}
+#seasonDock #visaLayer{color:#ddd;background:#101010f5;border:1px solid #383838;border-radius:20px;padding:7px 14px;min-height:36px;font:550 13px/20px system-ui}
+#seasonDock #visaLayer[aria-pressed=true]{border-color:#639a82;color:#abdfcb;background:#172822}
+#visaLegend{position:absolute;z-index:5;right:16px;top:190px;max-width:min(280px,84vw);padding:9px 12px;border:1px solid #383838;border-radius:14px;color:#ddd;background:#111;font:13px/1.5 system-ui}
+#visaLegend summary{cursor:pointer}#visaLegend small{display:block;color:#aaa}#visaLegend select{max-width:100%}.visa-key{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}.visa-key i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.entry-info{padding:7px 0}.loop-limit{display:block;margin-top:4px}#profileForm label{display:grid;gap:4px}#profileForm input[name=driveKm]{width:100%;color:inherit;background:#191919;border:1px solid #383838;border-radius:9px;padding:9px;font:inherit}
+@media(max-width:760px){#visaLegend{right:10px;top:70px;max-height:52dvh;overflow:auto}#mobileSettings:not([hidden])~#visaLegend{visibility:hidden}#mobileSettings #visaLayer{min-height:44px}}
