@@ -140,3 +140,14 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .ticket-photo img{display:block;width:100%;aspect-ratio:2.25;object-fit:cover;border-radius:12px}
 .ticket-photo figcaption a{font-size:11px;color:#c5becc;background:none;padding:4px 0;margin:0}
 .ticket-panel .road-cta{margin-top:13px!important}
+@media(min-width:761px){
+ #nearby,#loopDeck,#detail,#landmark,#builder,aside{width:clamp(385px,27vw,500px);max-width:calc(100vw - 32px)}
+ #nearby,#loopDeck{max-height:calc(100dvh - 190px);bottom:32px;overflow:auto}
+ #loopDeck .loop-images,#nearby .drive-strip{height:clamp(100px,15vh,162px)}
+}
+#nearby .drive-card,#loopDeck .loop-copy{padding:16px}
+#nearby .drive-card .action,#nearby .story-foot>button,#loopDeck .loop-detail-action button{display:block;width:100%;min-height:46px;text-align:center}
+#nearby .drive-card .action{background:#c9b7fc;color:#201433;font-weight:700;border-radius:12px}
+#nearby .story-foot>div,#loopDeck .route-navigation{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#loopDeck .route-navigation button,#nearby .story-foot>div button{width:100%;min-width:0}
+#loopDeck .ferry-note{display:block;margin-top:6px;color:#89e2ff}

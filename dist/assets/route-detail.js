@@ -13,7 +13,7 @@ function drawLoopDetails(box,card,area,approach){
   return '<li>'+loopPhoto(p,i)+'<div><strong>'+safe(p.name)+'</strong>'+((p.description||p.kind)?'<small>'+safe(p.description||p.kind)+'</small>':'')+link(map,'На карте')+(source?link(source,'Источник'):'')+'</div></li>';
  }).join('');
  box.innerHTML='<div class="loop-bar"><button data-loop="back">← К вариантам</button><button data-loop="close" aria-label="Закрыть">×</button></div>'+
- '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length||'Считаем по дорогам…')+'</p>'+(card.why?'<p>'+safe(card.why)+'</p>':'')+
+ '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length||'Считаем по дорогам…')+'</p>'+(card.ferries?.length?'<p class="ferry-note">Есть паром · на карте голубой пунктир. Проверь расписание перед выездом.</p>':'')+(card.why?'<p>'+safe(card.why)+'</p>':'')+
  (card.line?navigationLinks(stops):'')+
  '<section><h3>Сложность и дорога</h3><p>'+safe(accessLabel(card))+'</p><p>'+safe(card.surface||'Данных о покрытии нет. Расчёт проезда основан на дорожной карте.')+'</p></section>'+
  '<section><h3>Как добраться до старта</h3><p>'+safe(start.name)+'</p>'+

@@ -82,20 +82,20 @@ function frameDrive(d){
  if(!atlas)return;
  const bounds=new (window.maplibregl?.LngLatBounds||OfflineBounds)();
  driveStops(d).forEach(p=>bounds.extend(lngLat(p)));
- atlas.fitBounds(bounds,{padding:{top:140,right:45,bottom:innerWidth<650?200:90,left:innerWidth<650?40:300},maxZoom:11,duration:reduced.matches?0:450});
+ atlas.fitBounds(bounds,{padding:{top:140,right:innerWidth<761?45:Math.min(480,innerWidth*.42),bottom:innerWidth<650?200:90,left:40},maxZoom:11,duration:reduced.matches?0:450});
 }
 function driveCard(d){
  if(!d.status){
   d.status='Считаем путь по дорогам…';
   const origin=actualOrigin(),country=countryAt(origin[0],origin[1]);
   const coords=driveStops(d).map(([y,x])=>x.toFixed(5)+','+y.toFixed(5));
-  const url='https://router.project-osrm.org/route/v1/driving/'+coords.join(';')+'?overview=full&geometries=geojson&radiuses='+coords.map(()=>1500).join(';');
+  const url='https://router.project-osrm.org/route/v1/driving/'+coords.join(';')+'?overview=full&geometries=geojson&steps=true&radiuses='+coords.map(()=>1500).join(';');
   fetch(url,{signal:AbortSignal.timeout(8000)}).then(r=>r.json()).then(j=>{
    const r=j.routes?.[0];if(!r?.geometry?.coordinates?.length)throw Error();
    validateLoop(r,{lat:origin[0],lon:origin[1]},false,loopBudget(),country,false);
-   d.line=r.geometry.coordinates;
+   d.line=r.geometry.coordinates;d.ferries=ferrySegments(r);
    const minutes=Math.max(1,Math.round(r.duration/60)),h=Math.floor(minutes/60);
-   d.status=Math.round(r.distance/1000)+' км · '+(h?h+' ч ':'')+(minutes%60)+' мин за рулём';
+   d.status=Math.round(r.distance/1000)+' км · '+(h?h+' ч ':'')+(minutes%60)+' мин'+(d.ferries.length?' · есть паром':' за рулём');
   }).catch(()=>{d.status='Подъезд не подтверждён в рамках выбранного лимита'}).finally(()=>{
    if(driveShelf.current===d&&!$('nearby').hidden){$('quickCards').innerHTML=driveCard(d);paintRoute()}
   });

@@ -87,7 +87,7 @@ function travel(d,m){
  const km=distance(d);
  if(m==='local')return 'Маршрут по городу';
  const hours=m==='car'?km*1.28/78:m==='train'?km*1.2/95:km/730+1;
- return '≈ '+Math.max(1,Math.round(hours))+' ч в одну сторону';
+ return '≈ '+Math.max(1,Math.round(hours))+' ч в одну сторону'+(routeFerries.length?' · есть паром':'');
 }
 const tripDays=d=>Number($('days').value)||d.days;
 function price(d,m){
@@ -332,7 +332,7 @@ async function showSiteDrive(lat,lon){
   if(!domesticPath(country,path.geometry.coordinates))throw Error();
   const gap=Math.round(waypoints.at(-1).distance||0),startGap=Math.round(waypoints[0].distance||0);
   el.textContent=Math.round(path.distance/1000)+' км · '+hours(path.duration)+(gap>50?' · от дороги до места '+gap+' м':'')+(startGap>100?' · от старта до дороги '+startGap+' м':'');
-  siteLine={el,line:path.geometry.coordinates};paintRoute();
+  siteLine={el,line:path.geometry.coordinates,ferries:ferrySegments(path)};paintRoute();
   const button=document.createElement('button');button.textContent='Показать весь путь';button.onclick=()=>{const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();for(const pt of path.geometry.coordinates)b.extend(pt);atlas.fitBounds(b,{padding:innerWidth>760?{left:45,right:390,top:180,bottom:55}:48,maxZoom:12})};el.append(button);
  }catch{if(el.isConnected)el.textContent='Подъезд от старта не подтверждён. Можно посмотреть дороги рядом.'}
 }
@@ -428,18 +428,19 @@ let requestModeNetwork=()=>{
  script.onload=()=>{if(mode==='train')applyTransportLayer()};
  script.onerror=()=>{railRequested=false};document.head.append(script);
 };
+function highlightRoads(){return mode==='car'||mode==='rent'}
 function applyTransportLayer(){
  updateVisaMap();
- if(state.showRoads||mode!=='plane')requestModeNetwork();
+ if(highlightRoads()||mode!=='plane')requestModeNetwork();
  if(!atlas)return;
  if(canvas){canvas.draw();return}
  if(!atlas.getStyle()?.layers)return;
  const roadId='road-emphasis',transport=atlas.getStyle().layers.find(l=>l['source-layer']==='transportation');
- if(state.showRoads&&transport&&!atlas.getLayer(roadId)){
+ if(highlightRoads()&&transport&&!atlas.getLayer(roadId)){
   const before=atlas.getStyle().layers.find(l=>l.type==='symbol');
   atlas.addLayer({id:roadId,type:'line',source:transport.source,'source-layer':'transportation',filter:['in','class','motorway','trunk','primary','secondary','tertiary','minor','service','track'],paint:{'line-color':'#b6aa92','line-opacity':.68,'line-width':['interpolate',['linear'],['zoom'],4,.65,9,1.25,15,2.6]}},before?.id);
  }
- if(atlas.getLayer(roadId))atlas.setLayoutProperty(roadId,'visibility',state.showRoads?'visible':'none');
+ if(atlas.getLayer(roadId))atlas.setLayoutProperty(roadId,'visibility',highlightRoads()?'visible':'none');
  const id='transport-network';
  if(atlas.getLayer(id))atlas.removeLayer(id);
  if(atlas.getSource(id))atlas.removeSource(id);
@@ -928,7 +929,14 @@ function requirements(){
 function steps(){
  return '<div class="steps" aria-label="Шаги выбора">'+[['plan','Место'],['price','Бюджет'],['ready','Подготовка'],['today','В поездке']].map(([key,label])=>'<button data-stage="'+key+'" class="'+(tab===key?'selected':'')+'">'+label+'</button>').join('')+'</div>';
 }
-let routePaintPending=null;
+let routePaintPending=null,routeFerries=[];
+function visibleFerries(){
+ if(loopView.open)return loopView.cards[loopView.index]?.ferries||[];
+ if(building)return drivingFerries;
+ if(siteLine?.el.isConnected&&!$('landmark').hidden)return siteLine.ferries||[];
+ if(!active&&!$('nearby').hidden)return driveShelf.current?.ferries||[];
+ return routeFerries;
+}
 function paintRoute(){
  if(!atlas)return;
  if(canvas){canvas.draw();return}
@@ -942,42 +950,43 @@ function paintRoute(){
   return;
  }
  const lines=loopView.open?loopLine():building?drivingLines:previewLines();
- const preview=loopView.open&&!loopView.cards[loopView.index]?.line;
- const features=lines.filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{preview}}));
+ const features=[...lines.map(line=>[line,false]),...visibleFerries().map(line=>[line,true])]
+  .filter(([line])=>line.length>1).map(([line,ferry])=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{ferry}}));
  const data={type:'FeatureCollection',features};
  if(source)source.setData(data);
  else mapView.addSource('trip-route',{type:'geojson',data});
  if(!mapView.getLayer('trip-route'))mapView.addLayer({id:'trip-route',type:'line',source:'trip-route',
-  filter:['==','preview',false],layout:{'line-join':'round','line-cap':'round'},
+  filter:['==','ferry',false],layout:{'line-join':'round','line-cap':'round'},
   paint:{'line-color':'#cbbaff','line-width':4}});
- if(!mapView.getLayer('trip-preview'))mapView.addLayer({id:'trip-preview',type:'line',source:'trip-route',
-  filter:['==','preview',true],paint:{'line-color':'#cbbaff','line-opacity':.65,'line-width':2,'line-dasharray':[2,2]}});
+ if(!mapView.getLayer('trip-ferry'))mapView.addLayer({id:'trip-ferry',type:'line',source:'trip-route',
+  filter:['==','ferry',true],paint:{'line-color':'#89e2ff','line-width':5,'line-dasharray':[2,2]}});
 }
-function clearRoute(){if(!route.length)return;routeRequest++;route=[];routeInfo='';paintRoute()}
+function clearRoute(){routeRequest++;route=[];routeFerries=[];routeInfo='';paintRoute()}
 async function drawRoute(focus){
  const start=actualOrigin(),d=active;
  if(!start||!d)return;
  const serial=++routeRequest;
  const stops=tripMode==='rent'?landmarks[d.id].map(([,lat,lon])=>[lon,lat]):[];
- route=[lngLat(start),[d.lon,d.lat],...stops];
+ const points=[lngLat(start),[d.lon,d.lat],...stops];
+ route=tripMode==='car'?[]:points;routeFerries=[];
  routeInfo=tripMode==='car'?'Ищем маршрут по дорогам…':tripMode==='train'?'Линия направления · расписание поезда уточняется':'Линия направления · билеты и пересадки уточняются';
  paintRoute();renderDetail();
  if(focus&&atlas){
   const bounds=new (window.maplibregl?.LngLatBounds||OfflineBounds)();
-  for(const p of route)bounds.extend(p);
+  for(const p of points)bounds.extend(p);
   atlas.fitBounds(bounds,{padding:{top:150,bottom:105,left:65,right:innerWidth>700?390:65},maxZoom:9,duration:reduced.matches?0:550});
  }
  if(tripMode!=='car')return;
- const url='https://router.project-osrm.org/route/v1/driving/'+route.map(p=>p.map(n=>n.toFixed(4)).join(',')).join(';')+'?overview=simplified&geometries=geojson';
+ const url='https://router.project-osrm.org/route/v1/driving/'+points.map(p=>p.map(n=>n.toFixed(4)).join(',')).join(';')+'?overview=full&geometries=geojson&steps=true';
  try{
   const response=await fetch(url,{signal:AbortSignal.timeout(6500)});
   if(!response.ok)throw Error('route');
   const result=(await response.json()).routes?.[0];
   if(!result?.geometry?.coordinates?.length)throw Error('route');
   if(serial!==routeRequest)return;
-  route=result.geometry.coordinates;
-  routeInfo=Math.round(result.distance/1000)+' км по дорогам · '+Math.round(result.duration/360)/10+' ч в одну сторону';
- }catch{if(serial!==routeRequest)return;routeInfo='Прямая линия · дорожный маршрут сейчас недоступен'}
+  route=result.geometry.coordinates;routeFerries=ferrySegments(result);
+  routeInfo=Math.round(result.distance/1000)+' км по дорогам · '+Math.round(result.duration/360)/10+' ч в одну сторону'+(routeFerries.length?' · есть паром':'');
+ }catch{if(serial!==routeRequest)return;routeInfo='Дорожный маршрут сейчас недоступен'}
  paintRoute();renderDetail();
 }
 class OfflineBounds{
@@ -1037,8 +1046,8 @@ function bootOffline(){
  }
  const overviewImages=new Map();
  requestModeNetwork=()=>{
-  if(!canvas||z>=5.8){loadNetwork(mode==='train'?'rail':'roads');if(state.showRoads)loadNetwork('roads');return}
-  const key=mode==='train'&&!state.showRoads?'railways':'highways';if(overviewImages.has(key))return;
+  if(!canvas||z>=5.8){loadNetwork(mode==='train'?'rail':'roads');if(highlightRoads())loadNetwork('roads');return}
+  const key=mode==='train'&&!highlightRoads()?'railways':'highways';if(overviewImages.has(key))return;
   const img=new Image();overviewImages.set(key,img);img.onload=()=>{if(canvas&&!moving)draw()};img.src='assets/'+key+'.webp';
  };
 
@@ -1065,15 +1074,15 @@ function bootOffline(){
   const nw=unproject(0,0),se=unproject(w,h);
   paintOfflineVisa(ctx,nw,se);
   ctx.lineJoin='round';ctx.lineCap='round';
-  const overview=overviewImages.get(mode==='train'&&!state.showRoads?'railways':'highways');
-  if(z<5.8&&overview?.naturalWidth&&(state.showRoads||mode!=='plane')){
+  const overview=overviewImages.get(mode==='train'&&!highlightRoads()?'railways':'highways');
+  if(z<5.8&&overview?.naturalWidth&&(highlightRoads()||mode!=='plane')){
    ctx.save();ctx.scale(1,-1);ctx.globalAlpha=mode==='all'?.55:.86;ctx.drawImage(overview,-180,-90,360,180);ctx.restore();
   }
   if(z>=5.8)for(const b of buckets.values()){
    const rail=b.level===3;
-   if(rail&&mode!=='train'||!rail&&!state.showRoads&&(mode==='plane'||mode==='train'))continue;
+   if(rail&&mode!=='train'||!rail&&!highlightRoads()&&(mode==='plane'||mode==='train'))continue;
    if(!rail&&z<(mode==='car'?.9:1.35)+b.level*1.55||b.east<nw.lng||b.west>se.lng||b.north<se.lat||b.south>nw.lat)continue;
-   ctx.strokeStyle=rail?'#bc9b74':state.showRoads?'#a2967e':(mode==='car'||mode==='rent'?['#b7aa94','#827b6e','#59574e']:['#797369','#595851','#484947'])[b.level];
+   ctx.strokeStyle=rail?'#bc9b74':highlightRoads()?'#a2967e':(mode==='car'||mode==='rent'?['#b7aa94','#827b6e','#59574e']:['#797369','#595851','#484947'])[b.level];
    ctx.lineWidth=(rail?.95:b.level===0?1:.65)/scale();ctx.stroke(b.path);
   }
   if(flying()){
@@ -1090,10 +1099,11 @@ function bootOffline(){
    if(x>=0&&x<=w&&y>=0&&y<=h)ctx.fillText(name,x,y);
   }
   ctx.textAlign='start';
-  for(const line of loopView.open?loopLine():building?drivingLines:previewLines()){
+  const draws=loopView.open?loopLine():building?drivingLines:previewLines();
+  for(const [line,ferry] of [...draws.map(line=>[line,false]),...visibleFerries().map(line=>[line,true])]){
    if(line.length<2)continue;
    const confirmed=loopView.open&&loopView.cards[loopView.index]?.line;
-   ctx.strokeStyle='#cbbaff';ctx.lineWidth=confirmed?4:2;ctx.setLineDash(confirmed?[]:[6,4]);ctx.beginPath();
+   ctx.strokeStyle=ferry?'#89e2ff':'#cbbaff';ctx.lineWidth=ferry?5:confirmed?4:2;ctx.setLineDash(!ferry&&confirmed?[]:[6,4]);ctx.beginPath();
    line.forEach((p,i)=>{const {x,y}=project(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});
    ctx.stroke();ctx.setLineDash([]);
   }
@@ -1103,7 +1113,7 @@ function bootOffline(){
   cancelAnimationFrame(frame);clearTimeout(settle);frame=0;moving=false;
   el.style.transform='';pinLayer.style.transform='';
   $('thermalCanvas').style.transform='';window.temperatureLayer?.refresh();draw();renderPins();anchor={center:[...center],zoom:z};
-  if(state.showRoads||mode!=='plane')requestModeNetwork();
+  if(highlightRoads()||mode!=='plane')requestModeNetwork();
 
  }
  function animateGesture(){
@@ -1231,17 +1241,17 @@ function drivingSegments(){
 function approximateKm(points){
  return points.slice(1).reduce((sum,p,i)=>sum+kmBetween(points[i],p)*1.28,0);
 }
-let drivingLines=[];
+let drivingLines=[],drivingFerries=[];
 async function refreshTrip(){
  const segments=drivingSegments(),serial=++sequence;
- drivingLines=segments.map(group=>group.domesticCountry||group.roadBudget?[]:group.map(lngLat));roadKm=null;route=[];
+ drivingLines=[];drivingFerries=[];roadKm=null;route=[];
  roadMessage='Оценка по прямой × 1,28';paintRoute();renderPins();showLeg();
  if(!segments.length)return;
  const results=await Promise.all(segments.map(async group=>{
   if(group.length>100)return null;
   const coords=group.map(([y,x])=>x.toFixed(5)+','+y.toFixed(5)).join(';');
   try{
-   const response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson',{signal:AbortSignal.timeout(8500)});
+   const response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson&steps=true',{signal:AbortSignal.timeout(8500)});
    const result=(await response.json()).routes?.[0];const line=result?.geometry?.coordinates;
    if(!line?.length)return null;
    if(group.roadBudget){const [lat,lon]=group[0];validateLoop(result,{lat,lon},group.closedRoad,group.roadBudget,group.domesticCountry,!group.domesticCountry)}
@@ -1250,10 +1260,10 @@ async function refreshTrip(){
   }catch{return null}
  }));
  if(serial!==sequence||!building)return;
- drivingLines=results.map((r,i)=>r?r.geometry.coordinates:segments[i].domesticCountry||segments[i].roadBudget?[]:segments[i].map(lngLat));
+ drivingLines=results.flatMap(r=>r?[r.geometry.coordinates]:[]);drivingFerries=results.flatMap(ferrySegments);
  const rejected=results.some((r,i)=>!r&&segments[i].roadBudget);
  roadKm=rejected?null:results.reduce((sum,r,i)=>sum+(r?r.distance/1000:approximateKm(segments[i])),0);
- roadMessage=rejected?'Часть маршрута не прошла дорожную проверку':results.every(Boolean)?'По автодорогам · OSRM':'Часть пути оценена по прямой × 1,28';
+ roadMessage=rejected?'Часть маршрута не прошла дорожную проверку':results.every(Boolean)?(drivingFerries.length?'По автодорогам и паромам · OSRM':'По автодорогам · OSRM'):'Часть пути оценена по прямой × 1,28';
  paintRoute();showLeg();
 }
 function legKey(l){return l.lat.toFixed(4)+','+l.lon.toFixed(4)}

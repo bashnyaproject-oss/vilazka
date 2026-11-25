@@ -153,9 +153,12 @@ function validateLoop(path,start,closed,budget,country,crossBorder){
 }
 async function osrmPath(points,round=false,radius=2200){
  const type=round?'trip':'route',coords=points.map(p=>p.lon.toFixed(5)+','+p.lat.toFixed(5)).join(';');
- const q='overview=full&geometries=geojson&radiuses='+points.map(()=>radius).join(';')+(round?'&source=first&roundtrip=true':'');
+ const q='overview=full&geometries=geojson&steps=true&radiuses='+points.map(()=>radius).join(';')+(round?'&source=first&roundtrip=true':'');
  const r=await fetch('https://router.project-osrm.org/'+type+'/v1/driving/'+coords+'?'+q,{signal:AbortSignal.timeout(9000)});
  if(!r.ok)throw Error();const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];if(!path?.geometry?.coordinates?.length||(round&&j.trips.length!==1))throw Error();return {path,waypoints:j.waypoints};
+}
+function ferrySegments(path){
+ return (path?.legs||[]).flatMap(leg=>leg.steps||[]).filter(step=>step.mode==='ferry'&&step.geometry?.coordinates?.length>1).map(step=>step.geometry.coordinates);
 }
 const hours=seconds=>{const n=Math.max(1,Math.round(seconds/60));return (n>=60?Math.floor(n/60)+' ч ':'')+(n%60?n%60+' мин':'')};
 async function loadLoop(card){
@@ -180,7 +183,7 @@ async function loadLoop(card){
   }
   const {path,waypoints}=result;
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
-  card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
+  card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.ferries=ferrySegments(path);card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
  }catch(error){card.length=['Превышен лимит поездки','Дорога в выбранных границах не подтверждена','Нет подтверждённого возврата к старту','Маршрут слишком часто повторяет ту же дорогу'].includes(error.message)?error.message:'Дорога не подтверждена';card.rejected=true}
  card.pending=false;card.done=true;
  if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
@@ -263,7 +266,7 @@ function drawLoopCard(){
  if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-images">'+c.stops.map((p,i)=>({p,i})).filter(({p})=>findRoutePhoto(p)[0]).map(({p,i})=>loopPhoto(p,i)).join('')+'</div><div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(!c.line?'<small>Пунктир соединяет остановки по прямой</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="loop-images">'+c.stops.map((p,i)=>({p,i})).filter(({p})=>findRoutePhoto(p)[0]).map(({p,i})=>loopPhoto(p,i)).join('')+'</div><div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
  '<details class="loop-settings"'+(box.querySelector('.loop-settings')?.open?' open':'')+'><summary>Настройки маршрута</summary>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
@@ -286,7 +289,7 @@ function loopFrame(){
  if(!c){flyTo(xy(area),7);return}
  const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[area,c.start||area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
  const mobile=innerWidth<680,w=map.clientWidth,h=map.clientHeight;
- atlas.fitBounds(b,{padding:{left:28,right:mobile?28:Math.min(390,w*.42),top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
+ atlas.fitBounds(b,{padding:{left:28,right:mobile?28:Math.min(500,w*.43),top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
 }
 function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&&countryAt(lat,lon)===area.country)}
 function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
@@ -345,10 +348,7 @@ function saveLoop(){
  selectedLeg=itinerary.legs.length-1;persist();closeLoops();enterTrip();loopFrame();
 }
 function loopLine(){
- const c=loopView.cards[loopView.index];if(!c)return [];
- if(c.line)return [c.line];
- const start=c.start||loopView.area;
- return [[start,...c.stops,...(!c.source||c.ring?[start]:[])].map(p=>[p.lon,p.lat])];
+ const c=loopView.cards[loopView.index];return c?.line?[c.line]:[];
 }
 function selectedRoutePin(point,at){
  return point?'<span class="route-anchor" role="img" aria-label="Выбранная точка" title="'+safe(point.name||'Выбранная точка')+'"'+at(point.lat,point.lon)+'><i></i></span>':'';
