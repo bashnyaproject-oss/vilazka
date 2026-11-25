@@ -32,57 +32,70 @@ function nearbyBases(area){
 }
 function candidatesFor(area){
  const candidates=[],origin=xy(area);
- function add(name,lat,lon,photo,credit,town=false){
+ function add(name,lat,lon,photo,credit,town=false,weight=35,kind=""){
   if(Math.abs(lat-area.lat)>driveRadius()/110+0.05)return;
   const km=kmBetween(origin,[lat,lon]);
   if(km<1||km>driveRadius()||!allowsStop(area,lat,lon))return;
   const bearing=Math.atan2((lon-area.lon)*Math.cos(area.lat*Math.PI/180),lat-area.lat);
-  candidates.push({name,lat,lon,photo,credit,town,km,sector:(Math.round(bearing*4/Math.PI)+8)%8});
+  candidates.push({name,lat,lon,photo,credit,town,weight,kind,km,sector:(Math.round(bearing*4/Math.PI)+8)%8});
  }
- loopGallery.forEach(row=>add(...row));
+ loopGallery.forEach(row=>add(...row,false,62));
+ for(const guide of publishedDrives)for(const [name,lat,lon] of guide.places)
+  add(name,lat,lon,null,guide.url,false,85,'Из гида · '+guide.source);
  catalogue.forEach(([id,name,lon,lat,kind,,img])=>{
   const m=placeMedia[id];
   if(!img&&!m?.[1]&&!['Cultural','Natural','Mixed','Озеро','Гора','Историческое место','Парк','Музей','Монастырь','Заповедник','Водопад','Каньон','Замок','Пещера'].includes(kind))return;
-  add(name,lat,lon,img||m?.[1],img?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
+  add(name,lat,lon,img||m?.[1],img?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null,false,img?100:m?.[1]?65:28,kind);
  });
  russianPlaces.forEach(([n,,x,y],i)=>{const m=placeMedia['p'+i];add(n,y,x,m?.[1],m?.[1]?'https://ru.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null)});
- if(candidates.length<8||area.extraTowns)for(const p of area.bases.slice(0,60))add(p.name,p.lat,p.lon,null,null,true);
- for(const [name,lat,lon,kind] of area.sights||[])add(name,lat,lon,null,'https://www.geonames.org/',kind.startsWith('PPLA'));
- const valid=candidates.sort((a,b)=>(a.photo?0:55)+a.km-(b.photo?0:55)-b.km);
- const unique=[];for(const p of valid){if(!unique.some(q=>kmBetween(xy(p),xy(q))<2))unique.push(p);if(unique.length>=100)break}
+ if(candidates.length<8||area.extraTowns)for(const p of area.bases.slice(0,60))add(p.name,p.lat,p.lon,null,null,true,5);
+ for(const [name,lat,lon,kind] of area.sights||[])add(name,lat,lon,null,'https://www.geonames.org/',kind.startsWith('PPLA'),kind==='LK'?12:30,({LK:'Озеро',FLLS:'Водопад',MUS:'Музей',MSTY:'Монастырь',PK:'Парк',RESN:'Заповедник'})[kind]);
+ const preference=state.loopPreference;
+ const theme=(p)=>preference==='nature'?/озер|озёр|водопад|парк|заповед|скал|гор|природ|fjord|natural/i.test(p.kind+' '+p.name):preference==='culture'?/музе|храм|замок|монастыр|истор|cultural/i.test(p.kind+' '+p.name):false;
+ for(const p of candidates)p.rank=p.weight+(p.photo?8:0)+(theme(p)?32:0)-28*p.km/driveRadius();
+ candidates.sort((a,b)=>b.rank-a.rank);
+ const unique=[],buckets={};
+ for(const p of candidates){
+  const key=p.sector+'/'+Math.floor(p.km/driveRadius()*3);
+  if((buckets[key]||0)>=7||unique.some(q=>q.name===p.name||kmBetween(xy(p),xy(q))<1.2))continue;
+  buckets[key]=(buckets[key]||0)+1;unique.push(p);
+ }
  return unique;
 }
 function makeLoops(area,points,generated=false){
  const cards=[],used=new Set();
  if(!generated)for(const g of publishedDrives){
   const gp=g.places.map(([name,lat,lon])=>{
-   const known=points.find(p=>kmBetween(xy(p),[lat,lon])<3&&p.photo);
+   const known=points.find(p=>kmBetween(xy(p),[lat,lon])<3&&p.photo&&p.name===name);
    return {...known,name,lat,lon};
   });
   if(!gp.every(p=>allowsStop(area,p.lat,p.lon)))continue;
   const approach=kmBetween(xy(area),xy(gp[0]));if(approach>driveRadius())continue;
   const stops=gp.filter(p=>kmBetween(xy(area),xy(p))>1);
-  if(!stops.length)continue;
+  if(g.separateStart?gp.length<2:stops.length<2)continue;
   const end=stops[stops.length-1],sector=(Math.round(Math.atan2((end.lon-area.lon)*Math.cos(area.lat*Math.PI/180),end.lat-area.lat)*4/Math.PI)+8)%8;
-  cards.push({sector,title:g.name,stops,line:null,source:g.url,publisher:g.source,approach,length:null});
+  cards.push({sector,title:g.name,start:g.separateStart?gp[0]:null,stops:g.separateStart?gp.slice(1):stops,line:null,source:g.url,publisher:g.source,approach,length:null});
  }
  if(!generated)return cards.sort((a,b)=>a.approach-b.approach);
  for(const seed of points){
   if(cards.length>=18)break;
   if(used.has(seed)||cards.filter(c=>c.sector===seed.sector).length>=2)continue;
-  const near=points.filter(p=>p!==seed&&!used.has(p)&&Math.min((p.sector-seed.sector+8)%8,(seed.sector-p.sector+8)%8)<=2)
-   .map(p=>({p,gap:kmBetween(xy(seed),xy(p))})).filter(o=>o.gap>3&&o.gap<Math.max(45,seed.km*.95)).sort((a,b)=>a.gap-b.gap);
-  const stops=[seed,...near.slice(0,2).map(v=>v.p)];if(stops.length<2)continue;
+  if(seed.town)continue;
+  const near=points.filter(p=>p!==seed&&!used.has(p))
+   .map(p=>({p,gap:kmBetween(xy(seed),xy(p))}))
+   .filter(o=>o.gap>2&&o.gap<Math.max(45,Math.min(driveRadius()*.7,seed.km*.9+35)))
+   .sort((a,b)=>(b.p.rank-b.gap*.45)-(a.p.rank-a.gap*.45));
+  const chosen=[];
+  for(const {p} of near){
+   if((p.town&&chosen.some(q=>q.town))||chosen.some(q=>kmBetween(xy(p),xy(q))<2))continue;
+   chosen.push(p);if(chosen.length===2)break;
+  }
+  const stops=[seed,...chosen];if(stops.length<2)continue;
   const tour=seq=>[area,...seq,area].slice(1).reduce((s,p,i)=>s+kmBetween(xy(p),xy([area,...seq][i])),0);
   const perms=stops.length===3?[stops,[stops[1],stops[0],stops[2]],[stops[0],stops[2],stops[1]]]:[stops];
   const order=perms.sort((a,b)=>tour(a)-tour(b))[0];
   if(order.at(-1).km<order[0].km)order.reverse();
-  cards.push({sector:seed.sector,title:seed.name.split(' (')[0],stops:order,line:null,length:null});order.forEach(p=>used.add(p));
- }
- for(const p of points){
-  if(cards.length>=18)break;
-  if(used.has(p))continue;
-  cards.push({sector:p.sector,title:p.name,stops:[p],outAndBack:true,line:null,length:null});used.add(p);
+  cards.push({sector:seed.sector,title:seed.name.split(' (')[0]+' · '+stops.length+' остановки',stops:order,line:null,length:null});order.forEach(p=>used.add(p));
  }
  return cards;
 }
@@ -96,7 +109,7 @@ const hours=seconds=>{const n=Math.max(1,Math.round(seconds/60));return (n>=60?M
 async function loadLoop(card){
  if(!card||card.pending||card.done)return;
  card.pending=true;const area=loopView.area;
- try{const {path,waypoints}=await osrmPath([area,...card.stops],!card.source);
+ try{const {path,waypoints}=await osrmPath([card.start||area,...card.stops],!card.source);
   if(!area.crossBorder&&!domesticPath(area.country,path.geometry.coordinates))throw Error();
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
   card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
@@ -104,16 +117,20 @@ async function loadLoop(card){
  card.pending=false;card.done=true;
  if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
  drawLoopCard();renderPins();paintRoute();
- if(card.line||card.source||area.browsed)return;
- for(const next of loopView.cards.filter(c=>c!==card&&!c.source&&!c.done&&!c.pending).slice(0,4)){
-  await new Promise(resolve=>setTimeout(resolve,1050));
-  if(!loopView.open||loopView.area!==area||area.browsed)return;
-  await loadLoop(next);
-  if(!loopView.open||loopView.area!==area||area.browsed)return;
-  if(next.line){loopView.index=loopView.cards.indexOf(next);drawLoopCard();renderPins();paintRoute();loopFrame();return}
- }
+ if(card.line||area.browsed||area.trying)return;
+ area.trying=true;
+ try{
+  for(const next of loopView.cards.filter(c=>c!==card&&!c.done&&!c.pending).slice(0,5)){
+   if(!loopView.open||loopView.area!==area||area.browsed)break;
+   await loadLoop(next);
+   if(!loopView.open||loopView.area!==area||area.browsed)break;
+   if(next.line){loopView.index=loopView.cards.indexOf(next);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();loopFrame();break}
+  }
+ }finally{area.trying=false}
 }
-function loopHome(){return cities[state.loopHomeCity]||actualOrigin()}
+
+function refreshLoopApproach(){loopView.approach=null;approachTo({...loopView.area,...loopView.cards[loopView.index]?.start},++loopView.serial)}
+function loopHome(){return cities[state.loopHomeCity]||gps||actualOrigin()}
 function flightEstimate(home,area){
  function close(point){return Object.entries(airports).map(([code,[,lon,lat,routes]])=>({code,lat,lon,routes,km:kmBetween(point,[lat,lon])})).filter(p=>p.km<=140).sort((a,b)=>a.km-b.km).slice(0,10)}
  const arrivals=close(xy(area));let best;
@@ -126,7 +143,7 @@ function flightEstimate(home,area){
 }
 async function approachTo(area,serial){
  const home=loopHome();if(!home||kmBetween(home,xy(area))<2)return;
- const km=kmBetween(home,xy(area)),name=state.loopHomeCity||originName();
+ const km=kmBetween(home,xy(area)),name=state.loopHomeCity||(gps?'Текущее местоположение':originName());
  const air=km>280?flightEstimate(home,area):null;
  let info={home:name,label:'Считаем подъезд…'};loopView.approach=info;drawLoopCard();
  let road=null;
@@ -150,22 +167,24 @@ function drawLoopCard(){
  if(!loopView.open)return;
  const {cards,index,area,approach,picking}=loopView,c=cards[index],box=$('loopDeck');
  box.hidden=picking;if(picking)return;
+ if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
- (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?'Готовый маршрут':c.outAndBack?'Туда и обратно':'Подобрано рядом')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?'Готовый маршрут':'Подобрано рядом')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.source?'<a class="loop-source" target="_blank" rel="noopener" href="'+safe(c.source)+'">'+safe(c.publisher)+' ↗</a>':'')+
+ '<div class="loop-wishes" aria-label="Пожелания">'+[['all','Всё'],['nature','Природа'],['culture','Культура']].map(([id,label])=>'<button data-loop="preference" data-value="'+id+'" aria-pressed="'+((state.loopPreference||'all')===id)+'">'+label+'</button>').join('')+'</div>'+
  '<button class="loop-generate" data-loop="generate">'+(area.generated?'К готовым маршрутам':'Собрать свой маршрут')+'</button>'+
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+
  '<div class="loop-border"><label><input type="checkbox" id="crossBorder" '+(area.crossBorder?'checked':'')+'> Разрешить пересечение границ</label></div><div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
- (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="save" '+(!c.line?'disabled':'')+'>Выбрать маршрут</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+
+ (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="details" '+(!c.line?'disabled':'')+'>Далее →</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+
  (c?.stops.some(p=>p.town||p.credit==='https://www.geonames.org/')?'<a class="loop-source" href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames · CC BY 4.0</a>':'')+
  (itinerary.legs.length?'<button class="loop-saved" data-loop="saved">Мой маршрут ↗</button>':'');
 }
 function loopFrame(){
  const area=loopView.area,c=loopView.cards[loopView.index];if(!atlas)return;
  if(!c){flyTo(xy(area),7);return}
- const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
+ const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[c.start||area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
  const mobile=innerWidth<680,w=map.clientWidth,h=map.clientHeight;
  atlas.fitBounds(b,{padding:{left:mobile?28:Math.min(375,w*.42),right:28,top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
 }
@@ -173,7 +192,7 @@ function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&
 function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
  loopView.area={lat,lon,name,country:countryAt(lat,lon),crossBorder,generated};lastLoopPoint={lat,lon,name};state.loopArea=lastLoopPoint;state.selectedDestination={lat,lon,name};persist();loopView.picking=false;$('pickTip').hidden=true;
  const area=loopView.area;
- area.bases=nearbyBases(area);loopView.serial++;loopView.approach=null;loopView.index=0;
+ area.bases=nearbyBases(area);loopView.serial++;loopView.approach=null;loopView.index=0;loopView.details=false;
  loopView.cards=generated?[]:makeLoops(area,[]);
  const supplement=generated||loopView.cards.length<12;
  function addSuggestions(){
@@ -183,7 +202,7 @@ function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
    if(loopView.cards.length>=30)break;
    if(!existing.has(c.title)){loopView.cards.push(c);existing.add(c.title)}
   }
-  if(empty&&loopView.cards.length){loopFrame();renderPins();paintRoute();loadLoop(loopView.cards[0])}
+  if(empty&&loopView.cards.length){refreshLoopApproach();loopFrame();renderPins();paintRoute();loadLoop(loopView.cards[0])}
   drawLoopCard();
  }
  const code=visaData.iso2[area.country];
@@ -195,8 +214,8 @@ function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
    area.searching=false;area.sights=sights;area.extraTowns=rows;area.bases=nearbyBases(area);addSuggestions();
   });
  }
- if(supplement)addSuggestions();
- drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);approachTo(area,loopView.serial);
+ if(supplement&&(loopView.cards.length||!area.searching))addSuggestions();
+ drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);refreshLoopApproach();
 }
 function launchLoops(point){
  const center=atlas?.getCenter();
@@ -211,11 +230,11 @@ function closeLoops(){
  loopView.open=false;loopView.picking=false;loopView.serial++;$('loopDeck').hidden=true;$('pickTip').hidden=true;$('tripBuilder').setAttribute('aria-pressed','false');render();paintRoute();
 }
 function stepLoop(delta){
- const n=loopView.cards.length;if(n<2)return;loopView.area.browsed=true;
- loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[loopView.index]);
+ const n=loopView.cards.length;if(n<2)return;loopView.area.browsed=true;loopView.details=false;
+ loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[loopView.index]);refreshLoopApproach();
 }
 function saveLoop(){
- const area=loopView.area,c=loopView.cards[loopView.index];if(!c?.line)return;
+ const c=loopView.cards[loopView.index];if(!c?.line)return;const area={...loopView.area,...c.start};
  itinerary.legs.push({name:area.name,lat:area.lat,lon:area.lon,arrival:true,domesticLoop:!area.crossBorder,crossBorder:area.crossBorder,loopHome:loopHome()?.slice(0,2),approachByCar:!!loopView.approach&&!loopView.approach.air,stops:[...c.stops.map(({name,lat,lon})=>({name,lat,lon})),...(c.source?[]:[{name:area.name,lat:area.lat,lon:area.lon}])]});
  saveAccountItem('road-'+crypto.randomUUID(),{name:c.title,lat:area.lat,lon:area.lon,stops:c.stops.map(({name,lat,lon})=>({name,lat,lon}))});
  selectedLeg=itinerary.legs.length-1;persist();closeLoops();enterTrip();loopFrame();
@@ -224,7 +243,7 @@ function loopLine(){
  const c=loopView.cards[loopView.index];return c?.line?[c.line]:[];
 }
 function loopMarkers(at){
- const c=loopView.cards[loopView.index];return [loopView.area,...(c?.stops||[])].map((p,i)=>'<span class="drive-stop" title="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+(i||'⚑')+'</span>').join('');
+ const c=loopView.cards[loopView.index];return [c?.start||loopView.area,...(c?.stops||[])].map((p,i)=>'<span class="drive-stop" title="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+(i||'⚑')+'</span>').join('');
 }
 function initLoops(){
  const deck=$('loopDeck');let touch,dragX=null,wheelAt=0;
@@ -232,18 +251,20 @@ function initLoops(){
  deck.addEventListener('pointerup',e=>{if(dragX!==null&&Math.abs(e.clientX-dragX)>45)stepLoop(e.clientX<dragX?1:-1);dragX=null});
  deck.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)||Math.abs(e.deltaX)<8)return;e.preventDefault();const now=Date.now();if(now-wheelAt>400)stepLoop(e.deltaX>0?1:-1);wheelAt=now},{passive:false});
  deck.oninput=e=>{if(e.target.id==='driveRadius')e.target.previousElementSibling.textContent=e.target.value+' км'};
- deck.onchange=e=>{if(e.target.id==='driveRadius'){state.driveRadius=Number(e.target.value);const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated);return}if(e.target.id==='crossBorder'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,e.target.checked,a.generated);return}if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();approachTo(loopView.area,++loopView.serial)}};
+ deck.onchange=e=>{if(e.target.id==='driveRadius'){state.driveRadius=Number(e.target.value);const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated);return}if(e.target.id==='crossBorder'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,e.target.checked,a.generated);return}if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();refreshLoopApproach()}};
  deck.addEventListener('touchstart',e=>{touch=e.touches[0]},{passive:true});
  deck.addEventListener('touchend',e=>{if(!touch)return;const t=e.changedTouches[0],dx=t.clientX-touch.clientX;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(t.clientY-touch.clientY)*1.4)stepLoop(dx<0?1:-1);touch=null},{passive:true});
  deck.onclick=e=>{const action=e.target.closest('button')?.dataset.loop;
  if(action==='prev'||action==='next')stepLoop(action==='next'?1:-1);
+ if(action==='details'||action==='back'){loopView.details=action==='details';drawLoopCard();return}
+ if(action==='preference'){state.loopPreference=e.target.closest('button').dataset.value;const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,state.loopPreference!=='all');return}
  if(action==='generate'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,!a.generated)}
  if(action==='widen'){const a=loopView.area;state.driveRadius=Math.min(2000,driveRadius()*2);setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated)}
  if(action==='base'){const p=loopView.area.bases[Number(e.target.closest('button').dataset.index)];if(p)setLoopArea(p.lat,p.lon,p.name,loopView.area.crossBorder)}
  if(action==='close')closeLoops();if(action==='save')saveLoop();if(action==='saved'){closeLoops();enterTrip()}
  if(action==='pick'){loopView.picking=true;drawLoopCard();renderPins();$('pickTip').textContent='Поставь точку прибытия · Отмена';$('pickTip').hidden=false}
  };
- deck.onkeydown=e=>{if(e.target.id==='driveRadius')return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepLoop(e.key==='ArrowRight'?1:-1)}};
+ deck.onkeydown=e=>{if(loopView.details||e.target.id==='driveRadius'||e.target.tagName==='SELECT')return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepLoop(e.key==='ArrowRight'?1:-1)}};
  document.addEventListener('click',e=>{if(loopView.open&&e.target.closest('#explore,#saved,#browseRussia,#location'))closeLoops()},true);
  $('tripBuilder').onclick=()=>{if(!loopView.open)launchLoops()};
 }

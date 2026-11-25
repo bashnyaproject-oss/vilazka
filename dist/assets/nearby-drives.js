@@ -24,7 +24,8 @@ function driveOptions(origin){
  for(const site of nearby){
   if(used.has(site.p[0]))continue;
   const next=nearby.find(s=>!used.has(s.p[0])&&s.km>=site.km&&kmBetween(s.p.slice(1),site.p.slice(1))>3&&kmBetween(s.p.slice(1),site.p.slice(1))<35);
-  const places=next?[site.p,next.p]:[site.p];places.forEach(p=>used.add(p[0]));
+  if(!next)continue;
+  const places=[site.p,next.p];places.forEach(p=>used.add(p[0]));
   locals.push({name:site.p[0],why:'Подборка ближайших остановок от твоего старта.',source:site.source,url:site.url,places});
   if(locals.length===3)break;
  }
@@ -32,6 +33,7 @@ function driveOptions(origin){
   const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=driveRadius()&&local(p)).sort((a,b)=>km(a)-km(b));
   for(const p of towns.slice(0,3)){
    const q=towns.find(t=>km(t)>km(p)&&kmBetween(p.slice(1),t.slice(1))<45);
+   if(!q)continue;
    locals.push({name:p[0],why:'Поездка по окрестным городам.',source:'Посмотреть место в OpenStreetMap',url:'https://www.openstreetmap.org/?mlat='+p[1]+'&mlon='+p[2]+'#map=13/'+p[1]+'/'+p[2],places:q?[p,q]:[p]});
   }
  }
@@ -54,7 +56,7 @@ async function findMappedRoads(origin,key){
     if(kmBetween([ends[0].lat,ends[0].lon],[ends[1].lat,ends[1].lon])<.4)continue;
     const mid=e.geometry[Math.floor(e.geometry.length/2)];
     places=[[e.tags.name+' · начало',ends[0].lat,ends[0].lon],...[mid].filter(p=>!ends.includes(p)).map(p=>[e.tags.name,p.lat,p.lon]),[e.tags.name+' · конец',ends[1].lat,ends[1].lon]];
-   }else if(e.type==='node')places=[[e.tags.name,e.lat,e.lon]];else continue;
+   }else continue;
    if(!country||!places.every(p=>countryAt(p[1],p[2])===country))continue;
    found.push({name:e.tags.name,why:e.type==='way'?'Дорога отмечена как живописная в OpenStreetMap.':'Поездка к смотровой площадке из OpenStreetMap.',places,source:'OpenStreetMap',url:'https://www.openstreetmap.org/'+e.type+'/'+e.id,road:e.type==='way'});
   }

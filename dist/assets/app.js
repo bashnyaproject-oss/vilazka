@@ -824,7 +824,9 @@ function selectStart(point){
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
  if(!picking)return;
  lastLoopPoint={lat:point.lat,lon:point.lng,name:'Выбранная точка'};state.selectedDestination=lastLoopPoint;state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
- persist();finishPick();completeStart(state.point,Math.max(4,atlas.getZoom()));
+ persist();finishPick();
+ if(mode==='car'){launchLoops(lastLoopPoint);return}
+ completeStart(state.point,Math.max(4,atlas.getZoom()));
 }
 function completeStart(point,zoom){
  const destination=pendingDestination;pendingDestination=null;render();applyTransportLayer();
