@@ -63,3 +63,5 @@
 #loopDeck .route-photo-strip a{max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .loop-detail li.stop-without-photo{grid-template-columns:28px minmax(0,1fr)}
 .stop-index{align-self:start;display:grid;place-items:center;width:24px;height:24px;border:1px solid #c9b7fc;border-radius:50%;color:#f4eaff;background:#35284b;font:650 12px system-ui}
+.road-start-option{margin:8px 14px 12px;padding:11px;background:#211b2b;border:1px solid #ffffff1c;border-radius:12px;font-size:12px}
+#loopDeck .road-start-option .action{display:block;width:100%;margin:9px 0 0;min-height:42px;border-radius:9px;background:#c9b7fc;color:#211434;font-weight:700}

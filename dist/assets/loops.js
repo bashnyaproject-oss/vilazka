@@ -161,6 +161,20 @@ function ferrySegments(path){
  return (path?.legs||[]).flatMap(leg=>leg.steps||[]).filter(step=>step.mode==='ferry'&&step.geometry?.coordinates?.length>1).map(step=>step.geometry.coordinates);
 }
 const hours=seconds=>{const n=Math.max(1,Math.round(seconds/60));return (n>=60?Math.floor(n/60)+' ч ':'')+(n%60?n%60+' мин':'')};
+function checkRoadStart(area){
+ if(area.roadCheck)return area.roadCheck;
+ const coords=area.lon.toFixed(5)+','+area.lat.toFixed(5);
+ area.roadCheck=fetch('https://router.project-osrm.org/nearest/v1/driving/'+coords+'?number=1',{signal:AbortSignal.timeout(7000)})
+  .then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{
+   const road=data.waypoints?.[0],distance=road?.distance;
+   if(!road||!Number.isFinite(distance)||!Array.isArray(road.location)||distance<=2200||distance>15000)return;
+   const [lon,lat]=road.location;
+   if(!Number.isFinite(lat)||!Number.isFinite(lon)||!allowsStop(area,lat,lon))return;
+   area.roadStart={lat,lon,distance,name:road.name||'Точка у дороги'};
+   if(loopView.open&&loopView.area===area)drawLoopCard();
+  }).catch(()=>{});
+ return area.roadCheck;
+}
 async function loadLoop(card){
  if(!card||card.pending||card.done)return;
  card.pending=true;const area=loopView.area;
@@ -184,10 +198,10 @@ async function loadLoop(card){
   const {path,waypoints}=result;
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
   card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.ferries=ferrySegments(path);card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
- }catch(error){card.length=['Превышен лимит поездки','Дорога в выбранных границах не подтверждена','Нет подтверждённого возврата к старту','Маршрут слишком часто повторяет ту же дорогу'].includes(error.message)?error.message:'Дорога не подтверждена';card.rejected=true}
+ }catch(error){if(!card.source&&loopView.area===area)checkRoadStart(area);card.length=['Превышен лимит поездки','Дорога в выбранных границах не подтверждена','Нет подтверждённого возврата к старту','Маршрут слишком часто повторяет ту же дорогу'].includes(error.message)?error.message:'Дорога не подтверждена';card.rejected=true}
  card.pending=false;card.done=true;
  if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
- drawLoopCard();renderPins();paintRoute();
+ drawLoopCard();renderPins();paintRoute();if(card.line)loopFrame();
  if(card.line||area.browsed||area.trying)return;
  area.trying=true;
  try{
@@ -290,6 +304,7 @@ function drawLoopCard(){
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
  (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?.rejected&&area.roadStart?'<div class="road-start-option"><p>Выбранная точка находится в '+(area.roadStart.distance/1000).toLocaleString('ru',{maximumFractionDigits:1})+' км от ближайшей дороги в данных маршрутизатора.</p><button class="action" data-loop="road-start">Начать у дороги →</button></div>':'')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
  '<details class="loop-settings"'+(box.querySelector('.loop-settings')?.open?' open':'')+'><summary>Настройки маршрута</summary>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
@@ -311,6 +326,7 @@ function loopFrame(){
  const area=loopView.area,c=loopView.cards[loopView.index];if(!atlas)return;
  if(!c){flyTo(xy(area),7);return}
  const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[area,c.start||area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
+ for(const point of c.line||[])b.extend(point);
  const mobile=innerWidth<680,w=map.clientWidth,h=map.clientHeight;
  atlas.fitBounds(b,{padding:{left:28,right:mobile?28:Math.min(500,w*.43),top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
 }
@@ -403,6 +419,7 @@ function initLoops(){
  if(action==='preference'){state.loopPreference=e.target.closest('button').dataset.value;const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,state.loopPreference!=='all');return}
  if(action==='generate'){state.loopAccess='';const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,!a.generated)}
  if(action==='widen'){const a=loopView.area;state.driveRadius=Math.min(2000,driveRadius()*2);setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated)}
+ if(action==='road-start'&&loopView.area.roadStart){const a=loopView.area,p=a.roadStart;setLoopArea(p.lat,p.lon,p.name,a.crossBorder,a.generated);return}
  if(action==='base'){const p=loopView.area.bases[Number(e.target.closest('button').dataset.index)];if(p)setLoopArea(p.lat,p.lon,p.name,loopView.area.crossBorder)}
  if(action==='close')closeLoops();if(action==='save')saveLoop();if(action==='saved'){closeLoops();enterTrip()}
  if(action==='pick'){loopView.picking=true;drawLoopCard();renderPins();$('pickTip').textContent='Поставь точку прибытия · Отмена';$('pickTip').hidden=false}

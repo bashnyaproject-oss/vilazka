@@ -438,7 +438,7 @@ function applyTransportLayer(){
  const roadId='road-emphasis',transport=atlas.getStyle().layers.find(l=>l['source-layer']==='transportation');
  if(highlightRoads()&&transport&&!atlas.getLayer(roadId)){
   const before=atlas.getStyle().layers.find(l=>l.type==='symbol');
-  atlas.addLayer({id:roadId,type:'line',source:transport.source,'source-layer':'transportation',filter:['in','class','motorway','trunk','primary','secondary','tertiary','minor','service','track'],paint:{'line-color':'#b6aa92','line-opacity':.68,'line-width':['interpolate',['linear'],['zoom'],4,.65,9,1.25,15,2.6]}},before?.id);
+  atlas.addLayer({id:roadId,type:'line',source:transport.source,'source-layer':'transportation',filter:['in','class','motorway','trunk','primary','secondary','tertiary','minor','service','track'],paint:{'line-color':['match',['get','class'],['motorway','trunk','primary'],'#c7b892','#95918a'],'line-opacity':.9,'line-width':['interpolate',['linear'],['zoom'],3,.9,6,1.35,9,1.8,15,2.9]}},before?.id);
  }
  if(atlas.getLayer(roadId))atlas.setLayoutProperty(roadId,'visibility',highlightRoads()?'visible':'none');
  const id='transport-network';
