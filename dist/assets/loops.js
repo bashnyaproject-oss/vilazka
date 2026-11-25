@@ -248,6 +248,7 @@ function loopPhoto(p,i){
  (credit?'<a aria-label="Источник фотографии" href="'+safe(credit)+'" target="_blank" rel="noopener">©</a>':'')+'</figure>';
 }
 document.addEventListener('error',e=>{
+ if(e.target.matches?.('.route-stop img')){e.target.parentElement.classList.remove('with-photo');e.target.remove();return}
  if(e.target.matches?.('.route-photo img')){e.target.hidden=true;e.target.parentElement.classList.add('no-photo')}
 },true);
 function loopDrivingDays(c){
@@ -353,7 +354,13 @@ function loopMarkers(at){
  const c=loopView.cards[loopView.index],area=loopView.area;
  const separate=c?.start&&kmBetween(xy(area),xy(c.start))>.05;
  const start=separate?'<span class="drive-stop" title="Старт маршрута"'+at(c.start.lat,c.start.lon)+'>⚑</span>':'';
- return selectedRoutePin(area,at)+start+(c?.stops||[]).flatMap((p,i)=>kmBetween(xy(p),xy(area))<.05?[]:['<span class="drive-stop" title="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+(i+1)+'</span>']).join('');
+ const stops=(c?.stops||[]).map((p,i)=>{
+  if(kmBetween(xy(p),xy(area))<.05)return '';
+  const [photo]=findRoutePhoto(p);
+  return '<button class="drive-stop route-stop'+(photo?' with-photo':'')+'" data-route-stop="'+i+'" title="'+safe(p.name)+'" aria-label="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+
+   (photo?'<img alt="" loading="lazy" src="'+safe(photo)+'">':'')+'<b>'+(i+1)+'</b></button>';
+ }).join('');
+ return selectedRoutePin(area,at)+start+stops;
 }
 function initLoops(){
  const deck=$('loopDeck');let touch,dragX=null,wheelAt=0;

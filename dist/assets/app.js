@@ -148,7 +148,7 @@ function render(){
  $('resultTitle').textContent=viewingSaved?'Мои поездки':'Направления';
  updateLocation(); updateProgress();
  $('total').textContent=visible.length+' из '+data.length;
- $('explore').classList.toggle('active',!viewingSaved&&!document.querySelector('aside').hidden);
+ $('explore').classList.toggle('active',!viewingSaved&&!loopView.open&&!document.querySelector('aside').hidden);
  $('saved').classList.toggle('active',viewingSaved&&!document.querySelector('aside').hidden);
  $('cards').innerHTML=visible.map(d=>{
  const m=defaultMode(d);
@@ -681,6 +681,7 @@ $('filters').onchange=e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
+ if(k.routeStop!==undefined){const stop=loopView.cards[loopView.index]?.stops[Number(k.routeStop)];if(stop){loopView.details=true;drawLoopCard();$('loopDeck').querySelectorAll('.loop-detail li')[Number(k.routeStop)]?.scrollIntoView({block:'nearest'});}return}
  if(b.closest('#seasonList')){if(loopView.open)closeLoops();if(building)leaveTrip();$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
  if(k.openLoops!==undefined){launchLoops();return}
  if(k.takeDrive!==undefined&&activeDrive()){takeDrive(activeDrive());return}
@@ -763,7 +764,8 @@ function setDrawer(open,keepRussia=false){
  $('filters').hidden=false;$('drawerTitle').textContent=viewingSaved?'Поездки':'Направления';
  document.querySelector('aside').hidden=!open;
  if(open){active=null;$('detail').hidden=true;closeLandmark();}
- $('explore').setAttribute('aria-expanded',String(open));
+ $('explore').setAttribute('aria-expanded',String(open&&!russiaOnly&&!viewingSaved&&!loopView.open));
+ $('explore').classList.toggle('active',open&&!russiaOnly&&!viewingSaved&&!loopView.open);
  if(open&&!picking){$('portal').hidden=true;$('nearby').hidden=true;}
 }
 function updateProgress(){
@@ -788,7 +790,7 @@ function openLandmark(key){
 }
 function updateLocation(){
  const chosen=actualOrigin();
- $('locationText').textContent=gpsStatus==='pending'?'Определяем местоположение…':gpsStatus==='denied'?'Геолокация запрещена в настройках сайта':gpsStatus==='failed'?'Геопозиция недоступна. Нажми «Где я», чтобы повторить.':gps?'Ты на карте · '+placeName(gps):chosen?'Старт · '+originName():'';
+ $('locationText').textContent=gpsStatus==='pending'?'Определяем местоположение…':gpsStatus==='denied'?'Геолокация запрещена в настройках сайта':gpsStatus==='timeout'?'Браузер не успел получить координаты. Можно повторить или выбрать точку на карте.':gpsStatus==='unsupported'?'Этот браузер не предоставляет геолокацию. Выбери точку на карте.':gpsStatus==='failed'?'Устройство не передало координаты. Попробуй снова или выбери точку на карте.':gps?'Ты на карте · '+placeName(gps):chosen?'Старт · '+originName():'';
  $('location').hidden=!$('locationText').textContent;
  $('myPosition').setAttribute('aria-busy',String(gpsStatus==='pending'));
  map.classList.toggle('locating',gpsStatus==='pending');
@@ -800,7 +802,7 @@ function flyTo(point,target){
  atlas.flyTo({center,zoom:target,speed:1.15,curve:1.2,maxDuration:1350});
 }
 function requestLocation(focus){
- if(!navigator.geolocation){gpsStatus='failed';updateLocation();return}
+ if(!navigator.geolocation){gpsStatus='unsupported';updateLocation();return}
  if(gps&&focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));renderPins()}
  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
  const request=++geoRequest;
@@ -819,8 +821,8 @@ function requestLocation(focus){
    if(focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));return}
    if(state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
   },
-  error=>{if(request!==geoRequest)return;gpsStatus=error.code===1?'denied':'failed';updateLocation();$('startHint').textContent=$('locationText').textContent},
-  {enableHighAccuracy:false,timeout:12000,maximumAge:30000}
+  error=>{if(request!==geoRequest)return;gpsStatus=error.code===1?'denied':error.code===3?'timeout':'failed';updateLocation();$('startHint').textContent=$('locationText').textContent},
+  {enableHighAccuracy:false,timeout:20000,maximumAge:60000}
  );
 }
 let pendingDestination=null;
@@ -1095,8 +1097,6 @@ $('manualOrigin').onclick=()=>{
  $('pickTip').textContent='Нажми на карте, откуда начать роад-трип · Отмена';
  map.classList.add('choosing-destination');
 };
-$('roadLayer').setAttribute('aria-pressed',String(!!state.showRoads));
-$('roadLayer').onclick=()=>{state.showRoads=!state.showRoads;persist();$('roadLayer').setAttribute('aria-pressed',String(state.showRoads));applyTransportLayer()};
 
 $('locate').onclick=()=>requestLocation(true);
 $('gpsStart').onclick=()=>{state.origin='auto';$('origin').value='auto';persist();finishPick();$('portal').hidden=false;$('startHint').textContent='Запрашиваем геопозицию…';requestLocation(true)};
@@ -1300,6 +1300,7 @@ if(state.origin==='auto')requestLocation(false);else if(actualOrigin())flyTo(act
 let popularityFrame=0;
 $('popRange').oninput=()=>{
  const value=popularity.minimum;
+ $('popRange').style.setProperty('--fill',value*10+'%');
  $('popValue').textContent=value+' / 10';$('popCount').textContent=value||'';
  $('popRange').setAttribute('aria-valuetext',value?'От '+value+' из 10':'Все места');
  if(popularityFrame)return;

@@ -83,3 +83,26 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 #map.choosing-destination,#map.choosing-destination canvas,#map.choosing-destination #tiles{cursor:crosshair!important}
 @media(prefers-reduced-motion:reduce){.gps-pin::after,#myPosition[aria-busy=true] span{animation:none}}
 @media(max-width:760px){.control-label{flex-basis:100%;padding:3px 0}}
+.ui-icon{width:16px;height:16px;flex:none;vertical-align:-3px;color:currentColor}
+#myPosition .ui-icon{color:#8ac4ff}
+#myPosition[aria-busy=true] .ui-icon{animation:gps-wave 1s ease-out infinite}
+#seasonDock #thermalToggle .ui-icon{color:currentColor}
+#seasonDock #popFilter summary{display:flex;align-items:center;gap:6px;padding-inline:13px}
+#popCount{border-radius:7px;padding:1px 5px;background:#372c4d;color:#e7d9ff;font-weight:700}
+#popCount:empty{display:none}
+.pop-sheet{width:min(280px,85vw);padding:16px;background:#151318;border-color:#ffffff25}
+.pop-sheet input#popRange{appearance:none;display:block;height:5px;border:0;border-radius:8px;background:linear-gradient(to right,#c9b7fc var(--fill,50%),#34303b var(--fill,50%));margin:19px 0 12px;cursor:pointer}
+#popRange::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;border:2px solid #eee6ff;background:#bba4f9;box-shadow:0 0 0 4px #bba4f930}
+#popRange::-moz-range-thumb{width:15px;height:15px;border-radius:50%;border:2px solid #eee6ff;background:#bba4f9}
+#location{white-space:normal;text-overflow:clip;overflow:visible;max-width:min(285px,calc(100vw - 36px));line-height:1.35}
+#seasonDock select#season,#loopDeck select,.ui-language select{
+ appearance:none;
+ padding-right:34px!important;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='m3 5 4 4 4-4' fill='none' stroke='%23e2dceb' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+ background-position:right 12px center!important;background-repeat:no-repeat!important;
+}
+#pins .route-stop{pointer-events:auto;width:29px;height:29px;display:grid;place-items:center;border:1px solid #ece2ff;color:#eee7fb;background:#322447;padding:0}
+#pins .route-stop.with-photo{width:47px;height:47px;box-shadow:0 4px 12px #0008;border:2px solid #d5c0ff}
+.route-stop img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.route-stop.with-photo b{position:absolute;right:-5px;bottom:-4px;min-width:18px;height:18px;line-height:18px;border-radius:50%;background:#d5c0ff;color:#241b31}
+@media(prefers-reduced-motion:reduce){#myPosition[aria-busy=true] .ui-icon{animation:none}}
