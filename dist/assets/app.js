@@ -450,12 +450,16 @@ function applyTransportLayer(){
   atlas.addLayer({id,type:'line',source:id,paint:{'line-color':mode==='train'?'#c6a57e':'#7eaebf','line-opacity':.74,'line-width':mode==='train'?1.25:1.1}});
  }
  for(const layer of atlas.getStyle().layers){
+  if(layer['source-layer']==='transportation_name'){
+   if(!savedTransportVisibility.has(layer.id))savedTransportVisibility.set(layer.id,layer.layout?.visibility||'visible');
+   atlas.setLayoutProperty(layer.id,'visibility',mode==='all'?'none':savedTransportVisibility.get(layer.id));
+  }
   if(layer.id===roadId||layer.type!=='line'||layer['source-layer']!=='transportation')continue;
   if(!savedLinePaint.has(layer.id))savedLinePaint.set(layer.id,layer.paint?.['line-opacity']??1);
   atlas.setPaintProperty(layer.id,'line-opacity',mode==='all'?0:mode==='plane'?.14:mode==='train'?.32:savedLinePaint.get(layer.id));
  }
 }
-const savedLinePaint=new Map();
+const savedLinePaint=new Map(),savedTransportVisibility=new Map();
 function airportPins(at,z){
  const network=flightNetwork(),nodes=[],boxes=[];
  const candidates=z<3.7?airChoices():network.points;
