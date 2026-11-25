@@ -8,6 +8,17 @@ const pngCentres=[["Wewak", -3.54964, 143.63229], ["Wapenamanda", -5.6265, 143.9
 const townFiles=new Map();
 function driveRadius(){const n=Number(state.driveRadius);return Number.isFinite(n)&&n>=100&&n<=2000?n:200}
 
+const sightTiles=new Map();
+async function russianSights(area){
+ const cells=[];
+ const y=Math.floor(area.lat/4),x=Math.floor(area.lon/4);
+ for(let a=y-1;a<=y+1;a++)for(let b=x-1;b<=x+1;b++){
+  const id=a+'_'+b;if(!ruStopTiles.has(id))continue;
+  if(!sightTiles.has(id))sightTiles.set(id,fetch('assets/ru-stops/'+id+'.json').then(r=>{if(!r.ok)throw Error();return r.json()}).catch(()=>{sightTiles.delete(id);return []}));
+  cells.push(sightTiles.get(id));
+ }
+ return (await Promise.all(cells)).flat().map(p=>({p,km:kmBetween(xy(area),[p[1],p[2]])})).filter(s=>s.km<=driveRadius()).sort((a,b)=>a.km-b.km).slice(0,80).map(s=>s.p);
+}
 function nearbyBases(area){
  const towns=atlasCities.slice(0,russianStart).map(([name,,lon,lat])=>[name,lat,lon]);
  const found=[];
@@ -31,11 +42,12 @@ function candidatesFor(area){
  loopGallery.forEach(row=>add(...row));
  catalogue.forEach(([id,name,lon,lat,kind,,img])=>{
   const m=placeMedia[id];
-  if(!img&&!m?.[1]&&!['Парк','Музей','Монастырь','Заповедник','Водопад','Каньон','Замок','Пещера'].includes(kind))return;
+  if(!img&&!m?.[1]&&!['Cultural','Natural','Mixed','Озеро','Гора','Историческое место','Парк','Музей','Монастырь','Заповедник','Водопад','Каньон','Замок','Пещера'].includes(kind))return;
   add(name,lat,lon,img||m?.[1],img?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
  });
  russianPlaces.forEach(([n,,x,y],i)=>{const m=placeMedia['p'+i];add(n,y,x,m?.[1],m?.[1]?'https://ru.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null)});
  if(candidates.length<8||area.extraTowns)for(const p of area.bases.slice(0,60))add(p.name,p.lat,p.lon,null,null,true);
+ for(const [name,lat,lon,kind] of area.sights||[])add(name,lat,lon,null,'https://www.geonames.org/',kind.startsWith('PPLA'));
  const valid=candidates.sort((a,b)=>(a.photo?0:55)+a.km-(b.photo?0:55)-b.km);
  const unique=[];for(const p of valid){if(!unique.some(q=>kmBetween(xy(p),xy(q))<2))unique.push(p);if(unique.length>=100)break}
  return unique;
@@ -56,7 +68,8 @@ function makeLoops(area,points,generated=false){
  }
  if(!generated)return cards.sort((a,b)=>a.approach-b.approach);
  for(const seed of points){
-  if(used.has(seed)||cards.some(c=>c.sector===seed.sector))continue;
+  if(cards.length>=18)break;
+  if(used.has(seed)||cards.filter(c=>c.sector===seed.sector).length>=2)continue;
   const near=points.filter(p=>p!==seed&&!used.has(p)&&Math.min((p.sector-seed.sector+8)%8,(seed.sector-p.sector+8)%8)<=2)
    .map(p=>({p,gap:kmBetween(xy(seed),xy(p))})).filter(o=>o.gap>3&&o.gap<Math.max(45,seed.km*.95)).sort((a,b)=>a.gap-b.gap);
   const stops=[seed,...near.slice(0,2).map(v=>v.p)];if(stops.length<2)continue;
@@ -66,8 +79,10 @@ function makeLoops(area,points,generated=false){
   if(order.at(-1).km<order[0].km)order.reverse();
   cards.push({sector:seed.sector,title:seed.name.split(' (')[0],stops:order,line:null,length:null});order.forEach(p=>used.add(p));
  }
- if(!cards.length&&points.length){
-  const p=points[0];cards.push({sector:p.sector,title:p.name,stops:[p],outAndBack:true,line:null,length:null});
+ for(const p of points){
+  if(cards.length>=18)break;
+  if(used.has(p))continue;
+  cards.push({sector:p.sector,title:p.name,stops:[p],outAndBack:true,line:null,length:null});used.add(p);
  }
  return cards;
 }
@@ -75,7 +90,7 @@ async function osrmPath(points,round=false,radius=2200){
  const type=round?'trip':'route',coords=points.map(p=>p.lon.toFixed(5)+','+p.lat.toFixed(5)).join(';');
  const q='overview=full&geometries=geojson&radiuses='+points.map(()=>radius).join(';')+(round?'&source=first&roundtrip=true':'');
  const r=await fetch('https://router.project-osrm.org/'+type+'/v1/driving/'+coords+'?'+q,{signal:AbortSignal.timeout(9000)});
- if(!r.ok)throw Error();const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];if(!path?.geometry?.coordinates?.length)throw Error();return {path,waypoints:j.waypoints};
+ if(!r.ok)throw Error();const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];if(!path?.geometry?.coordinates?.length||(round&&j.trips.length!==1))throw Error();return {path,waypoints:j.waypoints};
 }
 const hours=seconds=>{const n=Math.max(1,Math.round(seconds/60));return (n>=60?Math.floor(n/60)+' ч ':'')+(n%60?n%60+' мин':'')};
 async function loadLoop(card){
@@ -86,7 +101,17 @@ async function loadLoop(card){
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
   card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
  }catch{card.length='Дорога не подтверждена'}
- card.pending=false;card.done=true;if(loopView.open&&loopView.cards[loopView.index]===card){drawLoopCard();renderPins();paintRoute()}
+ card.pending=false;card.done=true;
+ if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
+ drawLoopCard();renderPins();paintRoute();
+ if(card.line||card.source||area.browsed)return;
+ for(const next of loopView.cards.filter(c=>c!==card&&!c.source&&!c.done&&!c.pending).slice(0,4)){
+  await new Promise(resolve=>setTimeout(resolve,1050));
+  if(!loopView.open||loopView.area!==area||area.browsed)return;
+  await loadLoop(next);
+  if(!loopView.open||loopView.area!==area||area.browsed)return;
+  if(next.line){loopView.index=loopView.cards.indexOf(next);drawLoopCard();renderPins();paintRoute();loopFrame();return}
+ }
 }
 function loopHome(){return cities[state.loopHomeCity]||actualOrigin()}
 function flightEstimate(home,area){
@@ -114,7 +139,7 @@ async function approachTo(area,serial){
 }
 function loopPhoto(p,i){
  const url=p.photo||aerial(p.lon,p.lat,320);
- return '<figure><img src="'+safe(url)+'" alt="'+safe(p.name)+'" data-aerial="'+safe(aerial(p.lon,p.lat,320))+'"><figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption><a aria-label="Источник изображения" title="'+(p.photo?'Источник фотографии':'Спутниковый вид')+'" href="'+safe(p.credit||'https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9')+'" target="_blank" rel="noopener">'+(p.photo?'©':'Спутник')+'</a></figure>';
+ return '<figure><img src="'+safe(url)+'" alt="'+safe(p.name)+'" data-aerial="'+safe(aerial(p.lon,p.lat,320))+'"><figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption><a aria-label="Источник изображения" title="'+(p.photo?'Источник фотографии':'Спутниковый вид')+'" href="'+safe((p.photo&&p.credit)||'https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9')+'" target="_blank" rel="noopener">'+(p.photo?'©':'Спутник')+'</a></figure>';
 }
 function loopDrivingDays(c){
  if(!c?.line)return '';
@@ -128,13 +153,13 @@ function drawLoopCard(){
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
- (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?'Готовый маршрут':c.outAndBack?'Туда и обратно':c.stops.every(p=>p.town)?'По окрестным городам':'Кольцо')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.generated?'Пока мало остановок рядом':'Рядом нет готовых маршрутов')+'</h2><button data-loop="pick">Выбрать другую точку</button></div>')+
+ (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?'Готовый маршрут':c.outAndBack?'Туда и обратно':'Подобрано рядом')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.source?'<a class="loop-source" target="_blank" rel="noopener" href="'+safe(c.source)+'">'+safe(c.publisher)+' ↗</a>':'')+
  '<button class="loop-generate" data-loop="generate">'+(area.generated?'К готовым маршрутам':'Собрать свой маршрут')+'</button>'+
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+
  '<div class="loop-border"><label><input type="checkbox" id="crossBorder" '+(area.crossBorder?'checked':'')+'> Разрешить пересечение границ</label></div><div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
  (c?'<div class="loop-actions"><button data-loop="prev" aria-label="Предыдущее кольцо" '+(cards.length<2?'disabled':'')+'>‹</button><button data-loop="save" '+(!c.line?'disabled':'')+'>Выбрать маршрут</button><button data-loop="next" aria-label="Следующее кольцо" '+(cards.length<2?'disabled':'')+'>›</button></div>':'')+
- (c?.stops.some(p=>p.town)?'<a class="loop-source" href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames · CC BY 4.0</a>':'')+
+ (c?.stops.some(p=>p.town||p.credit==='https://www.geonames.org/')?'<a class="loop-source" href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames · CC BY 4.0</a>':'')+
  (itinerary.legs.length?'<button class="loop-saved" data-loop="saved">Мой маршрут ↗</button>':'');
 }
 function loopFrame(){
@@ -147,20 +172,31 @@ function loopFrame(){
 function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&&countryAt(lat,lon)===area.country)}
 function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
  loopView.area={lat,lon,name,country:countryAt(lat,lon),crossBorder,generated};lastLoopPoint={lat,lon,name};state.loopArea=lastLoopPoint;state.selectedDestination={lat,lon,name};persist();loopView.picking=false;$('pickTip').hidden=true;
- loopView.area.bases=nearbyBases(loopView.area);loopView.serial++;loopView.approach=null;loopView.cards=makeLoops(loopView.area,generated?candidatesFor(loopView.area):[],generated);loopView.index=0;
- const area=loopView.area,code=visaData.iso2[area.country];
- if(generated&&loopView.cards.length<4&&/^[A-Z]{2}$/.test(code)){
+ const area=loopView.area;
+ area.bases=nearbyBases(area);loopView.serial++;loopView.approach=null;loopView.index=0;
+ loopView.cards=generated?[]:makeLoops(area,[]);
+ const supplement=generated||loopView.cards.length<12;
+ function addSuggestions(){
+  if(!loopView.open||loopView.area!==area)return;
+  const empty=!loopView.cards.length,existing=new Set(loopView.cards.map(c=>c.title));
+  for(const c of makeLoops(area,candidatesFor(area),true)){
+   if(loopView.cards.length>=30)break;
+   if(!existing.has(c.title)){loopView.cards.push(c);existing.add(c.title)}
+  }
+  if(empty&&loopView.cards.length){loopFrame();renderPins();paintRoute();loadLoop(loopView.cards[0])}
+  drawLoopCard();
+ }
+ const code=visaData.iso2[area.country];
+ if(supplement&&/^[A-Z]{2}$/.test(code)){
+  area.searching=true;
   if(!townFiles.has(code))townFiles.set(code,fetch('assets/towns/'+code+'.json').then(r=>{if(!r.ok)throw Error();return r.json()}).catch(()=>{townFiles.delete(code);return []}));
-  townFiles.get(code).then(rows=>{
-   if(!loopView.open||loopView.area!==area||!rows.length)return;
-   area.extraTowns=rows;area.bases=nearbyBases(area);
-   const existing=new Set(loopView.cards.map(c=>c.title)),more=makeLoops(area,candidatesFor(area),true).filter(c=>!existing.has(c.title));
-   const empty=!loopView.cards.length;loopView.cards.push(...more);
-   if(empty&&more.length){loopFrame();renderPins();paintRoute();loadLoop(more[0])}
-   drawLoopCard();
+  Promise.all([townFiles.get(code),code==='RU'?russianSights(area):[]]).then(([rows,sights])=>{
+   if(!loopView.open||loopView.area!==area)return;
+   area.searching=false;area.sights=sights;area.extraTowns=rows;area.bases=nearbyBases(area);addSuggestions();
   });
  }
- drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);approachTo(loopView.area,loopView.serial);
+ if(supplement)addSuggestions();
+ drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);approachTo(area,loopView.serial);
 }
 function launchLoops(point){
  const center=atlas?.getCenter();
@@ -175,7 +211,7 @@ function closeLoops(){
  loopView.open=false;loopView.picking=false;loopView.serial++;$('loopDeck').hidden=true;$('pickTip').hidden=true;$('tripBuilder').setAttribute('aria-pressed','false');render();paintRoute();
 }
 function stepLoop(delta){
- const n=loopView.cards.length;if(n<2)return;
+ const n=loopView.cards.length;if(n<2)return;loopView.area.browsed=true;
  loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[loopView.index]);
 }
 function saveLoop(){
@@ -202,6 +238,7 @@ function initLoops(){
  deck.onclick=e=>{const action=e.target.closest('button')?.dataset.loop;
  if(action==='prev'||action==='next')stepLoop(action==='next'?1:-1);
  if(action==='generate'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,!a.generated)}
+ if(action==='widen'){const a=loopView.area;state.driveRadius=Math.min(2000,driveRadius()*2);setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated)}
  if(action==='base'){const p=loopView.area.bases[Number(e.target.closest('button').dataset.index)];if(p)setLoopArea(p.lat,p.lon,p.name,loopView.area.crossBorder)}
  if(action==='close')closeLoops();if(action==='save')saveLoop();if(action==='saved'){closeLoops();enterTrip()}
  if(action==='pick'){loopView.picking=true;drawLoopCard();renderPins();$('pickTip').textContent='Поставь точку прибытия · Отмена';$('pickTip').hidden=false}

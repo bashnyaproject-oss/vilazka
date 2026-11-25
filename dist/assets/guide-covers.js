@@ -1,0 +1,1 @@
+const guideCovers={"tour-altay": "https://static.tildacdn.com/tild6365-3935-4863-b331-633735343139/image.png", "tour-kamchatka": "https://static.tildacdn.com/tild3635-3232-4433-b566-373338383033/image.png", "tour-japan-roudtrip": "https://static.tildacdn.com/tild6364-3536-4637-a532-633439653464/__2026-01-07__225954.png"};

@@ -71,3 +71,6 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .account-trip{display:block;width:100%;padding:12px;text-align:left;border-bottom:1px solid #333}
 @media(min-width:761px) and (max-width:1050px){#location.origin-caption{top:235px}}
 @media(max-width:760px){#location.origin-caption{left:12px;top:calc(var(--phone-top) + 99px)!important}}
+
+.guides-nav{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#ccc;padding:7px 10px;font:500 14px system-ui;border-radius:16px}.guides-nav:hover{background:#202020;color:white}
+@media(max-width:760px){#phoneTabs{grid-template-columns:1fr 1.25fr .75fr}#phoneTabs button{font-size:12px;gap:4px}#phoneTabs .guides-nav{height:47px}}
