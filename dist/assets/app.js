@@ -185,10 +185,14 @@ function nearestTicketAirport(point){
  return best?.distance<=180?best.code:null;
 }
 function ticketPhoto({name,lat,lon}){
- const [photo,credit]=findRoutePhoto({name,lat,lon});
+ const acropolis=name==='Афинский Акрополь'&&kmBetween([lat,lon],[37.9709,23.7262])<.25;
+ const [photo,credit]=acropolis?[
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Acropolis_Parthenon_Athens_Greece.jpg/960px-Acropolis_Parthenon_Athens_Greece.jpg',
+  'https://commons.wikimedia.org/wiki/File:Acropolis_Parthenon_Athens_Greece.jpg'
+ ]:findRoutePhoto({name,lat,lon});
  if(!photo)return '';
  return '<figure class="ticket-photo"><img src="'+safe(photo)+'" alt="'+safe(name)+'" decoding="async">'+
- (credit?'<figcaption>'+travelLink(credit,'Фото и источник')+'</figcaption>':'')+'</figure>';
+ (credit?'<figcaption>'+travelLink(credit,acropolis?'Фото: Jebulon · CC0':'Фото и источник')+'</figcaption>':'')+'</figure>';
 }
 document.addEventListener('error',event=>{
  if(event.target.matches?.('.ticket-photo img'))event.target.closest('.ticket-photo').hidden=true;
