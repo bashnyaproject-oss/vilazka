@@ -285,7 +285,7 @@ function reviews(name,lat,lon){
  travelLink(googleUrl,'Google'+(google?' · ★ '+google[0]:''))+
  travelLink(yaUrl,'Яндекс'+(name==='Горный парк Рускеала'||name==='Ипатьевский монастырь'||name==='Ростовский кремль'?' · ★ 5,0':''))+'</div></section>';
 }
-const catalogue=[...heritage,...regionalSites,...famousPlaces];
+const catalogue=[...heritage,...regionalSites,...famousPlaces,...worldPlaces.map(([id,name,x,y,kind,country,links])=>[id,name,x,y,kind,country,null,null,null,null,links])];
 const geoIndex=new Map();
 for(let i=0;i<catalogue.length;i++){
  const row=catalogue[i],k=Math.floor(row[2]/5)+','+Math.floor(row[3]/5);
@@ -304,7 +304,8 @@ function nearbyCatalogue(at,z){
    if(score<minimum)continue;
    const p=atlas.project([lon,lat]);if(p.x<0||p.y<0||p.x>w||p.y>h)continue;
    const cell=Math.floor(p.x/step)+','+Math.floor(p.y/step);
-   const rank=(featured?30:0)+score*2+Number(Boolean(img||placeMedia[id]?.[1]));
+   const prominence=Math.min(19,Math.log2(catalogue[i][10]||1)*2);
+   const rank=(featured?30:0)+prominence+score*2+Number(Boolean(img||placeMedia[id]?.[1]));
    if(!cells.has(cell)||rank>cells.get(cell).rank)cells.set(cell,{i,rank,x:p.x,y:p.y});
   }
  }
@@ -337,13 +338,38 @@ async function showSiteDrive(lat,lon){
   const button=document.createElement('button');button.textContent='Показать весь путь';button.onclick=()=>{const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();for(const pt of path.geometry.coordinates)b.extend(pt);atlas.fitBounds(b,{padding:innerWidth>760?{left:45,right:390,top:180,bottom:55}:48,maxZoom:12})};el.append(button);
  }catch{if(el.isConnected)el.textContent='Подъезд от старта не подтверждён. Можно посмотреть дороги рядом.'}
 }
+async function loadWorldPhoto(id,name,slot){
+ try{
+  const response=await fetch('https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&origin=*&property=P18&entity='+id);
+  const claims=(await response.json()).claims?.P18||[];
+  const file=claims.find(c=>c.rank!=='deprecated'&&c.mainsnak.datavalue)?.mainsnak.datavalue.value;
+  if(!file||!slot.isConnected)return;
+  const enc=encodeURIComponent(file);
+  const image=new Image();image.alt=name;
+  image.onload=()=>{
+   if(!slot.isConnected)return;
+   const figure=document.createElement('figure');figure.className='geo-figure';
+   const link=document.createElement('a');link.href='https://commons.wikimedia.org/wiki/File:'+enc;
+   link.textContent='Фотография и лицензия ↗';link.target='_blank';link.rel='noopener';
+   figure.append(image,link);slot.replaceChildren(figure);
+  };
+  image.src='https://commons.wikimedia.org/wiki/Special:FilePath/'+enc+'?width=640';
+ }catch{/* The place and its source remain available without a photo. */}
+}
 function openCatalogue(i){
  const [id,name,lon,lat,cat,country,img,credit]=catalogue[i];if(pointChoice(lat,lon,name))return;
  if(building)leaveTrip();active=null;clearRoute();setDrawer(false,russiaOnly);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
- const isWiki=id.startsWith('wiki:'),isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isWiki?'Википедия':isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
- const url=isWiki?catalogue[i][8]:isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
- const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+(isWiki?'<figure class="geo-figure"><img src="'+safe(img)+'" alt="'+safe(name)+'"><figcaption><a target="_blank" rel="noopener" href="'+safe('https://ru.wikipedia.org/wiki/File:'+catalogue[i][9].split('/').pop())+'">Фотография и лицензия ↗</a></figcaption></figure>':photoFigure(id,name,lon,lat,img,credit))+reviews(name,lat,lon)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип <span>→</span></button>'+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
+ const imported=/^Q\d+$/.test(id),isWiki=id.startsWith('wiki:'),isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=imported?'Wikidata':isWiki?'Википедия':isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
+ const url=imported?'https://www.wikidata.org/wiki/'+id:isWiki?catalogue[i][8]:isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
+ const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+(imported?'<div data-world-photo></div>':isWiki?'<figure class="geo-figure"><img src="'+safe(img)+'" alt="'+safe(name)+'"><figcaption><a target="_blank" rel="noopener" href="'+safe('https://ru.wikipedia.org/wiki/File:'+catalogue[i][9].split('/').pop())+'">Фотография и лицензия ↗</a></figcaption></figure>':photoFigure(id,name,lon,lat,img,credit))+reviews(name,lat,lon)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип <span>→</span></button>'+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
 
+ if(imported){
+  const slot=box.querySelector('[data-world-photo]');
+  const attribution=document.createElement('small');
+  attribution.innerHTML='<a href="https://github.com/audiala/open-data" target="_blank" rel="noopener">Данные Audiala Places</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>';
+  box.querySelector('.panel').append(attribution);
+  loadWorldPhoto(id,name,slot);
+ }
  showSiteDrive(lat,lon);
  flyTo([lat,lon],Math.max(atlas.getZoom(),7));
 }
