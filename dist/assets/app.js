@@ -185,7 +185,7 @@ function renderDetail(){
  const lodging='https://www.booking.com/searchresults.ru.html?ss='+encodeURIComponent(stops[0]);
  const directions='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(tripMode==='car'?startQuery():stops[0])+'&destination='+encodeURIComponent(stops.at(-1))+'&waypoints='+encodeURIComponent(stops.slice(tripMode==='car'?0:1,-1).join('|'))+'&travelmode='+(tripMode==='train'?'transit':'driving');
  const transport=options(d).map(m=>'<button data-trip="'+m+'" class="'+(tripMode===m?'selected':'')+'">'+names[m]+'<small>'+price(d,m).text+' · '+travel(d,m)+'</small></button>').join('');
- const overview='<p class="destination-line">'+stops.join(' · ')+'</p><p>'+names[tripMode]+(actualOrigin()?' · ≈ '+p.text:'')+'</p><button class="action" data-choose>Хочу сюда</button><button class="action secondary" data-arrival-region="'+d.id+'">Кольца отсюда</button>'+(!actualOrigin()?'<button class="action secondary" data-set-origin>Маршрут отсюда</button>':'');
+ const overview='<p class="destination-line">'+stops.join(' · ')+'</p><p>'+names[tripMode]+(actualOrigin()?' · ≈ '+p.text:'')+'</p><button class="action secondary" data-choose>Хочу сюда</button><button class="action road-cta" data-arrival-region="'+d.id+'">Роад-трип →</button>'+(!actualOrigin()?'<button class="action secondary" data-set-origin>Маршрут отсюда</button>':'');
  const costs='<h3>≈ '+p.text+' на человека</h3><p>Дорога · '+euro(p.move)+'</p><p>Жильё и еда · '+euro(p.living)+'</p>'+(p.rental?'<p>Аренда · '+euro(p.rental)+'</p>':'')+'<p class="note">Модельная оценка, не тариф. Депозит и визовые сборы отдельно.</p><div class="route-options">'+transport+'</div><button class="action" data-stage="ready">Что понадобится</button>';
  const ready='<h3>Въезд · '+visaFor(d)+'</h3><a class="secondary" href="'+d.official+'" target="_blank" rel="noopener">Официальные условия</a>'+requirements().map((label,i)=>'<label class="switch"><input type="checkbox" data-requirement="'+i+'" '+(checkedRequirements.has(String(i))?'checked':'')+'> '+label+'</label>').join('')+'<p><a href="'+(['plane','rent'].includes(tripMode)?flights:directions)+'" target="_blank" rel="noopener">'+(['plane','rent'].includes(tripMode)?'Проверить перелёты':'Открыть в картах')+'</a><a class="secondary" href="'+lodging+'" target="_blank" rel="noopener">Найти жильё</a>'+(tripMode==='rent'?'<a class="secondary" href="https://www.rentalcars.com/" target="_blank" rel="noopener">Найти авто</a>':'')+'</p><button class="action" id="confirmRoute" data-confirm-route '+(checkedRequirements.size<requirements().length?'disabled':'')+'>Выбрать маршрут</button>';
  node.innerHTML='<div class="cover photo" style="'+seasonPos(d.id)+'--px:'+((d.id%4)/3*100)+'%;--py:'+(Math.floor(d.id/4)*50)+'%"><button class="close" data-close aria-label="Закрыть">×</button></div><div class="panel"><span class="badge">'+d.country+' · '+n+' дн.</span><h2>'+d.name+'</h2>'+(tab==='plan'?'':steps())+({plan:overview,price:costs,ready,today,chosen:'<h3>Поездка сохранена</h3><button class="action" data-arrival-region="'+d.id+'">Отметить, куда приеду</button><p>'+stops.join(' · ')+'</p><button class="action secondary" data-stage="ready">Что взять и проверить</button><button class="action secondary" data-stage="today">Что делать по дням</button>'}[tab])+''+'</div>';
@@ -279,7 +279,7 @@ function openCatalogue(i){
  if(building)leaveTrip();active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
  const url=isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
- const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action" data-stage-site="'+i+'">Кольца отсюда</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
+ const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип →</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
 
  showSiteDrive(lat,lon);
  flyTo([lat,lon],Math.max(atlas.getZoom(),7));
@@ -562,7 +562,7 @@ function openCity(i){
  if(building)leaveTrip();
  active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const box=$('landmark');
- box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2><button class="action secondary" data-leg-city="'+i+'">Кольца отсюда</button><button class="action" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
+ box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2><button class="action road-cta" data-leg-city="'+i+'">Роад-трип →</button><button class="action secondary" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
  box.querySelector('.panel').insertAdjacentHTML('beforeend',reviews(name,y,x));
  const mediaKey=i>=russianStart?'p'+(i-russianStart):'c'+i;
  if(i<russianStart||placeMedia[mediaKey]?.[1])box.querySelector('h2').insertAdjacentHTML('afterend',photoFigure(mediaKey,name,x,y));
@@ -682,6 +682,7 @@ document.addEventListener('click',e=>{
  if(k.arrivalRegion!==undefined){const d=data[+k.arrivalRegion];launchLoops({name:d.name,lat:d.lat,lon:d.lon})}
  if(k.near!==undefined&&building){const p=localPlaces(itinerary.legs[selectedLeg])[+k.near];if(p)addStageStop(p);return}
  if(k.focusLeg!==undefined&&building){pickStop=false;selectedLeg=+k.focusLeg;enterTrip();return}
+ if(k.roadLandmark){const [id,i]=k.roadLandmark.split(':').map(Number);const [name,lat,lon]=landmarks[id][i];launchLoops({name,lat,lon});return}
  if(k.stageSite!==undefined){const [,name,lon,lat]=catalogue[+k.stageSite];launchLoops({name,lat,lon})}
  if(k.city!==undefined)openCity(+k.city);
  if(k.citySave!==undefined){const i=+k.citySave;state.cityWishlist??=[];if(!state.cityWishlist.includes(i))state.cityWishlist.push(i);persist();const [name,,lon,lat]=atlasCities[i];saveAccountItem('city-'+i,{name,lat,lon});openCity(i)}
@@ -770,7 +771,7 @@ function openLandmark(key){
  const [id,i]=key.split(':').map(Number),d=data[id],[name,la,lo]=landmarks[id][i];
  active=null;setDrawer(false);render();markDiscovered(d);
  const link='https://www.google.com/maps/search/?api=1&query='+la+','+lo;
- $('landmark').innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+d.name+'</span><h2>'+name+'</h2><p>Остановка на маршруте по региону.</p><a href="'+link+'" target="_blank" rel="noopener">Открыть точку на карте</a><button class="action secondary" data-region="'+id+'">Весь маршрут</button></div>';
+ $('landmark').innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+d.name+'</span><h2>'+name+'</h2><p>Остановка на маршруте по региону.</p><a href="'+link+'" target="_blank" rel="noopener">Открыть точку на карте</a><button class="action road-cta" data-road-landmark="'+key+'">Роад-трип →</button><button class="action secondary" data-region="'+id+'">Весь маршрут</button></div>';
  $('landmark').querySelector('.panel').insertAdjacentHTML('beforeend',photoFigure('',name,lo,la)+reviews(name,la,lo));
  $('landmark').hidden=false;
 }

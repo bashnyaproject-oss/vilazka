@@ -92,11 +92,11 @@ function driveCard(d){
   const url='https://router.project-osrm.org/route/v1/driving/'+coords.join(';')+'?overview=full&geometries=geojson&radiuses='+coords.map(()=>1500).join(';');
   fetch(url,{signal:AbortSignal.timeout(8000)}).then(r=>r.json()).then(j=>{
    const r=j.routes?.[0];if(!r?.geometry?.coordinates?.length)throw Error();
-   if(!domesticPath(country,r.geometry.coordinates))throw Error();
+   validateLoop(r,{lat:origin[0],lon:origin[1]},false,loopBudget(),country,false);
    d.line=r.geometry.coordinates;
    const minutes=Math.max(1,Math.round(r.duration/60)),h=Math.floor(minutes/60);
    d.status=Math.round(r.distance/1000)+' км · '+(h?h+' ч ':'')+(minutes%60)+' мин за рулём';
-  }).catch(()=>{d.status='Дорожный расчёт недоступен · показаны остановки'}).finally(()=>{
+  }).catch(()=>{d.status='Подъезд не подтверждён в рамках выбранного лимита'}).finally(()=>{
    if(driveShelf.current===d&&!$('nearby').hidden){$('quickCards').innerHTML=driveCard(d);paintRoute()}
   });
  }
@@ -105,7 +105,7 @@ function driveCard(d){
   const match=loopGallery.find(p=>kmBetween([lat,lon],p.slice(1,3))<1.5);
   return {name,lat,lon,photo:match?.[3],credit:match?.[4]};
  });
- return '<div class="loop-images drive-strip">'+stops.map(loopPhoto).join('')+'</div><div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong><button class="action" data-open-loops>Кольца рядом →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
+ return '<div class="loop-images drive-strip">'+stops.map(loopPhoto).join('')+'</div><div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong><button class="action" data-open-loops>Роад-трип →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
 
 }
 function takeDrive(d){
