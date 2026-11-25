@@ -38,3 +38,18 @@
  .maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left{bottom:calc(var(--phone-sheet) + 83px)}
  @media(max-height:520px){#mobilePlaces{visibility:hidden}#loopDeck{width:55%!important;max-height:64dvh}.phone-roads .map-tools{top:60px}}
 }
+@media(min-width:761px){
+ #mobileTop{display:block;position:fixed;z-index:12;right:16px;top:184px;width:min(285px,calc(100vw - 32px))}
+ #mobileTop .phone-search{display:flex;align-items:center;background:#101011;border:1px solid #ffffff30;border-radius:16px;padding:4px 9px;gap:4px;box-shadow:0 4px 20px #0005}
+ #mobileTop label{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+ #mobileTop svg{flex-shrink:0}
+ #mobileTop input{width:100%;min-height:35px;border:0;background:transparent;color:#fff;font-size:14px;padding:0}
+ #mobileOptions,#mobileCancel{display:none}
+ #mobileTop.searching #mobileCancel{display:block;background:none;border:0;color:#ddd;font-size:22px}
+ #mobileResults{max-height:45vh;overflow:auto;margin-top:5px;padding:5px;background:#111;border:1px solid #ffffff2a;border-radius:14px}
+ #mobileResults button{display:grid;gap:2px;text-align:left;color:#fff;background:none;border:0;border-radius:8px;width:100%;min-height:42px;padding:6px 9px}
+ #mobileResults button:hover,#mobileResults button:focus-visible{background:#272135}
+ #mobileResults small,.phone-caption{color:#b4afbb;font:12px system-ui}
+ .phone-caption,#mobileResults p{padding:6px 9px}
+}
+@media(min-width:1280px){#mobileTop{top:77px}}

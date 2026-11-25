@@ -35,3 +35,19 @@
 #nearby .story-foot{display:grid;gap:4px;padding:5px 9px 8px}
 #nearby .story-foot>div{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .action.road-cta{display:inline-flex;align-items:center;min-height:44px;background:#ead8ac;color:#201a11;font-weight:700}
+#loopDeck{width:min(365px,calc(100vw - 32px));border-radius:20px;background:#101011}
+#loopDeck .loop-bar{padding:6px 9px;border-bottom:1px solid #ffffff12}
+#loopDeck .loop-images{height:94px}
+#loopDeck .loop-images:empty{display:none}
+#loopDeck .loop-copy{padding:13px 14px 4px}
+#loopDeck .loop-copy h2{font-size:20px;margin:5px 0 7px}
+#loopDeck .route-navigation button[data-loop=next],#nearby .story-foot>div #storyNext{background:#c9b7fc;border-color:#ddcfff;color:#1c1234}
+#loopDeck .route-navigation button[data-loop=next]:not(:disabled):hover{background:#ddcfff}
+#loopDeck .loop-settings{margin:3px 12px 9px;border-top:1px solid #ffffff1b}
+#loopDeck .loop-settings summary{cursor:pointer;padding:11px 2px;color:#c8c5cf;font:550 12px system-ui}
+#loopDeck .loop-settings[open] summary{margin-bottom:6px}
+#loopDeck .loop-settings .radius-control{padding:6px 2px}
+.route-anchor{width:30px;height:37px;position:absolute;top:0;left:0;translate:-50% -94%;z-index:14;pointer-events:none;filter:drop-shadow(0 3px 6px #000a)}
+.route-anchor::before{content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;transform:rotate(-45deg);border-radius:55% 55% 55% 2px;background:#8250ec;border:2px solid #e9ddff;box-sizing:border-box}
+.route-anchor i{position:absolute;top:10px;left:11px;width:8px;height:8px;background:#f8f2ff;border-radius:50%}
+@media(max-width:760px){#loopDeck .loop-images{height:76px}#loopDeck .loop-copy h2{font-size:18px}}

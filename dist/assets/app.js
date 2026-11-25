@@ -494,7 +494,7 @@ function renderPins(){
  if(mode!=='all')$('zoomHint').textContent=flying()?(flightNetwork().from?'Из '+flightNetwork().from+' · прямые направления':(actualOrigin()?'Рядом нет аэропорта из каталога':'Аэропорты · выбери старт')):(mode==='train'?'Железные дороги · места рядом с путями':'Автодороги · места для поездки');
  const [slat,slon]=baseOrigin();
  const regions=groups;
- pinLayer.innerHTML=locationPin+(actualOrigin()&&state.origin!=='auto'?'<span class="start" role="img" aria-label="Точка старта" title="'+originName()+'"'+at(slat,slon)+'></span>':'')+regions.map(({items})=>{
+ pinLayer.innerHTML=locationPin+selectedRoutePin(lastLoopPoint||state.loopArea,at)+(actualOrigin()&&state.origin!=='auto'?'<span class="start" role="img" aria-label="Точка старта" title="'+originName()+'"'+at(slat,slon)+'></span>':'')+regions.map(({items})=>{
   const [d]=items;
   if(items.length>1)return '<button class="cluster" data-cluster="'+items.map(i=>i.id).join(',')+'" aria-label="'+items.length+' направления"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<b>'+items.length+'</b></button>';
   return '<button class="pin '+(active===d?'current':'')+'" data-open="'+d.id+'" aria-label="'+d.name+'"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<small>'+d.name+'</small></button>';

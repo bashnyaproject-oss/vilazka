@@ -5,16 +5,29 @@
  const anchors=[modes,seasons].map(el=>{const marker=document.createComment('desktop control');el.before(marker);return marker});
  const normalize=s=>s.toLocaleLowerCase('ru').replace(/ё/g,'е');
  let entries,shortlist=[],lastCamera='',timer;
+ const ruCountries=new Intl.DisplayNames(['ru'],{type:'region'}),enCountries=new Intl.DisplayNames(['en'],{type:'region'});
+ const localCities={...{Moscow:'Москва',London:'Лондон',Paris:'Париж',Rome:'Рим',Riga:'Рига',Vilnius:'Вильнюс',Tallinn:'Таллин',Almaty:'Алматы',Astana:'Астана',Tbilisi:'Тбилиси',Baku:'Баку',Yerevan:'Ереван',Stockholm:'Стокгольм',Helsinki:'Хельсинки',Warsaw:'Варшава',Minsk:'Минск',Kyiv:'Киев',Kazan:'Казань',Volgograd:'Волгоград',Perm:'Пермь','Nizhny Novgorod':'Нижний Новгород',Sochi:'Сочи',Kaliningrad:'Калининград',Novosibirsk:'Новосибирск',Yekaterinburg:'Екатеринбург'}};
+
  const aliases={Moscow:'Москва',Berlin:'Берлин',Amsterdam:'Амстердам',Oslo:'Осло',Istanbul:'Стамбул','Saint Petersburg':'Санкт-Петербург',Yaroslavl:'Ярославль'};
  function index(){
   if(entries)return entries;
   entries=[];
-  function add(name,lat,lon,subtitle,action,id,pic){
-   entries.push({name,lat,lon,subtitle,action,id,pic,key:normalize(name+' '+subtitle)});
+  function add(name,lat,lon,subtitle,action,id,pic,extra=''){
+   entries.push({name,lat,lon,subtitle,action,id,pic,key:normalize(name+' '+subtitle+' '+extra)});
   }
   data.forEach(d=>add(d.name,d.lat,d.lon,d.country,'destination',d.id));
   catalogue.forEach(([id,name,lon,lat,kind,country,img],i)=>add(name,lat,lon,({Cultural:'Культура',Natural:'Природа',Mixed:'Наследие'})[kind]||kind,'site',i,img||placeMedia[id]?.[1]));
-  atlasCities.forEach(([name,area,lon,lat],i)=>add(aliases[name]||name,lat,lon,area,'city',i,placeMedia[i<russianStart?'c'+i:'p'+(i-russianStart)]?.[1]));
+  atlasCities.forEach(([name,area,lon,lat],i)=>add(aliases[name]||localCities[name]||name,lat,lon,area,'city',i,placeMedia[i<russianStart?'c'+i:'p'+(i-russianStart)]?.[1],name));
+  const nations=new Map();
+  for(const [code,w,s,e,n] of countryShapes){
+   const area=(e-w)*(n-s),known=nations.get(code);
+   if(!known||area>known.area)nations.set(code,{w,s,e,n,area});
+  }
+  for(const [code,{w,s,e,n}] of nations){
+   const iso=visaData.iso2[code];if(!iso)continue;
+   const name=ruCountries.of(iso);
+   add(name,(s+n)/2,(w+e)/2,'Страна','country',iso,null,enCountries.of(iso));
+  }
   return entries;
  }
  function closeSearch(){results.hidden=true;field.blur();$('mobileTop').classList.remove('searching')}
@@ -29,12 +42,13 @@
   if(!size.matches)return;
   const roads=roadMode();document.body.classList.toggle('phone-roads',roads);
   $('phoneMap').setAttribute('aria-pressed',String(!roads));$('phoneRoads').setAttribute('aria-pressed',String(roads));
-  field.placeholder=roads?'Где начать маршрут?':'Найти город или место';
+  field.placeholder=roads?'Город или страна для поездки':'Город, страна или место';
  }
  function camera(){return atlas?.getCenter()||{lat:55.75,lng:37.62}}
  function nearest(list,center){return list.map(p=>[p,kmBetween([center.lat,center.lng],[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1])}
  function choose(p){
   if(!p)return;const roads=roadMode();closeSearch();menu(false);field.value='';
+  if(p.action==='country'){resetMap();flyTo([p.lat,p.lon],4);return}
   if(roads){launchLoops({name:p.name,lat:p.lat,lon:p.lon});sync();return}
   resetMap();
   if(p.action==='site')openCatalogue(p.id);else if(p.action==='city')openCity(p.id);else open(data[p.id]);
@@ -42,11 +56,12 @@
  }
  function search(){
   menu(false);const q=normalize(field.value.trim()),center=camera();
-  const found=q?index().filter(p=>p.key.includes(q)):index().filter(p=>p.pic);
+  const found=q?index().filter(p=>q.length===1?p.key.split(/[\s-]+/).some(part=>part.startsWith(q)):p.key.includes(q)):index().filter(p=>p.pic);
   const ranked=nearest(found,center);
   if(q)ranked.sort((a,b)=>Number(!normalize(a[0].name).startsWith(q))-Number(!normalize(b[0].name).startsWith(q)));
+  if(q){const firstCountry=ranked.findIndex(([p])=>p.action==='country'&&normalize(p.name).startsWith(q));if(firstCountry>2)ranked.splice(2,0,...ranked.splice(firstCountry,1))}
   const seen=new Set();shortlist=ranked.filter(([p])=>{if(seen.has(p.name))return false;seen.add(p.name);return true}).slice(0,8);
-  results.innerHTML='<div class="phone-caption">'+(q?'Результаты':'Места рядом с центром карты')+'</div>'+shortlist.map(([p,km],i)=>'<button data-result="'+i+'"><span>'+safe(p.name)+'</span><small>'+safe(p.subtitle)+' · '+Math.round(km)+' км</small></button>').join('')+(!shortlist.length?'<p>Мест с таким названием пока нет.</p>':'');
+  results.innerHTML='<div class="phone-caption">'+(q?'Результаты':'Места рядом с центром карты')+'</div>'+shortlist.map(([p,km],i)=>'<button data-result="'+i+'"><span>'+safe(p.name)+'</span><small>'+safe(p.subtitle)+(p.action==='country'?'':' · '+Math.round(km)+' км')+'</small></button>').join('')+(!shortlist.length?'<p>Мест с таким названием пока нет.</p>':'');
   results.hidden=false;$('mobileTop').classList.add('searching');
  }
  function nearby(){
@@ -78,7 +93,7 @@
  field.onfocus=search;field.oninput=search;field.onkeydown=e=>{if(e.key==='Escape')closeSearch();if(e.key==='Enter'&&shortlist[0])choose(shortlist[0][0])};
  results.onclick=e=>{const b=e.target.closest('[data-result]');if(b)choose(shortlist[+b.dataset.result][0])};
  settings.onclick=e=>{const id=e.target.closest('[data-proxy]')?.dataset.proxy;if(id){menu(false);$(id).click()}};
- document.addEventListener('pointerdown',e=>{if(!size.matches||e.target.closest('#mobileTop,#mobileSettings'))return;closeSearch();menu(false)});
+ document.addEventListener('pointerdown',e=>{if(e.target.closest('#mobileTop,#mobileSettings'))return;closeSearch();menu(false)});
  new MutationObserver(schedule).observe($('loopDeck'),{attributes:true,attributeFilter:['hidden']});
  new MutationObserver(schedule).observe($('builder'),{attributes:true,attributeFilter:['hidden']});
  size.addEventListener('change',setup);setup();

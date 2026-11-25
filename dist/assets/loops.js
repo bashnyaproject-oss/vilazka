@@ -262,9 +262,10 @@ function drawLoopCard(){
  if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
+ (c?'<div class="loop-images">'+c.stops.map((p,i)=>({p,i})).filter(({p})=>findRoutePhoto(p)[0]).map(({p,i})=>loopPhoto(p,i)).join('')+'</div><div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
+ '<details class="loop-settings"'+(box.querySelector('.loop-settings')?.open?' open':'')+'><summary>Настройки маршрута</summary>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
- (c?'<div class="loop-images">'+c.stops.map(loopPhoto).join('')+'</div><div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' '+loopDirections[c.sector]+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+loopDrivingDays(c)+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
- (c?.source?'<a class="loop-source" target="_blank" rel="noopener" href="'+safe(c.source)+'">'+safe(c.publisher)+' ↗</a>':'')+
  '<label class="loop-access">Весь маршрут<select id="loopBudget"><option value="short">До 200 км · 5 ч</option><option value="day">До 350 км · 8 ч</option><option value="weekend">До 600 км · 12 ч</option></select></label>'+
  '<div class="loop-border"><label><input type="checkbox" id="loopLinear" '+(state.loopLinear?'checked':'')+'> Показать линейные маршруты</label></div>'+
  '<label class="loop-access">Доступность<select id="loopAccess">'+accessOptions()+'</select></label>'+
@@ -272,8 +273,9 @@ function drawLoopCard(){
  '<button class="loop-generate" data-loop="generate">'+(area.generated?'К готовым маршрутам':'Собрать свой маршрут')+'</button>'+
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+
  '<div class="loop-border"><label><input type="checkbox" id="crossBorder" '+(area.crossBorder?'checked':'')+'> Разрешить пересечение границ</label></div><div class="loop-home"><label>Дом <select id="loopHomeCity" aria-label="Домашняя точка"><option value="">'+safe(actualOrigin()?originName():'Моя точка старта')+'</option>'+Object.keys(cities).map(n=>'<option '+(state.loopHomeCity===n?'selected':'')+'>'+safe(n)+'</option>').join('')+'</select></label>'+(approach?''+(approach.link?'<a target="_blank" rel="noopener" href="'+safe(approach.link)+'">'+safe(approach.label)+' ↗</a>':'<span>'+safe(approach.label)+'</span>'):'')+'</div>'+
- (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Предыдущий</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее о маршруте</button></div>':'')+
+ (c?.source?'<a class="loop-source" target="_blank" rel="noopener" href="'+safe(c.source)+'">'+safe(c.publisher)+' ↗</a>':'')+
  (c?.stops.some(p=>p.town||p.credit==='https://www.geonames.org/')?'<a class="loop-source" href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames · CC BY 4.0</a>':'')+
+ '</details>'+
  (itinerary.legs.length?'<button class="loop-saved" data-loop="saved">Мой маршрут ↗</button>':'');
  $('loopAccess').value=state.loopAccess||'';
  $('loopBudget').value=state.loopBudget||'day';
@@ -281,7 +283,7 @@ function drawLoopCard(){
 function loopFrame(){
  const area=loopView.area,c=loopView.cards[loopView.index];if(!atlas)return;
  if(!c){flyTo(xy(area),7);return}
- const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[c.start||area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
+ const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[area,c.start||area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
  const mobile=innerWidth<680,w=map.clientWidth,h=map.clientHeight;
  atlas.fitBounds(b,{padding:{left:mobile?28:Math.min(375,w*.42),right:28,top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
 }
@@ -344,8 +346,14 @@ function saveLoop(){
 function loopLine(){
  const c=loopView.cards[loopView.index];return c?.line?[c.line]:[];
 }
+function selectedRoutePin(point,at){
+ return point?'<span class="route-anchor" role="img" aria-label="Выбранная точка" title="'+safe(point.name||'Выбранная точка')+'"'+at(point.lat,point.lon)+'><i></i></span>':'';
+}
 function loopMarkers(at){
- const c=loopView.cards[loopView.index];return [c?.start||loopView.area,...(c?.stops||[])].map((p,i)=>'<span class="drive-stop" title="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+(i||'⚑')+'</span>').join('');
+ const c=loopView.cards[loopView.index],area=loopView.area;
+ const separate=c?.start&&kmBetween(xy(area),xy(c.start))>.05;
+ const start=separate?'<span class="drive-stop" title="Старт маршрута"'+at(c.start.lat,c.start.lon)+'>⚑</span>':'';
+ return selectedRoutePin(area,at)+start+(c?.stops||[]).flatMap((p,i)=>kmBetween(xy(p),xy(area))<.05?[]:['<span class="drive-stop" title="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+(i+1)+'</span>']).join('');
 }
 function initLoops(){
  const deck=$('loopDeck');let touch,dragX=null,wheelAt=0;
