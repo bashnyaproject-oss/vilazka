@@ -184,6 +184,15 @@ function nearestTicketAirport(point){
  }
  return best?.distance<=180?best.code:null;
 }
+function ticketPhoto({name,lat,lon}){
+ const [photo,credit]=findRoutePhoto({name,lat,lon});
+ if(!photo)return '';
+ return '<figure class="ticket-photo"><img src="'+safe(photo)+'" alt="'+safe(name)+'" decoding="async">'+
+ (credit?'<figcaption>'+travelLink(credit,'Фото и источник')+'</figcaption>':'')+'</figure>';
+}
+document.addEventListener('error',event=>{
+ if(event.target.matches?.('.ticket-photo img'))event.target.closest('.ticket-photo').hidden=true;
+},true);
 function showTicketDestination(target){
  const {lat,lon,name,airport}=target,point=[lat,lon],home=actualOrigin();
  const train=mode==='train',station=nearestTicketCity(point);
@@ -199,11 +208,11 @@ function showTicketDestination(target){
  $('detail').hidden=true;
  const box=$('landmark');
  box.innerHTML='<div class="panel ticket-panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button>'+
- '<span class="badge">'+(train?'Поезд':'Самолёт')+'</span><h2>'+safe(name)+'</h2>'+
+ '<span class="badge">'+(train?'Поезд':'Самолёт')+'</span><h2>'+safe(name)+'</h2>'+ticketPhoto(target)+
  '<p class="ticket-direction">'+safe(from)+' <span aria-hidden="true">→</span> '+safe(to)+'</p>'+
  (train?'<h3>Где купить билет на поезд</h3>'+railTicketLinks(domestic):flightLinks(fromAirport,toAirport,true))+
  (train&&station?.distance>8?'<p class="note">Ближайший город из атласа. Уточни станцию у продавца.</p>':'')+
- '<p class="note">Проверь даты и наличие билетов у продавца.</p>'+
+ '<p class="note">Проверь даты и наличие билетов у продавца.</p><button class="action road-cta" data-ticket-routes>Маршруты рядом <span>→</span></button>'+
  (!train&&airport&&fromAirport!==airport?'<button class="action secondary" data-depart="'+safe(airport)+'">Вылетать отсюда</button>':'')+'</div>';
  box.hidden=false;renderPins();flyTo(point,Math.max(5,Math.min(atlas?.getZoom()||5,9)));
 }
@@ -724,6 +733,7 @@ $('filters').onchange=e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
+ if(k.ticketRoutes!==undefined&&ticketTarget){launchLoops(ticketTarget);return}
  if(k.routeStop!==undefined){const stop=loopView.cards[loopView.index]?.stops[Number(k.routeStop)];if(stop){loopView.details=true;drawLoopCard();$('loopDeck').querySelectorAll('.loop-detail li')[Number(k.routeStop)]?.scrollIntoView({block:'nearest'});}return}
  if(b.closest('#seasonList')){if(loopView.open)closeLoops();if(building)leaveTrip();$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
  if(k.openLoops!==undefined){launchLoops();return}

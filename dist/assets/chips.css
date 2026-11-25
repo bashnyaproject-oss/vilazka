@@ -133,3 +133,10 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
  dialog{margin:88px 16px auto auto;max-height:calc(100dvh - 106px)}
 }
 @media(max-width:760px){#mobileSettings #seasonDock>button,#mobileSettings #seasonDock #popFilter summary{padding-inline:9px}}
+.header-account #saved{font:550 13px system-ui;color:#ece8f2;white-space:nowrap;padding:7px 10px;border-radius:10px}
+.header-account .profile-icon{display:inline-grid;place-items:center;width:37px;height:37px;padding:0;border:1px solid #ffffff2c;color:#f3edf9;flex:none}
+.header-account .profile-icon:hover,.header-account #saved:hover{background:#25212b}
+.ticket-photo{margin:12px 0 0}
+.ticket-photo img{display:block;width:100%;aspect-ratio:2.25;object-fit:cover;border-radius:12px}
+.ticket-photo figcaption a{font-size:11px;color:#c5becc;background:none;padding:4px 0;margin:0}
+.ticket-panel .road-cta{margin-top:13px!important}
