@@ -24,7 +24,7 @@
    if(!known||area>known.area)nations.set(code,{w,s,e,n,area});
   }
   for(const [code,{w,s,e,n}] of nations){
-   const iso=visaData.iso2[code];if(!iso)continue;
+   const iso=visaData.iso2[code];if(!/^[A-Z]{2}$/.test(iso))continue;
    const name=ruCountries.of(iso);
    add(name,(s+n)/2,(w+e)/2,'Страна','country',iso,null,enCountries.of(iso));
   }
