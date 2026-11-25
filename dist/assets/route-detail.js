@@ -8,10 +8,10 @@ function drawLoopDetails(box,card,area,approach){
  const scenes=card.stops.map((p,i)=>{
   const source=p.credit&&p.credit.startsWith('https://')?p.credit:null;
   const map='https://www.google.com/maps/search/?api=1&query='+xy(p).join(',');
-  return '<li>'+loopPhoto(p,i)+'<div><strong>'+safe(p.name)+'</strong>'+(p.kind?'<small>'+safe(p.kind)+'</small>':'')+link(map,'На карте')+(source?link(source,'Источник'):'')+'</div></li>';
+  return '<li>'+loopPhoto(p,i)+'<div><strong>'+safe(p.name)+'</strong>'+((p.description||p.kind)?'<small>'+safe(p.description||p.kind)+'</small>':'')+link(map,'На карте')+(source?link(source,'Источник'):'')+'</div></li>';
  }).join('');
  box.innerHTML='<div class="loop-bar"><button data-loop="back">← К вариантам</button><button data-loop="close" aria-label="Закрыть">×</button></div>'+
- '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length)+'</p>'+
+ '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length)+'</p>'+(card.why?'<p>'+safe(card.why)+'</p>':'')+
  '<section><h3>Как добраться до старта</h3><p>'+safe(start.name)+'</p>'+
  '<p>'+safe(positioned?'Ты рядом со стартом':approach?.label||'Укажи местоположение или открой карту для построения пути')+'</p>'+
  (approach?.air&&approach.link?link(approach.link,'Проверить рейсы'):'')+link(directions,'Маршрут до старта')+'</section>'+

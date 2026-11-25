@@ -65,16 +65,16 @@ function candidatesFor(area){
 function makeLoops(area,points,generated=false){
  const cards=[],used=new Set();
  if(!generated)for(const g of publishedDrives){
-  const gp=g.places.map(([name,lat,lon])=>{
+  const gp=g.places.map(([name,lat,lon,description])=>{
    const known=points.find(p=>kmBetween(xy(p),[lat,lon])<3&&p.photo&&p.name===name);
-   return {...known,name,lat,lon};
+   return {...known,name,lat,lon,description};
   });
   if(!gp.every(p=>allowsStop(area,p.lat,p.lon)))continue;
   const approach=kmBetween(xy(area),xy(gp[0]));if(approach>driveRadius())continue;
   const stops=gp.filter(p=>kmBetween(xy(area),xy(p))>1);
   if(g.separateStart?gp.length<2:stops.length<2)continue;
   const end=stops[stops.length-1],sector=(Math.round(Math.atan2((end.lon-area.lon)*Math.cos(area.lat*Math.PI/180),end.lat-area.lat)*4/Math.PI)+8)%8;
-  cards.push({sector,title:g.name,start:g.separateStart?gp[0]:null,stops:g.separateStart?gp.slice(1):stops,line:null,source:g.url,publisher:g.source,approach,length:null});
+  cards.push({sector,title:g.name,start:g.separateStart?gp[0]:null,stops:g.separateStart?gp.slice(1):stops,line:null,why:g.why,source:g.url,publisher:g.source,approach,length:null});
  }
  if(!generated)return cards.sort((a,b)=>a.approach-b.approach);
  for(const seed of points){
@@ -109,7 +109,19 @@ const hours=seconds=>{const n=Math.max(1,Math.round(seconds/60));return (n>=60?M
 async function loadLoop(card){
  if(!card||card.pending||card.done)return;
  card.pending=true;const area=loopView.area;
- try{const {path,waypoints}=await osrmPath([card.start||area,...card.stops],!card.source);
+ const start=card.start||area;
+ try{
+  let result;
+  try{result=await osrmPath([start,...card.stops],!card.source)}catch(error){
+   if(card.source||card.stops.length<3||loopView.area!==area||!loopView.open)throw error;
+   const pairs=[card.stops.slice(0,2),[card.stops[0],card.stops[2]],card.stops.slice(1)];
+   for(const stops of pairs){
+    if(loopView.area!==area||!loopView.open)break;
+    try{result=await osrmPath([start,...stops],true);card.stops=stops;break}catch{}
+   }
+   if(!result)throw error;
+  }
+  const {path,waypoints}=result;
   if(!area.crossBorder&&!domesticPath(area.country,path.geometry.coordinates))throw Error();
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
   card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
@@ -201,6 +213,10 @@ function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
   for(const c of makeLoops(area,candidatesFor(area),true)){
    if(loopView.cards.length>=30)break;
    if(!existing.has(c.title)){loopView.cards.push(c);existing.add(c.title)}
+  }
+  if(!empty&&loopView.cards[loopView.index]?.done&&!loopView.cards[loopView.index]?.line&&!area.browsed&&!area.trying){
+   const available=loopView.cards.findIndex(c=>!c.done&&!c.pending);
+   if(available>=0){loopView.index=available;refreshLoopApproach();loopFrame();renderPins();paintRoute();loadLoop(loopView.cards[available])}
   }
   if(empty&&loopView.cards.length){refreshLoopApproach();loopFrame();renderPins();paintRoute();loadLoop(loopView.cards[0])}
   drawLoopCard();
