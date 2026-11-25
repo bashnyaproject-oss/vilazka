@@ -40,6 +40,7 @@ function placeName(point){
 const originName=()=>actualOrigin()?(['auto','pin'].includes(state.origin)?placeName(actualOrigin()):state.origin):'Выбрать старт';
 const startQuery=()=>actualOrigin()?.slice(0,2).join(',')||'';
 if(!['2','3','5','8'].includes(state.drive))state.drive=defaults.drive;
+let russiaOnly=false, refreshRussiaList=null;
 let mode='all', viewingSaved=false, active=null, tripMode='', tab='plan', visible=[];
 const persist=()=>{try{localStorage.setItem(storeKey,JSON.stringify(state))}catch{}};
 const euro=n=>new Intl.NumberFormat('ru-RU').format(n)+' €';
@@ -138,6 +139,10 @@ function browseStory(step){
  $('quickCards').innerHTML=storyCard();flyTo([d.lat,d.lon],4);renderPins();
 }
 function render(){
+ if(russiaOnly){
+  updateLocation();updateProgress();$('nearby').hidden=true;driveShelf.current=null;
+  refreshRussiaList?.();renderPins();paintRoute();return;
+ }
  visible=data.filter(matches).sort((a,b)=>(b.tag===state.taste)-(a.tag===state.taste)||distance(a)-distance(b));
  if(active&&!visible.includes(active))active=null;
  $('resultTitle').textContent=viewingSaved?'Мои поездки':'Направления';
@@ -237,7 +242,8 @@ function nearbyCatalogue(at,z){
  const west=Math.max(-180,bounds.getWest()),east=Math.min(180,bounds.getEast());
  for(let a=Math.floor(west/5);a<=Math.floor(east/5);a++)for(let b=Math.floor(Math.max(-90,bounds.getSouth())/5);b<=Math.floor(Math.min(90,bounds.getNorth())/5);b++){
   for(const i of geoIndex.get(a+','+b)||[]){
-   const [id,,lon,lat,,,img]=catalogue[i],score=popularity.score(id);
+   const [id,,lon,lat,,country,img]=catalogue[i],score=popularity.score(id);
+   if(russiaOnly&&country!=='RU')continue;
    if(score<minimum)continue;
    const p=atlas.project([lon,lat]);if(p.x<0||p.y<0||p.x>w||p.y>h)continue;
    const cell=Math.floor(p.x/step)+','+Math.floor(p.y/step);
@@ -276,7 +282,7 @@ async function showSiteDrive(lat,lon){
 }
 function openCatalogue(i){
  const [id,name,lon,lat,cat,country,img,credit]=catalogue[i];if(pointChoice(lat,lon,name))return;
- if(building)leaveTrip();active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
+ if(building)leaveTrip();active=null;clearRoute();setDrawer(false,russiaOnly);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
  const url=isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
  const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип →</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
@@ -348,6 +354,7 @@ function wrappedParts(line){
  return parts;
 }
 function transportGeometry(){
+ if(russiaOnly)return [];
  if(mode==='train')return typeof railLines==='undefined'?[]:railLines;
  if(flying()&&flightNetwork().from){
   const {from,points}=flightNetwork(),choices=airChoices();
@@ -467,7 +474,7 @@ function renderPins(){
   pinLayer.innerHTML=locationPin+stagePins(at);positionPins();return;
  }
  const groups=[],minorDots=[];
- for(const d of visible){
+ for(const d of russiaOnly?[]:visible){
   if(flying()&&tier<2&&!viewingSaved)continue;
   if(!viewingSaved&&d!==active&&tier===0&&!major.has(d.id)){
    minorDots.push('<button class="landmark-mark landmark-small" style="--diameter:5px" data-open="'+d.id+'" title="'+d.name+'" aria-label="'+d.name+'"'+at(d.lat,d.lon)+'></button>');
@@ -479,7 +486,7 @@ function renderPins(){
   if(group)group.items.push(d);else groups.push({x,y,items:[d]});
  }
  const used=new Set();
- const points=tier<2?[]:visible.flatMap(d=>landmarks[d.id].map((p,i)=>({d,p,i})));
+ const points=russiaOnly||tier<2?[]:visible.flatMap(d=>landmarks[d.id].map((p,i)=>({d,p,i})));
  const pois=points.map(({d,p,i})=>{
   if(tier===2&&i!==0)return '';
   const [name,lat,lon]=p,{x,y}=atlas.project([lon,lat]);
@@ -497,7 +504,7 @@ function renderPins(){
   const [d]=items;
   if(items.length>1)return '<button class="cluster" data-cluster="'+items.map(i=>i.id).join(',')+'" aria-label="'+items.length+' направления"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<b>'+items.length+'</b></button>';
   return '<button class="pin '+(active===d?'current':'')+'" data-open="'+d.id+'" aria-label="'+d.name+'"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<small>'+d.name+'</small></button>';
- }).join('')+minorDots.join('')+nearbyCatalogue(at,zoom)+pois+cityPins(at,regions)+(flying()?airportPins(at,zoom):'')+(!active&&!$('nearby').hidden&&driveShelf.current?driveShelf.current.places.map(([name,lat,lon],i)=>'<span class="drive-stop" aria-label="'+safe(name)+'"'+at(lat,lon)+'>'+ (i+1)+'</span>').join(''):'');
+ }).join('')+minorDots.join('')+nearbyCatalogue(at,zoom)+pois+cityPins(at,regions)+(flying()&&!russiaOnly?airportPins(at,zoom):'')+(!active&&!$('nearby').hidden&&driveShelf.current?driveShelf.current.places.map(([name,lat,lon],i)=>'<span class="drive-stop" aria-label="'+safe(name)+'"'+at(lat,lon)+'>'+ (i+1)+'</span>').join(''):'');
 
  positionPins();
 }
@@ -534,7 +541,7 @@ function landmarkPins(at,z,labels){
 function cityPins(at,regions){
  if(viewingSaved||picking)return '';
  const z=atlas.getZoom(),labels=regions.map(({x,y})=>({left:x-26,right:x+26,top:y-48,bottom:y+5}));
- const entries=rankedCities.filter(e=>e.i<russianStart);
+ const entries=rankedCities.filter(({city,i})=>i<russianStart&&(!russiaOnly||countryAt(city[3],city[2])==='RUS'));
  const result=[landmarkPins(at,z,labels)];
  for(const {city:[name,,lon,lat,pop],i} of entries){
   if(!popularity.allows('c'+i))continue;
@@ -559,7 +566,7 @@ function openCity(i){
  const [name,country,x,y]=atlasCities[i];
  if(pointChoice(y,x,name))return;
  if(building)leaveTrip();
- active=null;clearRoute();setDrawer(false);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
+ active=null;clearRoute();setDrawer(false,russiaOnly);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const box=$('landmark');
  box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2><button class="action road-cta" data-leg-city="'+i+'">Роад-трип →</button><button class="action secondary" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
  box.querySelector('.panel').insertAdjacentHTML('beforeend',reviews(name,y,x));
@@ -659,7 +666,7 @@ function compare(){
 }
 $('profile').onclick=showProfile;
 $('dialog').addEventListener('close',()=>{visaRequested=false});
-$('explore').onclick=()=>{const show=document.querySelector('aside').hidden||viewingSaved;viewingSaved=false;setDrawer(show);render()};
+$('explore').onclick=()=>{const show=document.querySelector('aside').hidden||viewingSaved||russiaOnly;viewingSaved=false;setDrawer(show);render()};
 $('saved').onclick=openAccountTrips;
 $('filters').onsubmit=e=>e.preventDefault();
 $('filters').onchange=e=>{
@@ -747,7 +754,12 @@ const landmarks=[
  [['Казанский кремль',55.799,49.105],['Старо-Татарская слобода',55.780,49.116],['Свияжск',55.770,48.660]],
  [['Красная Поляна',43.680,40.205],['Роза Хутор',43.674,40.297],['Сириус',43.415,39.944]]
 ];
-function setDrawer(open){
+function setDrawer(open,keepRussia=false){
+ const wasRussia=russiaOnly;
+ if(!keepRussia){russiaOnly=false;refreshRussiaList=null;}
+ $('browseRussia').classList.toggle('active',russiaOnly);
+ $('browseRussia').setAttribute('aria-pressed',String(russiaOnly));
+ if(wasRussia&&!russiaOnly)applyTransportLayer();
  $('filters').hidden=false;$('drawerTitle').textContent=viewingSaved?'Поездки':'Направления';
  document.querySelector('aside').hidden=!open;
  if(open){active=null;$('detail').hidden=true;closeLandmark();}
@@ -1094,8 +1106,11 @@ $('closeDrawer').onclick=()=>{setDrawer(false);viewingSaved=false;if(!actualOrig
 $('storyPrev').onclick=()=>browseStory(-1);
 $('storyNext').onclick=()=>browseStory(1);
 $('browseRussia').onclick=()=>{
+ if(loopView.open)closeLoops();
  if(building||pickStage||pickStop)leaveTrip();
- viewingSaved=false;active=null;closeLandmark();setDrawer(true);render();
+ if(picking)finishPick();
+ russiaOnly=true;
+ viewingSaved=false;active=null;closeLandmark();setDrawer(true,true);$('explore').classList.remove('active');$('explore').setAttribute('aria-expanded','false');$('saved').classList.remove('active');clearRoute();
  $('drawerTitle').textContent='Места России';$('filters').hidden=true;
  $('resultTitle').textContent='Каталог мест';
  const entries=[...russianPlaces.map(([name,area],i)=>[name,area,'city',russianStart+i]),...catalogue.flatMap(([id,name,,,kind,country],i)=>country==='RU'?[[name,kind,'site',i]]:[])];
@@ -1107,7 +1122,7 @@ $('browseRussia').onclick=()=>{
   $('placeResults').innerHTML=filtered.slice(0,limit).map(([n,k,key,i])=>'<button class="ru-row" data-'+key+'="'+i+'"><strong>'+safe(n)+'</strong><span>'+safe(k)+'</span></button>').join('');
   $('morePlaces').hidden=limit>=filtered.length;
  }
- $('findRussia').oninput=()=>{limit=60;list()};$('morePlaces').onclick=()=>{limit+=60;list()};list();
+ $('findRussia').oninput=()=>{limit=60;list()};$('morePlaces').onclick=()=>{limit+=60;list()};refreshRussiaList=list;render();applyTransportLayer();
  const bounds=new (window.maplibregl?.LngLatBounds||OfflineBounds)();for(const [,,x,y] of russianPlaces)bounds.extend([x,y]);
  atlas.fitBounds(bounds,{padding:70,maxZoom:4,duration:0});
 };

@@ -57,7 +57,7 @@
  function search(){
   menu(false);const q=normalize(field.value.trim()),center=camera();
   const found=q?index().filter(p=>q.length===1?p.key.split(/[\s-]+/).some(part=>part.startsWith(q)):p.key.includes(q)):index().filter(p=>p.pic);
-  const ranked=nearest(found,center);
+  const ranked=nearest(russiaOnly?found.filter(p=>p.action==='country'?p.id==='RU':countryAt(p.lat,p.lon)==='RUS'):found,center);
   if(q)ranked.sort((a,b)=>Number(!normalize(a[0].name).startsWith(q))-Number(!normalize(b[0].name).startsWith(q)));
   if(q){const firstCountry=ranked.findIndex(([p])=>p.action==='country'&&normalize(p.name).startsWith(q));if(firstCountry>2)ranked.splice(2,0,...ranked.splice(firstCountry,1))}
   const seen=new Set();shortlist=ranked.filter(([p])=>{if(seen.has(p.name))return false;seen.add(p.name);return true}).slice(0,8);
@@ -69,7 +69,7 @@
   const center=camera(),key=[center.lat.toFixed(2),center.lng.toFixed(2),atlas?.getZoom().toFixed(1)].join('/');
   if(lastCamera===key)return;lastCamera=key;
   const bounds=atlas?.getBounds();if(!bounds)return;
-  const pool=index().filter(p=>p.pic&&p.lat>=bounds.getSouth()&&p.lat<=bounds.getNorth()&&p.lon>=bounds.getWest()&&p.lon<=bounds.getEast());
+  const pool=index().filter(p=>(!russiaOnly||countryAt(p.lat,p.lon)==='RUS')&&p.pic&&p.lat>=bounds.getSouth()&&p.lat<=bounds.getNorth()&&p.lon>=bounds.getWest()&&p.lon<=bounds.getEast());
   const seen=new Set(),places=nearest(pool,center).filter(([p])=>{if(seen.has(p.name))return false;seen.add(p.name);return true}).slice(0,8);
   const rail=$('mobilePlaces');rail.replaceChildren();rail.hidden=!places.length;
   for(const [p] of places){
