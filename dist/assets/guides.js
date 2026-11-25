@@ -40,7 +40,7 @@ const byId=id=>document.getElementById(id);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mapLink=q=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
 const photo=(g,cls)=>g.pic&&/^https:\/\//.test(g.pic)?'<img class="'+cls+'" loading="lazy" alt="" src="'+esc(g.pic)+'">':'';
-const info=g=>g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
+const info=g=>g.distanceKm&&g.drivingMinutes?g.distanceKm+' км · '+Math.floor(g.drivingMinutes/60)+' ч '+g.drivingMinutes%60+' мин':g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
 byId('access').innerHTML=accessOptions();
 function list(){
  const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
@@ -51,7 +51,7 @@ function show(){
  const g=guides.find(g=>'#'+g.id===location.hash);
  byId('library').hidden=!!g;byId('article').hidden=!g;if(!g){list();return}
  const phases=g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(([name,lat,lon])=>'<li><a target="_blank" rel="noopener" href="'+mapLink(lat+','+lon)+'">'+esc(name)+' ↗</a></li>').join('')+'</ol></section>').join('');
- byId('article').innerHTML='<a class="back" href="#">← Все гайды</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p><p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+phases;window.scrollTo(0,0);
+ byId('article').innerHTML='<a class="back" href="#">← Все гайды</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+phases;window.scrollTo(0,0);
 }
 document.addEventListener('error',e=>{if(e.target.tagName==='IMG')e.target.hidden=true},true);
 byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();
