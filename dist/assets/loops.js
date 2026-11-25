@@ -19,6 +19,22 @@ async function russianSights(area){
  }
  return (await Promise.all(cells)).flat().map(p=>({p,km:kmBetween(xy(area),[p[1],p[2]])})).filter(s=>s.km<=driveRadius()).sort((a,b)=>a.km-b.km).slice(0,80).map(s=>s.p);
 }
+const mappedSights=new Map();
+async function worldSights(area){
+ const radius=Math.min(180000,driveRadius()*1000);
+ const key=[area.lat.toFixed(2),area.lon.toFixed(2),radius].join('/');
+ if(mappedSights.has(key))return mappedSights.get(key);
+ const around='(around:'+radius+','+area.lat.toFixed(4)+','+area.lon.toFixed(4)+')';
+ const query='[out:json][timeout:10];(nwr'+around+'["name"]["tourism"~"^(viewpoint|museum|attraction)$"]["wikidata"];nwr'+around+'["name"]["historic"~"^(castle|archaeological_site|monument)$"]["wikidata"];);out center 450;';
+ const request=fetch('https://overpass.kumi.systems/api/interpreter?data='+encodeURIComponent(query),{signal:AbortSignal.timeout(14000)})
+  .then(r=>{if(!r.ok)throw Error();return r.json()})
+  .then(j=>j.elements.flatMap(e=>{
+   const p=e.center||e,name=e.tags?.['name:ru']||e.tags?.name;
+   return name&&Number.isFinite(p.lat)&&Number.isFinite(p.lon)?[[name,p.lat,p.lon,'https://www.openstreetmap.org/'+e.type+'/'+e.id,e.tags.tourism||e.tags.historic]]:[];
+  })).catch(()=>{mappedSights.delete(key);return []});
+ if(mappedSights.size>=20)mappedSights.delete(mappedSights.keys().next().value);
+ mappedSights.set(key,request);return request;
+}
 function nearbyBases(area){
  const towns=atlasCities.slice(0,russianStart).map(([name,,lon,lat])=>[name,lat,lon]);
  const found=[];
@@ -50,8 +66,9 @@ function candidatesFor(area){
  russianPlaces.forEach(([n,,x,y],i)=>{const m=placeMedia['p'+i];add(n,y,x,m?.[1],m?.[1]?'https://ru.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null)});
  if(candidates.length<8||area.extraTowns)for(const p of area.bases.slice(0,60))add(p.name,p.lat,p.lon,null,null,true,5);
  for(const [name,lat,lon,kind] of area.sights||[])add(name,lat,lon,null,'https://www.geonames.org/',kind.startsWith('PPLA'),kind==='LK'?12:30,({LK:'Озеро',FLLS:'Водопад',MUS:'Музей',MSTY:'Монастырь',PK:'Парк',RESN:'Заповедник'})[kind]);
+ for(const [name,lat,lon,url,type] of area.mapped||[])add(name,lat,lon,null,url,false,63,({viewpoint:'Смотровая',museum:'Музей',castle:'Замок',archaeological_site:'Историческое место',monument:'Памятник'})[type]||'Достопримечательность');
  const preference=state.loopPreference;
- const theme=(p)=>preference==='nature'?/озер|озёр|водопад|парк|заповед|скал|гор|природ|fjord|natural/i.test(p.kind+' '+p.name):preference==='culture'?/музе|храм|замок|монастыр|истор|cultural/i.test(p.kind+' '+p.name):false;
+ const theme=(p)=>preference==='nature'?/озер|озёр|водопад|парк|смотров|заповед|скал|гор|природ|fjord|natural/i.test(p.kind+' '+p.name):preference==='culture'?/музе|храм|замок|монастыр|истор|cultural/i.test(p.kind+' '+p.name):false;
  for(const p of candidates)p.rank=p.weight+(p.photo?8:0)+(theme(p)?32:0)-28*p.km/driveRadius();
  candidates.sort((a,b)=>b.rank-a.rank);
  const unique=[],buckets={};
@@ -63,7 +80,7 @@ function candidatesFor(area){
  return unique;
 }
 function makeLoops(area,points,generated=false){
- const cards=[],used=new Set();
+ const cards=[],used=new Map(),signatures=new Set();
  if(!generated)for(const g of publishedDrives){
   const gp=g.places.map(([name,lat,lon,description])=>{
    const known=points.find(p=>kmBetween(xy(p),[lat,lon])<3&&p.photo&&p.name===name);
@@ -78,24 +95,28 @@ function makeLoops(area,points,generated=false){
  }
  if(!generated)return cards.sort((a,b)=>a.approach-b.approach);
  for(const seed of points){
-  if(cards.length>=18)break;
-  if(used.has(seed)||cards.filter(c=>c.sector===seed.sector).length>=2)continue;
-  if(seed.town)continue;
-  const near=points.filter(p=>p!==seed&&!used.has(p))
+  if(cards.length>=64)break;
+  if((used.get(seed)||0)>=3||cards.filter(c=>c.sector===seed.sector).length>=8)continue;
+  if(seed.town&&points.some(p=>!p.town&&p.km<=seed.km*1.4))continue;
+  const near=points.filter(p=>p!==seed&&(used.get(p)||0)<5)
    .map(p=>({p,gap:kmBetween(xy(seed),xy(p))}))
    .filter(o=>o.gap>2&&o.gap<Math.max(45,Math.min(driveRadius()*.7,seed.km*.9+35)))
    .sort((a,b)=>(b.p.rank-b.gap*.45)-(a.p.rank-a.gap*.45));
+  for(const offset of [0,2,4]){
+  if(cards.length>=64||cards.filter(c=>c.sector===seed.sector).length>=8)break;
   const chosen=[];
-  for(const {p} of near){
+  for(const {p} of near.slice(offset)){
    if((p.town&&chosen.some(q=>q.town))||chosen.some(q=>kmBetween(xy(p),xy(q))<2))continue;
    chosen.push(p);if(chosen.length===2)break;
   }
   const stops=[seed,...chosen];if(stops.length<2)continue;
+  const key=stops.map(p=>p.name).sort().join("|");if(signatures.has(key))continue;signatures.add(key);
   const tour=seq=>[area,...seq,area].slice(1).reduce((s,p,i)=>s+kmBetween(xy(p),xy([area,...seq][i])),0);
   const perms=stops.length===3?[stops,[stops[1],stops[0],stops[2]],[stops[0],stops[2],stops[1]]]:[stops];
   const order=perms.sort((a,b)=>tour(a)-tour(b))[0];
   if(order.at(-1).km<order[0].km)order.reverse();
-  cards.push({sector:seed.sector,title:seed.name.split(' (')[0]+' · '+stops.length+' остановки',stops:order,line:null,length:null});order.forEach(p=>used.add(p));
+  cards.push({sector:seed.sector,title:seed.name.split(' (')[0]+' и '+chosen[0].name,stops:order,line:null,length:null});order.forEach(p=>used.set(p,(used.get(p)||0)+1));
+  }
  }
  return cards;
 }
@@ -206,12 +227,12 @@ function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
  const area=loopView.area;
  area.bases=nearbyBases(area);loopView.serial++;loopView.approach=null;loopView.index=0;loopView.details=false;
  loopView.cards=generated?[]:makeLoops(area,[]);
- const supplement=generated||loopView.cards.length<12;
+
  function addSuggestions(){
   if(!loopView.open||loopView.area!==area)return;
   const empty=!loopView.cards.length,existing=new Set(loopView.cards.map(c=>c.title));
   for(const c of makeLoops(area,candidatesFor(area),true)){
-   if(loopView.cards.length>=30)break;
+   if(loopView.cards.length>=80)break;
    if(!existing.has(c.title)){loopView.cards.push(c);existing.add(c.title)}
   }
   if(!empty&&loopView.cards[loopView.index]?.done&&!loopView.cards[loopView.index]?.line&&!area.browsed&&!area.trying){
@@ -222,7 +243,7 @@ function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
   drawLoopCard();
  }
  const code=visaData.iso2[area.country];
- if(supplement&&/^[A-Z]{2}$/.test(code)){
+ if(/^[A-Z]{2}$/.test(code)){
   area.searching=true;
   if(!townFiles.has(code))townFiles.set(code,fetch('assets/towns/'+code+'.json').then(r=>{if(!r.ok)throw Error();return r.json()}).catch(()=>{townFiles.delete(code);return []}));
   Promise.all([townFiles.get(code),code==='RU'?russianSights(area):[]]).then(([rows,sights])=>{
@@ -230,7 +251,8 @@ function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
    area.searching=false;area.sights=sights;area.extraTowns=rows;area.bases=nearbyBases(area);addSuggestions();
   });
  }
- if(supplement&&(loopView.cards.length||!area.searching))addSuggestions();
+ if(loopView.cards.length||!area.searching)addSuggestions();
+ if(loopView.cards.length<25&&area.country)worldSights(area).then(rows=>{if(rows.length&&loopView.area===area&&loopView.open){area.mapped=rows;addSuggestions()}});
  drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[0]);refreshLoopApproach();
 }
 function launchLoops(point){
