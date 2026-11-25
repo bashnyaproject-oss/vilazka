@@ -285,7 +285,7 @@ function reviews(name,lat,lon){
  travelLink(googleUrl,'Google'+(google?' · ★ '+google[0]:''))+
  travelLink(yaUrl,'Яндекс'+(name==='Горный парк Рускеала'||name==='Ипатьевский монастырь'||name==='Ростовский кремль'?' · ★ 5,0':''))+'</div></section>';
 }
-const catalogue=[...heritage,...regionalSites];
+const catalogue=[...heritage,...regionalSites,...famousPlaces];
 const geoIndex=new Map();
 for(let i=0;i<catalogue.length;i++){
  const row=catalogue[i],k=Math.floor(row[2]/5)+','+Math.floor(row[3]/5);
@@ -300,10 +300,11 @@ function nearbyCatalogue(at,z){
   for(const i of geoIndex.get(a+','+b)||[]){
    const [id,,lon,lat,,country,img]=catalogue[i],score=popularity.score(id);
    if(russiaOnly&&country!=='RU')continue;
+   const featured=id.startsWith('wiki:');
    if(score<minimum)continue;
    const p=atlas.project([lon,lat]);if(p.x<0||p.y<0||p.x>w||p.y>h)continue;
    const cell=Math.floor(p.x/step)+','+Math.floor(p.y/step);
-   const rank=score*2+Number(Boolean(img||placeMedia[id]?.[1]));
+   const rank=(featured?30:0)+score*2+Number(Boolean(img||placeMedia[id]?.[1]));
    if(!cells.has(cell)||rank>cells.get(cell).rank)cells.set(cell,{i,rank,x:p.x,y:p.y});
   }
  }
@@ -311,7 +312,7 @@ function nearbyCatalogue(at,z){
  for(const {i,x,y,rank} of [...cells.values()].sort((a,b)=>b.rank-a.rank)){
   const [id,name,lon,lat,,,img]=catalogue[i],photo=img||placeMedia[id]?.[1];
   const gap=z<5?118:z<7?88:64;
-  const show=(z>=4.5||rank>0)&&photos.length<(z<5?12:26)&&photos.every(p=>Math.hypot(x-p.x,y-p.y)>gap);
+  const show=Boolean(photo)&&(z>=4.5||rank>0)&&photos.length<(z<5?12:26)&&photos.every(p=>Math.hypot(x-p.x,y-p.y)>gap);
   if(show)photos.push({x,y});
   const title=safe(name+(show&&!photo?' · вид со спутника':''));
   const size=Math.min(43,Math.round(21+Math.max(0,z-3)*3+Math.min(5,rank)));
@@ -339,9 +340,9 @@ async function showSiteDrive(lat,lon){
 function openCatalogue(i){
  const [id,name,lon,lat,cat,country,img,credit]=catalogue[i];if(pointChoice(lat,lon,name))return;
  if(building)leaveTrip();active=null;clearRoute();setDrawer(false,russiaOnly);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
- const isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
- const url=isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
- const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+reviews(name,lat,lon)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип <span>→</span></button>'+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
+ const isWiki=id.startsWith('wiki:'),isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isWiki?'Википедия':isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
+ const url=isWiki?catalogue[i][8]:isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
+ const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+(isWiki?'<figure class="geo-figure"><img src="'+safe(img)+'" alt="'+safe(name)+'"><figcaption><a target="_blank" rel="noopener" href="'+safe('https://ru.wikipedia.org/wiki/File:'+catalogue[i][9].split('/').pop())+'">Фотография и лицензия ↗</a></figcaption></figure>':photoFigure(id,name,lon,lat,img,credit))+reviews(name,lat,lon)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип <span>→</span></button>'+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
 
  showSiteDrive(lat,lon);
  flyTo([lat,lon],Math.max(atlas.getZoom(),7));

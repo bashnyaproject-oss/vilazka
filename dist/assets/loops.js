@@ -58,10 +58,10 @@ function candidatesFor(area){
  loopGallery.forEach(row=>add(...row,false,62));
  for(const guide of publishedDrives)for(const [name,lat,lon] of guide.places)
   add(name,lat,lon,null,guide.url,false,85,'Из гида · '+guide.source);
- catalogue.forEach(([id,name,lon,lat,kind,,img])=>{
+ catalogue.forEach(([id,name,lon,lat,kind,,img,,,original])=>{
   const m=placeMedia[id];
   if(!img&&!m?.[1]&&!['Cultural','Natural','Mixed','Озеро','Гора','Историческое место','Парк','Музей','Монастырь','Заповедник','Водопад','Каньон','Замок','Пещера'].includes(kind))return;
-  add(name,lat,lon,img||m?.[1],img?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null,false,img?100:m?.[1]?65:28,kind);
+  add(name,lat,lon,img||m?.[1],original?'https://ru.wikipedia.org/wiki/File:'+original.split('/').pop():img?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null,false,original?140:img?100:m?.[1]?65:28,kind);
  });
  russianPlaces.forEach(([n,,x,y],i)=>{const m=placeMedia['p'+i];add(n,y,x,m?.[1],m?.[1]?'https://ru.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null)});
  if(candidates.length<8||area.extraTowns)for(const p of area.bases.slice(0,60))add(p.name,p.lat,p.lon,null,null,true,5);
@@ -269,9 +269,9 @@ function findRoutePhoto(p){
   };
   for(const row of additionalRoutePhotos)add(...row);
   for(const row of loopGallery)add(...row);
-  for(const [id,name,lon,lat,,,image] of catalogue){
+  for(const [id,name,lon,lat,,,image,,,original] of catalogue){
    const m=placeMedia[id];
-   add(name,lat,lon,image||m?.[1],image?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
+   add(name,lat,lon,image||m?.[1],original?'https://ru.wikipedia.org/wiki/File:'+original.split('/').pop():image?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
   }
  }
  const match=routePhotoIndex.get(p.name.toLocaleLowerCase().trim().replace(/[’']/g,''))?.find(q=>kmBetween(xy(p),xy(q))<2);
