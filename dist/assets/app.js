@@ -268,7 +268,9 @@ function reviews(name,lat,lon){
  const q=encodeURIComponent(name),google=googleScores[name],ya=knownYandex[name];
  const googleUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' '+lat+','+lon);
  const yaUrl=ya?'https://yandex.ru/maps/org/'+ya+'/reviews/':'https://yandex.ru/maps/?ll='+lon+'%2C'+lat+'&z=14&text='+q;
- return '<section class="review-links"><h3>Оценки места</h3><a target="_blank" rel="noopener" href="'+googleUrl+'">Google Карты <b>'+(google?'★ '+google[0]:'Отзывы ↗')+'</b></a><a target="_blank" rel="noopener" href="'+yaUrl+'">Яндекс Карты <b>'+(name==='Горный парк Рускеала'||name==='Ипатьевский монастырь'||name==='Ростовский кремль'?'★ 5,0':'Отзывы ↗')+'</b></a>'+(ya?'<iframe title="Рейтинг Яндекса" loading="lazy" src="https://yandex.ru/sprav/widget/rating-badge/'+ya+'"></iframe>':'')+(google?'<small>Google · <a target="_blank" rel="noopener" href="'+google[1]+'">снимок Wanderlog</a></small>':'')+'</section>';
+ return '<section class="review-links"><h3>Оценки места</h3><div>'+
+ travelLink(googleUrl,'Google'+(google?' · ★ '+google[0]:''))+
+ travelLink(yaUrl,'Яндекс'+(name==='Горный парк Рускеала'||name==='Ипатьевский монастырь'||name==='Ростовский кремль'?' · ★ 5,0':''))+'</div></section>';
 }
 const catalogue=[...heritage,...regionalSites];
 const geoIndex=new Map();
@@ -326,7 +328,7 @@ function openCatalogue(i){
  if(building)leaveTrip();active=null;clearRoute();setDrawer(false,russiaOnly);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const isGeo=id.startsWith('g'),isOsm=id.startsWith('osm:'),source=isGeo?'GeoNames':isOsm?'OpenStreetMap':'ЮНЕСКО';
  const url=isGeo?'https://www.geonames.org/'+id.slice(1):isOsm?'https://www.openstreetmap.org/'+id.slice(4):'https://whc.unesco.org/en/list/'+id+'/';
- const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип →</button>'+reviews(name,lat,lon)+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
+ const box=$('landmark');box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><small>'+safe(({Cultural:'Культурное наследие',Natural:'Природное наследие',Mixed:'Всемирное наследие'})[cat]||cat)+'</small><h2>'+safe(name)+'</h2>'+photoFigure(id,name,lon,lat,img,credit)+reviews(name,lat,lon)+'<button class="action road-cta" data-stage-site="'+i+'">Роад-трип <span>→</span></button>'+'<a target="_blank" rel="noopener" href="'+url+'">'+source+' ↗</a></div>';box.hidden=false;
 
  showSiteDrive(lat,lon);
  flyTo([lat,lon],Math.max(atlas.getZoom(),7));
@@ -610,8 +612,7 @@ function openCity(i){
  if(building)leaveTrip();
  active=null;clearRoute();setDrawer(false,russiaOnly);$('detail').hidden=true;$('nearby').hidden=true;$('portal').hidden=true;
  const box=$('landmark');
- box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2><button class="action road-cta" data-leg-city="'+i+'">Роад-трип →</button><button class="action secondary" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
- box.querySelector('.panel').insertAdjacentHTML('beforeend',reviews(name,y,x));
+ box.innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+country+'</span><h2>'+name+'</h2>'+reviews(name,y,x)+'<button class="action road-cta" data-leg-city="'+i+'">Роад-трип <span>→</span></button><button class="action secondary" data-city-save="'+i+'">'+((state.cityWishlist||[]).includes(i)?'В поездках':'Хочу сюда')+'</button><a class="secondary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/#map=15/'+y+'/'+x+'">Улицы и места рядом</a></div>';
  const mediaKey=i>=russianStart?'p'+(i-russianStart):'c'+i;
  if(i<russianStart||placeMedia[mediaKey]?.[1])box.querySelector('h2').insertAdjacentHTML('afterend',photoFigure(mediaKey,name,x,y));
  else if(i>=russianStart){
@@ -913,14 +914,30 @@ function requirements(){
 function steps(){
  return '<div class="steps" aria-label="Шаги выбора">'+[['plan','Место'],['price','Бюджет'],['ready','Подготовка'],['today','В поездке']].map(([key,label])=>'<button data-stage="'+key+'" class="'+(tab===key?'selected':'')+'">'+label+'</button>').join('')+'</div>';
 }
+let routePaintPending=null;
 function paintRoute(){
  if(!atlas)return;
  if(canvas){canvas.draw();return}
- if(!atlas.isStyleLoaded())return;
- const features=(loopView.open?loopLine():building?drivingLines:previewLines()).filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{}}));
- const content={type:'FeatureCollection',features};
- if(atlas.getSource('trip-route'))atlas.getSource('trip-route').setData(content);
- else {atlas.addSource('trip-route',{type:'geojson',data:content});atlas.addLayer({id:'trip-route',type:'line',source:'trip-route',paint:{'line-color':'#cbbaff','line-width':3,'line-dasharray':[2,1]}})}
+ const mapView=atlas;
+ const source=mapView.getSource('trip-route');
+ if(!source&&!mapView.isStyleLoaded()){
+  if(routePaintPending!==mapView){routePaintPending=mapView;mapView.once('idle',()=>{
+   if(routePaintPending===mapView)routePaintPending=null;
+   if(atlas===mapView)paintRoute();
+  })}
+  return;
+ }
+ const lines=loopView.open?loopLine():building?drivingLines:previewLines();
+ const preview=loopView.open&&!loopView.cards[loopView.index]?.line;
+ const features=lines.filter(line=>line.length>1).map(line=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{preview}}));
+ const data={type:'FeatureCollection',features};
+ if(source)source.setData(data);
+ else mapView.addSource('trip-route',{type:'geojson',data});
+ if(!mapView.getLayer('trip-route'))mapView.addLayer({id:'trip-route',type:'line',source:'trip-route',
+  filter:['==','preview',false],layout:{'line-join':'round','line-cap':'round'},
+  paint:{'line-color':'#cbbaff','line-width':4}});
+ if(!mapView.getLayer('trip-preview'))mapView.addLayer({id:'trip-preview',type:'line',source:'trip-route',
+  filter:['==','preview',true],paint:{'line-color':'#cbbaff','line-opacity':.65,'line-width':2,'line-dasharray':[2,2]}});
 }
 function clearRoute(){if(!route.length)return;routeRequest++;route=[];routeInfo='';paintRoute()}
 async function drawRoute(focus){
@@ -1061,7 +1078,8 @@ function bootOffline(){
   ctx.textAlign='start';
   for(const line of loopView.open?loopLine():building?drivingLines:previewLines()){
    if(line.length<2)continue;
-   ctx.strokeStyle='#cbbaff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();
+   const confirmed=loopView.open&&loopView.cards[loopView.index]?.line;
+   ctx.strokeStyle='#cbbaff';ctx.lineWidth=confirmed?4:2;ctx.setLineDash(confirmed?[]:[6,4]);ctx.beginPath();
    line.forEach((p,i)=>{const {x,y}=project(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});
    ctx.stroke();ctx.setLineDash([]);
   }

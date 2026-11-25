@@ -114,3 +114,22 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .ticket-panel .ticket-providers a{min-height:42px;margin:0;padding:10px 14px;border-radius:11px}
 .ticket-panel .ticket-providers a:first-child{background:#c9b7fc;color:#1c1234;font-weight:700}
 .ticket-panel .note{margin-top:10px}
+.ui-icon{display:block;width:18px;height:18px;overflow:visible}
+#seasonDock{align-items:center;max-width:calc(100vw - 28px)}
+#seasonDock>button,#seasonDock #popFilter summary{display:inline-flex;align-items:center;gap:7px;min-height:39px;line-height:1.25;padding-inline:12px}
+#seasonDock select#season{min-width:0;line-height:1.25}
+#originTools button{min-height:42px}
+#originTools svg{flex:none;overflow:visible}
+#landmark .review-links{margin:10px 0 14px}
+#landmark .review-links h3{font-size:12px;color:#bdb6c5;margin:0 0 6px}
+#landmark .review-links>div{display:flex;flex-wrap:wrap;gap:6px}
+#landmark .review-links>div>a{display:inline-flex;width:auto;justify-content:start;min-height:34px;align-items:center;margin:0;padding:5px 10px;background:#211e27;color:#eee8f6;border:1px solid #ffffff22;border-radius:9px;font-size:12px}
+#landmark .action.road-cta,#detail .action.road-cta{width:100%;min-height:47px;justify-content:space-between;background:#c9b7fc;color:#211434;margin:5px 0 8px;padding-inline:15px;border-radius:12px}
+@media(min-width:761px){
+ aside,#detail,#landmark,#builder,#loopDeck,#nearby,#seasonMenu{right:16px!important;left:auto!important}
+ #loopDeck,#nearby{top:auto;bottom:20px}
+ #builder{top:181px;bottom:auto;max-height:calc(100dvh - 200px)}
+ .map-tools{left:16px;right:auto}
+ dialog{margin:88px 16px auto auto;max-height:calc(100dvh - 106px)}
+}
+@media(max-width:760px){#mobileSettings #seasonDock>button,#mobileSettings #seasonDock #popFilter summary{padding-inline:9px}}
