@@ -11,10 +11,11 @@ function drawLoopDetails(box,card,area,approach){
   return '<li>'+loopPhoto(p,i)+'<div><strong>'+safe(p.name)+'</strong>'+((p.description||p.kind)?'<small>'+safe(p.description||p.kind)+'</small>':'')+link(map,'На карте')+(source?link(source,'Источник'):'')+'</div></li>';
  }).join('');
  box.innerHTML='<div class="loop-bar"><button data-loop="back">← К вариантам</button><button data-loop="close" aria-label="Закрыть">×</button></div>'+
- '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length)+'</p>'+(card.why?'<p>'+safe(card.why)+'</p>':'')+
+ '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length||'Считаем по дорогам…')+'</p>'+(card.why?'<p>'+safe(card.why)+'</p>':'')+
+ '<section><h3>Сложность и дорога</h3><p>'+safe(accessLabel(card))+'</p><p>'+safe(card.surface||'Данных о покрытии нет. Расчёт проезда основан на дорожной карте.')+'</p></section>'+
  '<section><h3>Как добраться до старта</h3><p>'+safe(start.name)+'</p>'+
  '<p>'+safe(positioned?'Ты рядом со стартом':approach?.label||'Укажи местоположение или открой карту для построения пути')+'</p>'+
  (approach?.air&&approach.link?link(approach.link,'Проверить рейсы'):'')+link(directions,'Маршрут до старта')+'</section>'+
- '<h3>Что увидишь по пути</h3><ol>'+scenes+'</ol>'+(card.source?link(card.source,'Гайд автора · '+card.publisher):'')+'</div>'+
- '<div class="loop-actions"><button data-loop="back" aria-label="Назад">‹</button><button data-loop="save">Сохранить маршрут</button></div>';
+ '<h3>Что увидишь по пути</h3><ol>'+scenes+'</ol>'+(card.source?link(card.source,'Подробности о маршруте'):'')+'</div>'+
+ '<div class="loop-actions"><button data-loop="back" aria-label="Назад">‹</button><button data-loop="save" '+(!card.line?'disabled':'')+'>Сохранить маршрут</button></div>';
 }

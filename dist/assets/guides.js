@@ -34,24 +34,24 @@ const summaries=[
 ];
 const guides=summaries.map(([id,name,overview,how,days])=>({id,name,overview,how,days,source:'FAT BUS',url:'https://fatbus.ru/'+id,pic:guideCovers[id]}));
 for(const [i,g] of publishedDrives.entries()){
- const detail=dayGuides[g.url];guides.push({...g,id:'route-'+i,pic:detail?.pic,groups:detail?.days,overview:g.places.map(p=>p[0]).join(' → ')});
+ const detail=dayGuides[g.url];guides.push({...g,id:'route-'+i,pic:g.pic||detail?.pic,groups:detail?.days,overview:g.places.map(p=>p[0]).join(' → ')});
 }
 const byId=id=>document.getElementById(id);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mapLink=q=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
 const photo=(g,cls)=>g.pic&&/^https:\/\//.test(g.pic)?'<img class="'+cls+'" loading="lazy" alt="" src="'+esc(g.pic)+'">':'';
 const info=g=>g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
-for(const name of new Set(guides.map(g=>g.source)))byId('author').add(new Option(name,name));
+byId('access').innerHTML=accessOptions();
 function list(){
- const q=byId('query').value.trim().toLowerCase(),author=byId('author').value;
- const found=guides.filter(g=>(!author||g.source===author)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
- byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+photo(g,'cover')+'<small>'+esc(g.source)+' · '+info(g)+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
+ const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
+ const found=guides.filter(g=>(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
+ byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+photo(g,'cover')+'<small>'+esc(accessLabel(g))+' · '+info(g)+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
 }
 function show(){
  const g=guides.find(g=>'#'+g.id===location.hash);
  byId('library').hidden=!!g;byId('article').hidden=!g;if(!g){list();return}
  const phases=g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(([name,lat,lon])=>'<li><a target="_blank" rel="noopener" href="'+mapLink(lat+','+lon)+'">'+esc(name)+' ↗</a></li>').join('')+'</ol></section>').join('');
- byId('article').innerHTML='<a class="back" href="#">← Все гайды</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(g.source)+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p><p>'+esc(g.how||g.why||'')+'</p><a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Полная программа автора ↗</a>'+phases;window.scrollTo(0,0);
+ byId('article').innerHTML='<a class="back" href="#">← Все гайды</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p><p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+phases;window.scrollTo(0,0);
 }
 document.addEventListener('error',e=>{if(e.target.tagName==='IMG')e.target.hidden=true},true);
-byId('query').oninput=list;byId('author').onchange=list;window.onhashchange=show;show();
+byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();
