@@ -222,10 +222,34 @@ async function approachTo(area,serial){
  info.link=!best?null:info.air?'https://www.google.com/travel/flights?q='+encodeURIComponent(air.label):'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home.slice(0,2).join(',')+'&destination='+xy(area).join(',');
  if(loopView.open)drawLoopCard();
 }
-function loopPhoto(p,i){
- const url=p.photo||aerial(p.lon,p.lat,320);
- return '<figure><img src="'+safe(url)+'" alt="'+safe(p.name)+'" data-aerial="'+safe(aerial(p.lon,p.lat,320))+'"><figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption><a aria-label="Источник изображения" title="'+(p.photo?'Источник фотографии':'Спутниковый вид')+'" href="'+safe((p.photo&&p.credit)||'https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9')+'" target="_blank" rel="noopener">'+(p.photo?'©':'Спутник')+'</a></figure>';
+let routePhotoIndex;
+function findRoutePhoto(p){
+ if(p.photo)return [p.photo,p.credit];
+ if(!routePhotoIndex){
+  routePhotoIndex=new Map();
+  const add=(name,lat,lon,url,credit)=>{
+   if(!url)return;
+   const key=name.toLocaleLowerCase().trim(),matches=routePhotoIndex.get(key)||[];
+   matches.push({lat,lon,url,credit});routePhotoIndex.set(key,matches);
+  };
+  for(const row of loopGallery)add(...row);
+  for(const [id,name,lon,lat,,,image] of catalogue){
+   const m=placeMedia[id];
+   add(name,lat,lon,image||m?.[1],image?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
+  }
+ }
+ const match=routePhotoIndex.get(p.name.toLocaleLowerCase().trim())?.find(q=>kmBetween(xy(p),xy(q))<2);
+ return match?[match.url,match.credit]:[];
 }
+function loopPhoto(p,i){
+ const [url,credit]=findRoutePhoto(p);
+ const image=url?'<img loading="lazy" decoding="async" src="'+safe(url)+'" alt="'+safe(p.name)+'">':'';
+ return '<figure class="route-photo'+(url?'':' no-photo')+'">'+image+'<figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption>'+
+ (credit?'<a aria-label="Источник фотографии" href="'+safe(credit)+'" target="_blank" rel="noopener">©</a>':'')+'</figure>';
+}
+document.addEventListener('error',e=>{
+ if(e.target.matches?.('.route-photo img')){e.target.hidden=true;e.target.parentElement.classList.add('no-photo')}
+},true);
 function loopDrivingDays(c){
  if(!c?.line)return '';
  const days=Math.max(1,Math.ceil(c.durationHours/Number(state.drive||3)),state.driveKm?Math.ceil(c.distanceKm/Number(state.driveKm)):1);

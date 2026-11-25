@@ -23,3 +23,6 @@
 .loop-detail li small{display:block;color:#aaa}.loop-detail li strong{font-size:13px}
 .loop-access{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 14px;font-size:12px}
 .loop-access select{width:auto;max-width:70%;font-size:12px}
+.route-photo.no-photo{background:linear-gradient(145deg,#292822,#141414)}
+.route-photo.no-photo img[hidden]{display:none}
+.route-photo.no-photo figcaption{background:none;padding:9px}

@@ -21,7 +21,7 @@ let state={...defaults};
 try{state={...defaults,...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{}
 if(!visaIndexes.has(state.passport))state.passport='';
 if(!['auto','pin'].includes(state.origin)&&!Object.hasOwn(cities,state.origin))state.origin=defaults.origin;
-let gps=null;
+let gps=null,gpsWatch=null,destinationPicking=false;
 let gpsStatus='idle';
 let geoRequest=0;
 const actualOrigin=()=>state.origin==='pin'?state.point:state.origin==='auto'?gps:cities[state.origin];
@@ -462,9 +462,10 @@ function renderPins(){
  const zoom=atlas.getZoom();
  tier=scaleTier(zoom);lastMarkerZoom=Math.round(zoom*5);
  const at=(lat,lon)=>' data-at="'+lon+','+lat+'"';
- if(loopView.open&&!loopView.picking){pinLayer.innerHTML=loopMarkers(at);positionPins();return}
+ const locationPin=gps?'<span class="gps-pin" role="img" aria-label="Вы здесь"'+at(...gps)+'></span>':'';
+ if(loopView.open&&!loopView.picking){pinLayer.innerHTML=locationPin+loopMarkers(at);positionPins();return}
  if(building&&!pickStage){
-  pinLayer.innerHTML=stagePins(at);positionPins();return;
+  pinLayer.innerHTML=locationPin+stagePins(at);positionPins();return;
  }
  const groups=[],minorDots=[];
  for(const d of visible){
@@ -493,7 +494,7 @@ function renderPins(){
  if(mode!=='all')$('zoomHint').textContent=flying()?(flightNetwork().from?'Из '+flightNetwork().from+' · прямые направления':(actualOrigin()?'Рядом нет аэропорта из каталога':'Аэропорты · выбери старт')):(mode==='train'?'Железные дороги · места рядом с путями':'Автодороги · места для поездки');
  const [slat,slon]=baseOrigin();
  const regions=groups;
- pinLayer.innerHTML=(actualOrigin()?'<span class="start" role="img" aria-label="Точка старта" title="'+originName()+'"'+at(slat,slon)+'></span>':'')+regions.map(({items})=>{
+ pinLayer.innerHTML=locationPin+(actualOrigin()&&state.origin!=='auto'?'<span class="start" role="img" aria-label="Точка старта" title="'+originName()+'"'+at(slat,slon)+'></span>':'')+regions.map(({items})=>{
   const [d]=items;
   if(items.length>1)return '<button class="cluster" data-cluster="'+items.map(i=>i.id).join(',')+'" aria-label="'+items.length+' направления"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<b>'+items.length+'</b></button>';
   return '<button class="pin '+(active===d?'current':'')+'" data-open="'+d.id+'" aria-label="'+d.name+'"'+at(d.lat,d.lon)+'>'+photo(d,'pin-photo')+'<small>'+d.name+'</small></button>';
@@ -666,7 +667,7 @@ $('filters').onchange=e=>{
  if(e.target.id==='visa'&&$('visa').checked&&!state.passport){$('visa').checked=false;showProfile();return}
  if(e.target.id==='origin'){
   if($('origin').value==='pin'&&!state.point){beginPick();return}
-  state.origin=$('origin').value;geoRequest++;persist();
+  state.origin=$('origin').value;persist();
   if(state.origin==='auto')requestLocation(true);else flyTo(baseOrigin(),4);
  }
  active=null;closeLandmark();render();if(e.target.id!=='origin')fit();else if(actualOrigin()){setDrawer(false);completeStart(actualOrigin(),4)}
@@ -688,7 +689,7 @@ document.addEventListener('click',e=>{
  if(k.mode)pickTransport(b);
  if(k.airport)openAirport(k.airport);
  if(k.depart){const [,x,y]=airports[k.depart];preferredAirport=k.depart;
-  if(!actualOrigin()){state.point=[y,x];state.origin='pin';$('origin').value='pin';geoRequest++;gpsStatus='idle';persist()}
+  if(!actualOrigin()){state.point=[y,x];state.origin='pin';$('origin').value='pin';persist()}
   closeLandmark();render();applyTransportLayer();fitTransport();
  }
  if(k.airStage){const [city,x,y]=airports[k.airStage];launchLoops({name:city,lat:y,lon:x})}
@@ -775,8 +776,9 @@ function openLandmark(key){
 }
 function updateLocation(){
  const chosen=actualOrigin();
- $('locationText').textContent=gpsStatus==='pending'?'Ищем местоположение…':gpsStatus==='failed'&&!chosen?'Геолокация недоступна':chosen?'Старт · '+originName():'';
+ $('locationText').textContent=gpsStatus==='pending'?'Определяем местоположение…':gpsStatus==='denied'?'Геолокация запрещена в настройках сайта':gpsStatus==='failed'?'Геопозиция недоступна. Нажми «Где я», чтобы повторить.':gps?'Ты на карте · '+placeName(gps):chosen?'Старт · '+originName():'';
  $('location').hidden=!$('locationText').textContent;
+ $('myPosition').setAttribute('aria-busy',String(gpsStatus==='pending'));
  map.classList.toggle('locating',gpsStatus==='pending');
 }
 function flyTo(point,target){
@@ -786,20 +788,27 @@ function flyTo(point,target){
  atlas.flyTo({center,zoom:target,speed:1.15,curve:1.2,maxDuration:1350});
 }
 function requestLocation(focus){
- if(!navigator.geolocation){gpsStatus='failed';updateLocation();$('startHint').textContent='Геопозиция недоступна. Поставь точку пипеткой.';return}
+ if(!navigator.geolocation){gpsStatus='failed';updateLocation();return}
+ if(gps&&focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));renderPins()}
+ if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
  const request=++geoRequest;
  gpsStatus='pending';updateLocation();
- navigator.geolocation.getCurrentPosition(
+ let first=true;
+ gpsWatch=navigator.geolocation.watchPosition(
   ({coords})=>{
    if(request!==geoRequest)return;
-   state.origin='auto';$('origin').value='auto';persist();
-   gps=[coords.latitude,coords.longitude];gpsStatus='ready';
-   if(focus){updateLocation();renderPins();flyTo(gps,9);return}
-   if(loopView.open||building||lastLoopPoint){updateLocation();return}
-   $('portal').hidden=true;completeStart(gps,focus?5:3.8)
+   const next=[coords.latitude,coords.longitude];
+   if(!first&&gpsStatus==='ready'&&gps&&kmBetween(gps,next)<.025)return;
+   gps=next;gpsStatus='ready';
+   updateLocation();renderPins();
+   if(!first)return;
+   first=false;
+   if(state.origin==='auto')$('portal').hidden=true;
+   if(focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));return}
+   if(state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
   },
-  ()=>{if(request!==geoRequest)return;gpsStatus='failed';updateLocation();$('startHint').textContent='Геопозиция недоступна. Поставь точку пипеткой.'},
-  {enableHighAccuracy:false,timeout:9000,maximumAge:300000}
+  error=>{if(request!==geoRequest)return;gpsStatus=error.code===1?'denied':'failed';updateLocation();$('startHint').textContent=$('locationText').textContent},
+  {enableHighAccuracy:false,timeout:12000,maximumAge:30000}
  );
 }
 let pendingDestination=null;
@@ -809,7 +818,7 @@ function showStart(){
  active=null;setDrawer(false);closeLandmark();$('portal').hidden=false;render();
 }
 function beginPick(){
- geoRequest++;gpsStatus='idle';showStart();picking=true;
+ showStart();picking=true;
  map.classList.add('picking');$('startTitle').textContent='Поставь точку старта';
  $('startHint').textContent='Нажми на нужное место на карте.';
  $('cancelPick').hidden=false;$('pickStart').hidden=true;
@@ -820,12 +829,13 @@ function finishPick(){
  $('cancelPick').hidden=true;$('pickStart').hidden=false;$('portal').hidden=!!actualOrigin();
 }
 function selectStart(point){
+ if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true;launchLoops({lat:point.lat,lon:point.lng,name:placeName([point.lat,point.lng])});return}
  if(loopView.open){if(loopView.picking)setLoopArea(point.lat,point.lng,'Точка прибытия');return}
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
  if(!picking)return;
  lastLoopPoint={lat:point.lat,lon:point.lng,name:'Выбранная точка'};state.selectedDestination=lastLoopPoint;state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
  persist();finishPick();
- if(mode==='car'){launchLoops(lastLoopPoint);return}
+ if(mode==='car'){flyTo(state.point,8);render();return}
  completeStart(state.point,Math.max(4,atlas.getZoom()));
 }
 function completeStart(point,zoom){
@@ -1067,12 +1077,17 @@ function bootOffline(){
 $('moreIdeas').onclick=updateSeasonPanel;
 $('closeIdeas').onclick=()=>{$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')};
 $('myPosition').onclick=()=>{if(picking)finishPick();requestLocation(true)};
-$('manualOrigin').onclick=()=>{if(loopView.open)closeLoops();if(building)leaveTrip();beginPick()};
+$('manualOrigin').onclick=()=>{
+ if(loopView.open)closeLoops();if(building)leaveTrip();if(picking)finishPick();
+ destinationPicking=true;$('portal').hidden=true;$('pickTip').hidden=false;
+ $('pickTip').textContent='Нажми на карте, откуда начать роад-трип · Отмена';
+ map.classList.add('choosing-destination');
+};
 $('roadLayer').setAttribute('aria-pressed',String(!!state.showRoads));
 $('roadLayer').onclick=()=>{state.showRoads=!state.showRoads;persist();$('roadLayer').setAttribute('aria-pressed',String(state.showRoads));applyTransportLayer()};
 
-$('locate').onclick=()=>actualOrigin()?flyTo(actualOrigin(),5):showStart();
-$('gpsStart').onclick=()=>{finishPick();$('portal').hidden=false;$('startHint').textContent='Запрашиваем геопозицию…';requestLocation(true)};
+$('locate').onclick=()=>requestLocation(true);
+$('gpsStart').onclick=()=>{state.origin='auto';$('origin').value='auto';persist();finishPick();$('portal').hidden=false;$('startHint').textContent='Запрашиваем геопозицию…';requestLocation(true)};
 $('pickStart').onclick=beginPick;
 $('cancelPick').onclick=finishPick;
 $('closeDrawer').onclick=()=>{setDrawer(false);viewingSaved=false;if(!actualOrigin())showStart();else render()};
@@ -1244,7 +1259,7 @@ function showLeg(){
  panel.querySelector('.trip-extra').open=!!checklistOpen;panel.querySelector('details details').open=!!packOpen;panel.scrollTop=scroll;
 }
 initVisa();initLoops();updateVisaMap();
-$('pickTip').onclick=()=>{if(loopView.open){loopView.picking=false;$('pickTip').hidden=true;drawLoopCard();renderPins()}else if(itinerary.legs.length)enterTrip();else leaveTrip()};
+$('pickTip').onclick=()=>{if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true;if(!actualOrigin())$('portal').hidden=false;return}if(loopView.open){loopView.picking=false;$('pickTip').hidden=true;drawLoopCard();renderPins()}else if(itinerary.legs.length)enterTrip();else leaveTrip()};
 $('builder').onclick=e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.dataset.leg!==undefined){selectedLeg=+b.dataset.leg;const l=itinerary.legs[selectedLeg];enterTrip();flyTo([l.lat,l.lon],8)}
