@@ -166,8 +166,49 @@ function save(d){
  state.saved=state.saved.includes(d.id)?state.saved.filter(id=>id!==d.id):[...state.saved,d.id];
  persist();saveAccountItem('place-'+d.id,{name:d.name,lat:d.lat,lon:d.lon},!state.saved.includes(d.id));render();
 }
+let ticketTarget=null;
+function ticketMode(){return ['train','plane','rent'].includes(mode)}
+function nearestTicketCity(point){
+ let best=null;
+ for(const [name,,lon,lat] of atlasCities.slice(0,russianStart)){
+  const distance=kmBetween(point,[lat,lon]);
+  if(!best||distance<best.distance)best={name,distance,lat,lon};
+ }
+ return best?.distance<=80?best:null;
+}
+function nearestTicketAirport(point){
+ let best=null;
+ for(const [code,[,lon,lat]] of Object.entries(airports)){
+  const distance=kmBetween(point,[lat,lon]);
+  if(!best||distance<best.distance)best={code,distance};
+ }
+ return best?.distance<=180?best.code:null;
+}
+function showTicketDestination(target){
+ const {lat,lon,name,airport}=target,point=[lat,lon],home=actualOrigin();
+ const train=mode==='train',station=nearestTicketCity(point);
+ const fromAirport=train?null:flightNetwork().from||null;
+ const toAirport=train?null:airport||nearestTicketAirport(point);
+ const from=train?(home?nearestTicketCity(home)?.name||originName():'Город отправления'):fromAirport||'Аэропорт вылета';
+ const to=train?(station?.name||name):toAirport||name;
+ const domestic=countryAt(lat,lon)==='RUS'&&(!home||countryAt(home[0],home[1])==='RUS');
+ active=null;setDrawer(false);closeLandmark();clearRoute();
+ $('portal').hidden=true;$('nearby').hidden=true;
+ lastLoopPoint={lat,lon,name};state.selectedDestination=lastLoopPoint;persist();
+ ticketTarget=target;
+ $('detail').hidden=true;
+ const box=$('landmark');
+ box.innerHTML='<div class="panel ticket-panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button>'+
+ '<span class="badge">'+(train?'Поезд':'Самолёт')+'</span><h2>'+safe(name)+'</h2>'+
+ '<p class="ticket-direction">'+safe(from)+' <span aria-hidden="true">→</span> '+safe(to)+'</p>'+
+ (train?'<h3>Где купить билет на поезд</h3>'+railTicketLinks(domestic):flightLinks(fromAirport,toAirport,true))+
+ (train&&station?.distance>8?'<p class="note">Ближайший город из атласа. Уточни станцию у продавца.</p>':'')+
+ '<p class="note">Проверь даты и наличие билетов у продавца.</p>'+
+ (!train&&airport&&fromAirport!==airport?'<button class="action secondary" data-depart="'+safe(airport)+'">Вылетать отсюда</button>':'')+'</div>';
+ box.hidden=false;renderPins();flyTo(point,Math.max(5,Math.min(atlas?.getZoom()||5,9)));
+}
 function open(d){
- if(pointChoice(d.lat,d.lon,d.name))return;
+ if(pointChoice(d.lat,d.lon,d.name,d.airport))return;
  if(building)leaveTrip();
 
  setDrawer(false);closeLandmark();$('portal').hidden=true;
@@ -420,7 +461,7 @@ function airportCard(){
 }
 function openAirport(code){
  const [city,x,y]=airports[code],from=flightNetwork().from;
- if(pointChoice(y,x,city))return;
+ if(pointChoice(y,x,city,code))return;
  const canDepart=!actualOrigin()||kmBetween(actualOrigin(),[y,x])<=250;
  airportSelection=code;active=null;setDrawer(false);render();applyTransportLayer();$('nearby').hidden=true;$('portal').hidden=true;
  $('landmark').innerHTML='<div class="panel"><button class="close" data-landmark-close aria-label="Закрыть">×</button><span class="badge">'+code+'</span><h2>'+safe(city)+'</h2><p class="note">'+(from&&from!==code?from+' → '+code+' · ':'')+'Схема направлений на 25.09.2026. Проверь рейсы на свои даты.</p>'+flightLinks(from,code)+'<button class="action secondary" data-air-stage="'+code+'">'+(mode==='rent'?'Собрать маршрут на авто':'Исследовать рядом')+'</button>'+(canDepart&&code!==from?'<button class="action secondary" data-depart="'+code+'">Вылетать отсюда</button>':'')+'<p><a class="secondary" href="https://github.com/Jonty/airline-route-data" target="_blank" rel="noopener">Источник направлений</a></p></div>';
@@ -442,6 +483,7 @@ function fitTransport(){
  atlas.fitBounds(bounds,{padding:{left:50,right:50,top:130,bottom:110},maxZoom:5,duration:reduced.matches?0:550});
 }
 function pickTransport(button){
+ const destination=ticketTarget||(active?{name:active.name,lat:active.lat,lon:active.lon,airport:active.airport}:null);
  const stayInLoop=loopView.open&&button.dataset.mode==='car';
  if(loopView.open&&!stayInLoop)closeLoops();
  if(building)leaveTrip();
@@ -449,7 +491,7 @@ function pickTransport(button){
  $('modes').querySelectorAll('button').forEach(el=>{el.classList.toggle('selected',el===button);el.setAttribute('aria-pressed',String(el===button))});
  if(stayInLoop){applyTransportLayer();return}
  active=null;airportSelection=null;storyId=-1;viewingSaved=false;
- closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();fitTransport();
+ closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();if(destination&&ticketMode())showTicketDestination(destination);else fitTransport();
 }
 
 let pinAnchor=null;
@@ -715,6 +757,7 @@ document.addEventListener('click',e=>{
  }
  if(k.close!==undefined){active=null;render();fit()}
  if(k.setOrigin!==undefined){pendingDestination=active;showStart()}
+ if(k.choose!==undefined&&active&&['train','plane','rent'].includes(tripMode)){const d=active;if(mode!==tripMode)pickTransport($('modes').querySelector('[data-mode='+tripMode+']'));else showTicketDestination({name:d.name,lat:d.lat,lon:d.lon,airport:d.airport});return}
  if(k.choose!==undefined&&active){saveAccountItem('place-'+active.id,{name:active.name,lat:active.lat,lon:active.lon});if(!state.saved.includes(active.id))state.saved.push(active.id);persist();tab='chosen';render()}
  if(k.trip){tripMode=k.trip;checkedRequirements.clear();renderDetail();drawRoute(false)}
  if(k.stage){tab=k.stage;renderDetail()}
@@ -779,7 +822,7 @@ function markDiscovered(d){
  const toast=$('toast');toast.textContent=state.discovered.length===data.length?'Атлас пройден!':'✦ Открыто место · '+d.name;toast.hidden=false;
  clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,2500);
 }
-function closeLandmark(){$('landmark').hidden=true;if(siteLine){siteLine=null;paintRoute()}}
+function closeLandmark(){ticketTarget=null;$('landmark').hidden=true;if(siteLine){siteLine=null;paintRoute()}}
 function openLandmark(key){
  const [id,i]=key.split(':').map(Number),d=data[id],[name,la,lo]=landmarks[id][i];
  active=null;setDrawer(false);render();markDiscovered(d);
@@ -843,10 +886,10 @@ function finishPick(){
  $('cancelPick').hidden=true;$('pickStart').hidden=false;$('portal').hidden=!!actualOrigin();
 }
 function selectStart(point){
- if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true;launchLoops({lat:point.lat,lon:point.lng,name:placeName([point.lat,point.lng])});return}
+ if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true;const target={lat:point.lat,lon:point.lng,name:placeName([point.lat,point.lng])};if(ticketMode())showTicketDestination(target);else launchLoops(target);return}
  if(loopView.open){if(loopView.picking)setLoopArea(point.lat,point.lng,'Точка прибытия');return}
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
- if(!picking)return;
+ if(!picking){if(ticketMode()&&!building)showTicketDestination({lat:point.lat,lon:point.lng,name:placeName([point.lat,point.lng])});return}
  lastLoopPoint={lat:point.lat,lon:point.lng,name:'Выбранная точка'};state.selectedDestination=lastLoopPoint;state.origin='pin';state.point=[point.lat,point.lng];$('origin').value='pin';
  persist();finishPick();
  if(mode==='car'){flyTo(state.point,8);render();return}
@@ -1094,7 +1137,7 @@ $('myPosition').onclick=()=>{if(picking)finishPick();requestLocation(true)};
 $('manualOrigin').onclick=()=>{
  if(loopView.open)closeLoops();if(building)leaveTrip();if(picking)finishPick();
  destinationPicking=true;$('portal').hidden=true;$('pickTip').hidden=false;
- $('pickTip').textContent='Нажми на карте, откуда начать роад-трип · Отмена';
+ $('pickTip').textContent='Нажми на карте, чтобы выбрать место поездки · Отмена';
  map.classList.add('choosing-destination');
 };
 
@@ -1253,11 +1296,12 @@ function chooseNext(byAir=false){
  $('pickTip').textContent=(itinerary.legs.length?'Следующий этап':'Точка прибытия')+' · нажми на карту или место · Отмена';
  $('pickTip').hidden=false;renderPins();
 }
-function pointChoice(lat,lon,name){
+function pointChoice(lat,lon,name,airport){
  if(loopView.open){setLoopArea(lat,lon,name);return true}
  lastLoopPoint={lat,lon,name};state.selectedDestination=lastLoopPoint;persist();
  if(pickStage){startLeg(name,lat,lon,nextArrivalByAir);return true}
  if(pickStop){pickStop=false;addStageStop({name,lat,lon});showLeg();return true}
+ if(ticketMode()){showTicketDestination({name,lat,lon,airport});return true}
  return false;
 }
 function totals(){

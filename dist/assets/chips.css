@@ -106,3 +106,11 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .route-stop img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .route-stop.with-photo b{position:absolute;right:-5px;bottom:-4px;min-width:18px;height:18px;line-height:18px;border-radius:50%;background:#d5c0ff;color:#241b31}
 @media(prefers-reduced-motion:reduce){#myPosition[aria-busy=true] .ui-icon{animation:none}}
+.ticket-panel{padding:20px}
+.ticket-panel h2{margin:7px 38px 6px 0}
+.ticket-panel .ticket-direction{margin:12px 0 16px;color:#e8dcff;font-weight:650}
+.ticket-direction span{display:inline-block;margin:0 6px;color:#bb9ff0}
+.ticket-panel .ticket-providers{display:grid;gap:6px;margin:8px 0 12px}
+.ticket-panel .ticket-providers a{min-height:42px;margin:0;padding:10px 14px;border-radius:11px}
+.ticket-panel .ticket-providers a:first-child{background:#c9b7fc;color:#1c1234;font-weight:700}
+.ticket-panel .note{margin-top:10px}

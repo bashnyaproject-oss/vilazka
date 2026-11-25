@@ -1,7 +1,7 @@
 function travelLink(url, label, newTab=true){
  return '<a href="'+safe(url)+'"'+(newTab?' target="_blank" rel="noopener"':'')+'>'+safe(label)+' ↗</a>';
 }
-function flightLinks(origin,destination){
+function flightLinks(origin,destination,expanded=false){
  const iata=value=>/^[A-Z]{3}$/.test(value||'')?value:'';
  const to=iata(destination),from=iata(origin)===to?'':iata(origin);
  const query=to?'Flights '+(from?'from '+from+' ':'')+'to '+to:'';
@@ -18,7 +18,7 @@ function flightLinks(origin,destination){
   ['Kiwi.com','https://www.kiwi.com/'],
   ['CheapOair','https://www.cheapoair.com/flights/']
  ];
- return '<details class="travel-links"><summary>Найти авиабилеты</summary>'+
+ return '<details class="travel-links"'+(expanded?' open':'')+'><summary>Где купить авиабилет</summary>'+
  (to?'<small>'+(from?from+' → ':'Аэропорт назначения · ')+to+'</small>':'')+
  '<div>'+sites.map(([name,url])=>travelLink(url,name)).join('')+'</div></details>';
 }
@@ -42,4 +42,17 @@ function navigationLinks(points){
  return '<details class="travel-links"><summary>Открыть в навигаторе</summary><div>'+google+
  travelLink('yandexnavi://build_route_on_map?'+yandex,'Яндекс Навигатор',false)+
  travelLink('https://yandex.ru/maps/?'+web,'Яндекс Карты · веб')+'</div></details>';
+}
+
+function railTicketLinks(domestic){
+ const providers=domestic?[
+  ['РЖД','https://ticket.rzd.ru/'],
+  ['Туту','https://www.tutu.ru/poezda/'],
+  ['Яндекс Путешествия','https://travel.yandex.ru/trains/']
+ ]:[
+  ['Trainline','https://www.thetrainline.com/'],
+  ['Omio','https://www.omio.com/trains'],
+  ['Rail Europe','https://www.raileurope.com/']
+ ];
+ return '<div class="ticket-providers">'+providers.map(([name,url])=>travelLink(url,name)).join('')+'</div>';
 }
