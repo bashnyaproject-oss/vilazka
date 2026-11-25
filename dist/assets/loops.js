@@ -205,7 +205,7 @@ function flightEstimate(home,area){
  for(const a of close(home))for(const b of arrivals){
   if(!a.routes.includes(b.code)||a.code===b.code)continue;
   const seconds=(2.5+(a.km+b.km)*1.3/60+kmBetween(xy(a),xy(b))/740)*3600;
-  if(!best||seconds<best.seconds)best={seconds,label:'Перелёт '+a.code+' → '+b.code+' + авто · ≈ '+hours(seconds)};
+  if(!best||seconds<best.seconds)best={seconds,from:a.code,to:b.code,label:'Перелёт '+a.code+' → '+b.code+' + авто · ≈ '+hours(seconds)};
  }
  return best;
 }
@@ -218,7 +218,7 @@ async function approachTo(area,serial){
  try{const {path}=await osrmPath([{lat:home[0],lon:home[1]},area]);if(area.crossBorder||domesticPath(area.country,path.geometry.coordinates))road={seconds:path.duration,label:'На авто · '+Math.round(path.distance/1000)+' км · '+hours(path.duration)}}catch{}
  if(loopView.serial!==serial)return;
  const best=[air,road].filter(Boolean).sort((a,b)=>a.seconds-b.seconds)[0];
- info.label=best?.label||'Маршрут подъезда уточняется';info.air=best&&best===air;
+ info.label=best?.label||'Маршрут подъезда уточняется';info.air=best&&best===air;if(info.air){info.from=air.from;info.to=air.to}
  info.link=!best?null:info.air?'https://www.google.com/travel/flights?q='+encodeURIComponent(air.label):'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home.slice(0,2).join(',')+'&destination='+xy(area).join(',');
  if(loopView.open)drawLoopCard();
 }
