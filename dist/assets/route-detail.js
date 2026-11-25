@@ -8,12 +8,13 @@ function drawLoopDetails(box,card,area,approach){
  const directions='https://www.google.com/maps/dir/?api=1&destination='+point+(home?'&origin='+home.slice(0,2).join(','):'');
  const link=(url,label)=>'<a target="_blank" rel="noopener" href="'+safe(url)+'">'+safe(label)+' ↗</a>';
  const scenes=card.stops.map((p,i)=>{
+  const hasPhoto=Boolean(findRoutePhoto(p)[0]);
   const source=p.credit&&p.credit.startsWith('https://')?p.credit:null;
   const map='https://www.google.com/maps/search/?api=1&query='+xy(p).join(',');
-  return '<li>'+loopPhoto(p,i)+'<div><strong>'+safe(p.name)+'</strong>'+((p.description||p.kind)?'<small>'+safe(p.description||p.kind)+'</small>':'')+link(map,'На карте')+(source?link(source,'Источник'):'')+'</div></li>';
+  return '<li'+(hasPhoto?'':' class="stop-without-photo"')+'>'+(hasPhoto?loopPhoto(p,i):'<span class="stop-index">'+(i+1)+'</span>')+'<div><strong>'+safe(p.name)+'</strong>'+((p.description||p.kind)?'<small>'+safe(p.description||p.kind)+'</small>':'')+link(map,'На карте')+(source?link(source,'Источник'):'')+'</div></li>';
  }).join('');
  box.innerHTML='<div class="loop-bar"><button data-loop="back">← К вариантам</button><button data-loop="close" aria-label="Закрыть">×</button></div>'+
- '<div class="loop-detail"><h2>'+safe(card.title)+'</h2><p>'+safe(card.length||'Считаем по дорогам…')+'</p>'+(card.ferries?.length?'<p class="ferry-note">Есть паром · на карте голубой пунктир. Проверь расписание перед выездом.</p>':'')+(card.why?'<p>'+safe(card.why)+'</p>':'')+
+ '<div class="loop-detail"><h2>'+safe(card.title)+'</h2>'+routePhotoStrip(card)+'<p>'+safe(card.length||'Считаем по дорогам…')+'</p>'+(card.ferries?.length?'<p class="ferry-note">Есть паром · на карте голубой пунктир. Проверь расписание перед выездом.</p>':'')+(card.why?'<p>'+safe(card.why)+'</p>':'')+
  (card.line?navigationLinks(stops):'')+
  '<section><h3>Сложность и дорога</h3><p>'+safe(accessLabel(card))+'</p><p>'+safe(card.surface||'Данных о покрытии нет. Расчёт проезда основан на дорожной карте.')+'</p></section>'+
  '<section><h3>Как добраться до старта</h3><p>'+safe(start.name)+'</p>'+

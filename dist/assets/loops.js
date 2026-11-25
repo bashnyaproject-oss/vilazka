@@ -225,30 +225,53 @@ async function approachTo(area,serial){
  info.link=!best?null:info.air?'https://www.google.com/travel/flights?q='+encodeURIComponent(air.label):'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+home.slice(0,2).join(',')+'&destination='+xy(area).join(',');
  if(loopView.open)drawLoopCard();
 }
+const additionalRoutePhotos = [
+ [
+  "Кольцово",
+  54.94204,
+  83.19192,
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Koltsovo_2026_%289%29.jpg/960px-Koltsovo_2026_%289%29.jpg",
+  "https://commons.wikimedia.org/wiki/File:Koltsovo_2026_%289%29.jpg",
+  "К.Артём.1 · CC BY-SA 4.0"
+ ],
+ [
+  "Обь",
+  54.98877,
+  82.71337,
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/%D0%AD%D0%A02%D0%9A-533%2C_%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F%2C_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D0%B8%D0%B1%D0%B8%D1%80%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C%2C_%D1%81%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F_%D0%9E%D0%B1%D1%8C_%28Trainpix_196095%29.jpg/960px-%D0%AD%D0%A02%D0%9A-533%2C_%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F%2C_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D0%B8%D0%B1%D0%B8%D1%80%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C%2C_%D1%81%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F_%D0%9E%D0%B1%D1%8C_%28Trainpix_196095%29.jpg",
+  "https://commons.wikimedia.org/wiki/File:%D0%AD%D0%A02%D0%9A-533%2C_%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F%2C_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D0%B8%D0%B1%D0%B8%D1%80%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C%2C_%D1%81%D1%82%D0%B0%D0%BD%D1%86%D0%B8%D1%8F_%D0%9E%D0%B1%D1%8C_%28Trainpix_196095%29.jpg",
+  "Maxim Dmitriev · CC BY-SA 4.0"
+ ]
+];
 let routePhotoIndex;
 function findRoutePhoto(p){
- if(p.photo)return [p.photo,p.credit];
+ if(p.photo)return [p.photo,p.credit,p.photoBy];
  if(!routePhotoIndex){
   routePhotoIndex=new Map();
-  const add=(name,lat,lon,url,credit)=>{
+  const add=(name,lat,lon,url,credit,by)=>{
    if(!url)return;
-   const key=name.toLocaleLowerCase().trim(),matches=routePhotoIndex.get(key)||[];
-   matches.push({lat,lon,url,credit});routePhotoIndex.set(key,matches);
+   const key=name.toLocaleLowerCase().trim().replace(/[’']/g,''),matches=routePhotoIndex.get(key)||[];
+   matches.push({lat,lon,url,credit,by});routePhotoIndex.set(key,matches);
   };
+  for(const row of additionalRoutePhotos)add(...row);
   for(const row of loopGallery)add(...row);
   for(const [id,name,lon,lat,,,image] of catalogue){
    const m=placeMedia[id];
    add(name,lat,lon,image||m?.[1],image?'https://whc.unesco.org/en/list/'+id+'/':m?.[1]?'https://'+m[2]+'.wikipedia.org/wiki/File:'+encodeURIComponent(m[3]):null);
   }
  }
- const match=routePhotoIndex.get(p.name.toLocaleLowerCase().trim())?.find(q=>kmBetween(xy(p),xy(q))<2);
- return match?[match.url,match.credit]:[];
+ const match=routePhotoIndex.get(p.name.toLocaleLowerCase().trim().replace(/[’']/g,''))?.find(q=>kmBetween(xy(p),xy(q))<2);
+ return match?[match.url,match.credit,match.by]:[];
 }
 function loopPhoto(p,i){
- const [url,credit]=findRoutePhoto(p);
+ const [url,credit,by]=findRoutePhoto(p);
  const image=url?'<img loading="lazy" decoding="async" src="'+safe(url)+'" alt="'+safe(p.name)+'">':'';
  return '<figure class="route-photo'+(url?'':' no-photo')+'">'+image+'<figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption>'+
- (credit?'<a aria-label="Источник фотографии" href="'+safe(credit)+'" target="_blank" rel="noopener">©</a>':'')+'</figure>';
+ (credit?'<a aria-label="Источник фотографии" href="'+safe(credit)+'" target="_blank" rel="noopener">'+safe(by||'©')+'</a>':'')+'</figure>';
+}
+function routePhotoStrip(card){
+ const photos=card.stops.map((p,i)=>({p,i})).filter(({p})=>findRoutePhoto(p)[0]);
+ return photos.length?'<div class="loop-images route-photo-strip" aria-label="Фото остановок">'+photos.map(({p,i})=>loopPhoto(p,i)).join('')+'</div>':'';
 }
 document.addEventListener('error',e=>{
  if(e.target.matches?.('.route-stop img')){e.target.parentElement.classList.remove('with-photo');e.target.remove();return}
@@ -266,7 +289,7 @@ function drawLoopCard(){
  if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-images">'+c.stops.map((p,i)=>({p,i})).filter(({p})=>findRoutePhoto(p)[0]).map(({p,i})=>loopPhoto(p,i)).join('')+'</div><div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2><strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
  '<details class="loop-settings"'+(box.querySelector('.loop-settings')?.open?' open':'')+'><summary>Настройки маршрута</summary>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
