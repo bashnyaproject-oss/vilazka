@@ -68,7 +68,7 @@ async function findMappedRoads(origin,key){
 }
 function activeDrive(){
  const origin=actualOrigin();
- if(!origin||!['all','car'].includes(mode)||building||pickStage||pickStop||viewingSaved)return null;
+ if(!origin||mode!=='car'||building||pickStage||pickStop||viewingSaved)return null;
  const key=origin.slice(0,2).join(',')+'/'+driveRadius();
  if(key!==driveShelf.key){
   driveShelf.key=key;driveShelf.options=driveOptions(origin);driveShelf.index=0;findMappedRoads(origin,key);

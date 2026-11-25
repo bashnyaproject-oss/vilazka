@@ -452,7 +452,7 @@ function applyTransportLayer(){
  for(const layer of atlas.getStyle().layers){
   if(layer.id===roadId||layer.type!=='line'||layer['source-layer']!=='transportation')continue;
   if(!savedLinePaint.has(layer.id))savedLinePaint.set(layer.id,layer.paint?.['line-opacity']??1);
-  atlas.setPaintProperty(layer.id,'line-opacity',mode==='plane'?.14:mode==='train'?.32:savedLinePaint.get(layer.id));
+  atlas.setPaintProperty(layer.id,'line-opacity',mode==='all'?0:mode==='plane'?.14:mode==='train'?.32:savedLinePaint.get(layer.id));
  }
 }
 const savedLinePaint=new Map();
@@ -501,13 +501,15 @@ function fitTransport(){
 function pickTransport(button){
  const destination=ticketTarget||(active?{name:active.name,lat:active.lat,lon:active.lon,airport:active.airport}:null);
  const stayInLoop=loopView.open&&button.dataset.mode==='car';
+ const leavingRoad=loopView.open||building||highlightRoads();
  if(loopView.open&&!stayInLoop)closeLoops();
  if(building)leaveTrip();
  mode=button.dataset.mode;document.body.dataset.transport=mode;
+ if(mode==='all'){$('popRange').value='0';$('popRange').style.setProperty('--fill','0%');$('popValue').textContent='0 / 10';$('popCount').textContent='';$('popRange').setAttribute('aria-valuetext','Все места');}
  $('modes').querySelectorAll('button').forEach(el=>{el.classList.toggle('selected',el===button);el.setAttribute('aria-pressed',String(el===button))});
  if(stayInLoop){applyTransportLayer();return}
  active=null;airportSelection=null;storyId=-1;viewingSaved=false;
- closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();if(destination&&ticketMode())showTicketDestination(destination);else fitTransport();
+ closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();if(destination&&ticketMode())showTicketDestination(destination);else if(mode!=='all'||!leavingRoad)fitTransport();
 }
 
 let pinAnchor=null;
@@ -1075,12 +1077,12 @@ function bootOffline(){
   paintOfflineVisa(ctx,nw,se);
   ctx.lineJoin='round';ctx.lineCap='round';
   const overview=overviewImages.get(mode==='train'&&!highlightRoads()?'railways':'highways');
-  if(z<5.8&&overview?.naturalWidth&&(highlightRoads()||mode!=='plane')){
+  if(z<5.8&&overview?.naturalWidth&&(highlightRoads()||mode==='train')){
    ctx.save();ctx.scale(1,-1);ctx.globalAlpha=mode==='all'?.55:.86;ctx.drawImage(overview,-180,-90,360,180);ctx.restore();
   }
   if(z>=5.8)for(const b of buckets.values()){
    const rail=b.level===3;
-   if(rail&&mode!=='train'||!rail&&!highlightRoads()&&(mode==='plane'||mode==='train'))continue;
+   if(rail?mode!=='train':!highlightRoads())continue;
    if(!rail&&z<(mode==='car'?.9:1.35)+b.level*1.55||b.east<nw.lng||b.west>se.lng||b.north<se.lat||b.south>nw.lat)continue;
    ctx.strokeStyle=rail?'#bc9b74':highlightRoads()?'#a2967e':(mode==='car'||mode==='rent'?['#b7aa94','#827b6e','#59574e']:['#797369','#595851','#484947'])[b.level];
    ctx.lineWidth=(rail?.95:b.level===0?1:.65)/scale();ctx.stroke(b.path);
