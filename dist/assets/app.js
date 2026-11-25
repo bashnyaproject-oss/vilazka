@@ -1114,6 +1114,7 @@ function drivingSegments(){
  for(const leg of itinerary.legs){
   if(leg.arrival)groups.push([]);
   const group=groups.at(-1);
+  if(leg.roadBudget){group.roadBudget=leg.roadBudget;group.closedRoad=leg.closedRoad}
   if(leg.domesticLoop)group.domesticCountry=countryAt(leg.lat,leg.lon)||"unknown";
   for(const point of [leg,...leg.stops]){
    const coords=[point.lat,point.lon];
@@ -1128,7 +1129,7 @@ function approximateKm(points){
 let drivingLines=[];
 async function refreshTrip(){
  const segments=drivingSegments(),serial=++sequence;
- drivingLines=segments.map(group=>group.domesticCountry?[]:group.map(lngLat));roadKm=null;route=[];
+ drivingLines=segments.map(group=>group.domesticCountry||group.roadBudget?[]:group.map(lngLat));roadKm=null;route=[];
  roadMessage='Оценка по прямой × 1,28';paintRoute();renderPins();showLeg();
  if(!segments.length)return;
  const results=await Promise.all(segments.map(async group=>{
@@ -1136,13 +1137,18 @@ async function refreshTrip(){
   const coords=group.map(([y,x])=>x.toFixed(5)+','+y.toFixed(5)).join(';');
   try{
    const response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson',{signal:AbortSignal.timeout(8500)});
-   const result=(await response.json()).routes?.[0];const line=result?.geometry?.coordinates;return line?.length&&(!group.domesticCountry||domesticPath(group.domesticCountry,line))?result:null;
+   const result=(await response.json()).routes?.[0];const line=result?.geometry?.coordinates;
+   if(!line?.length)return null;
+   if(group.roadBudget){const [lat,lon]=group[0];validateLoop(result,{lat,lon},group.closedRoad,group.roadBudget,group.domesticCountry,!group.domesticCountry)}
+   else if(group.domesticCountry&&!domesticPath(group.domesticCountry,line))return null;
+   return result;
   }catch{return null}
  }));
  if(serial!==sequence||!building)return;
- drivingLines=results.map((r,i)=>r?r.geometry.coordinates:segments[i].domesticCountry?[]:segments[i].map(lngLat));
- roadKm=results.reduce((sum,r,i)=>sum+(r?r.distance/1000:approximateKm(segments[i])),0);
- roadMessage=results.every(Boolean)?'По автодорогам · OSRM':'Часть пути оценена по прямой × 1,28';
+ drivingLines=results.map((r,i)=>r?r.geometry.coordinates:segments[i].domesticCountry||segments[i].roadBudget?[]:segments[i].map(lngLat));
+ const rejected=results.some((r,i)=>!r&&segments[i].roadBudget);
+ roadKm=rejected?null:results.reduce((sum,r,i)=>sum+(r?r.distance/1000:approximateKm(segments[i])),0);
+ roadMessage=rejected?'Часть маршрута не прошла дорожную проверку':results.every(Boolean)?'По автодорогам · OSRM':'Часть пути оценена по прямой × 1,28';
  paintRoute();showLeg();
 }
 function legKey(l){return l.lat.toFixed(4)+','+l.lon.toFixed(4)}
