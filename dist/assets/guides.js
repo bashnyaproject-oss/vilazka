@@ -56,12 +56,12 @@ function stopPhoto([name,lat,lon,,url]){
 }
 function guidePhoto(g){
  const known=g.source==='Norwegian Scenic Routes'&&Object.entries(scenicPhotos).find(([name])=>g.name.toLowerCase().includes(name.toLowerCase()))?.[1];
- return g.pic?{url:g.pic,credit:g.pictureSource}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean);
+ return g.pic?{url:g.pic,credit:g.pictureSource,caption:g.pictureCaption}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean);
 }
 function photo(g,cls){
  const image=guidePhoto(g);
  return image?'<figure class="guide-image '+cls+'"><img loading="lazy" decoding="async" alt="'+esc(g.name)+'" src="'+esc(image.url)+'">'+
- (cls==='hero'&&image.credit?'<figcaption><a target="_blank" rel="noopener" href="'+esc(image.credit)+'">Источник фотографии ↗</a></figcaption>':'')+'</figure>':'';
+ (cls==='hero'&&image.credit?'<figcaption><a target="_blank" rel="noopener" href="'+esc(image.credit)+'">Источник фотографии ↗</a>'+(image.caption?' · '+esc(image.caption):'')+'</figcaption>':'')+'</figure>':'';
 }
 function renderStop([name,lat,lon,description,url]){
  const image=stopPhoto([name,lat,lon,description,url]);
@@ -147,12 +147,15 @@ async function loadWorldRoads(){
   const response=await fetch('assets/world-scenic-roads.json');
   if(!response.ok)throw Error();
   const rows=await response.json();
-  let pictures={};
-  try{const reply=await fetch('assets/byway-photos.json');if(reply.ok)pictures=await reply.json()}catch{}
+  async function photosFrom(file){
+   try{const reply=await fetch('assets/'+file);return reply.ok?await reply.json():{}}catch{return {}}
+  }
+  const [pictures,nearbyPictures]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json')]);
   for(const [id,name,region,source,url,km,points] of rows){
    const [x,y]=points[0],[ex,ey]=points.at(-1);
-   const picture=pictures[name.toLowerCase()];
-   guides.push({id,name,region,source,url,pic:picture?.[0],pictureSource:picture?.[1],overview:region,why:'Линия показывает участок из указанного картографического источника.',places:[['Начало участка',y,x],['Конец участка',ey,ex]],geometry:[km,null,points]});
+   const picture=pictures[name.toLowerCase()]||nearbyPictures[name.toLowerCase()];
+   const pictureCaption=picture?.[2]?['Фото рядом с дорогой · '+picture[4]+' м от линии',picture[3],picture[2]].filter(Boolean).join(' · '):'';
+   guides.push({id,name,region,source,url,pic:picture?.[0],pictureSource:picture?.[1],pictureCaption,overview:region,why:'Линия показывает участок из указанного картографического источника.',places:[['Начало участка',y,x],['Конец участка',ey,ex]],geometry:[km,null,points]});
   }
   show();
  }catch{const status=byId('worldRoadStatus');if(status)status.textContent='Мировой каталог не загрузился. Доступна основная подборка.'}
