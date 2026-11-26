@@ -197,3 +197,9 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
  @keyframes signup-arrive{from{opacity:0;transform:translateY(15px) scale(.97)}to{opacity:1;transform:none}}
  @keyframes signup-lines{to{transform:translateY(11px)}}
 }
+
+#nearby .nearby-start summary,#loopDeck .loop-start summary,#nearby .nearby-start .travel-links a,#loopDeck .loop-start .travel-links a{display:grid;place-items:center;min-height:46px;padding:10px 14px;line-height:1.25;text-align:center}
+#nearby .drive-card .action{display:grid;place-items:center;padding:10px 14px;line-height:1.25}
+.signup-scene{background:radial-gradient(ellipse at 50% 44%,#ff929461,transparent 35%),linear-gradient(#16112e,#48244f 49%,#170f27 50%,#1b1027)}
+.signup-scene:after{inset:43% 0 0;clip-path:polygon(48% 0,52% 0,95% 100%,5% 100%);background:linear-gradient(90deg,#e577bd 0%,#302037 8%,#101019 35%,#100d17 65%,#302037 92%,#e577bd)}
+.signup-scene i{left:49%;top:43%;width:2%;height:61%;background:repeating-linear-gradient(0deg,#ffe2bd 0 13%,transparent 13% 27%);clip-path:polygon(47% 0,53% 0,100% 100%,0 100%)}

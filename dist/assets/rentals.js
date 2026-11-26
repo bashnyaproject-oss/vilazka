@@ -2,6 +2,13 @@
 (()=>{
  const toggle=$('rentalLayer'), status=$('rentalStatus'), cache=new Map();
  let enabled=false,key='',timer,request,rows=[];
+ function rentalSearchLink(message){
+  status.textContent=message+' ';
+  const center=atlas.getCenter(),link=document.createElement('a');
+  link.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Прокат авто '+center.lat+','+center.lng);
+  link.textContent='Поиск на карте ↗';link.target='_blank';link.rel='noopener';
+  status.append(link);
+ }
  window.drawRentalPins=()=>{
   const available=highlightRoads();
   toggle.hidden=!available;
@@ -20,27 +27,27 @@
      const query='[out:json][timeout:10];nwr["amenity"="car_rental"]('+box+');out center;';
      request=new AbortController();
      try{
-      const response=await fetch('https://overpass.kumi.systems/api/interpreter?data='+encodeURIComponent(query),{signal:AbortSignal.any([request.signal,AbortSignal.timeout(14000)])});
-      if(!response.ok)throw Error();
-      const data=await response.json();
+      const signal=request.signal;
+      const data=await Promise.any(['https://overpass.kumi.systems/api/interpreter','https://overpass-api.de/api/interpreter'].map(async url=>{
+       const response=await fetch(url+'?data='+encodeURIComponent(query),{signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
+       if(!response.ok)throw Error();
+       return response.json();
+      }));
       if(key!==box)return;
       if(!Array.isArray(data.elements))throw Error();
       rows=data.elements;
       if(cache.size>=20)cache.delete(cache.keys().next().value);
       cache.set(box,rows);positionPins();
-     }catch(e){if(key===box&&e.name!=='AbortError'){
-       status.textContent='Пункты проката не загрузились. ';
-       const center=atlas.getCenter(),link=document.createElement('a');
-       link.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Прокат авто '+center.lat+','+center.lng);
-       link.textContent='Поиск на карте ↗';link.target='_blank';link.rel='noopener';
-       status.append(link);
-      }}
+     }catch{if(key===box&&!request.signal.aborted)rentalSearchLink('Пункты проката не загрузились.')}
     },500);
    }
   }
   if(!available||!enabled)return;
   if(!key){status.textContent='Приближаем область поиска…';return}
-  if(cache.has(key))status.textContent=rows.length?'Пункты проката · OpenStreetMap':'В этой области нет отмеченных пунктов';
+  if(cache.has(key)){
+   if(rows.length)status.textContent='Пункты проката · OpenStreetMap';
+   else rentalSearchLink('В OpenStreetMap здесь нет отмеченных пунктов.');
+  }
   for(const row of rows){
    const lat=row.lat??row.center?.lat,lon=row.lon??row.center?.lon;
    if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<south||lat>north||lon<west||lon>east)continue;

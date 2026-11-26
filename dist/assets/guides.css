@@ -41,3 +41,7 @@ header>a:last-child{color:#d4c1ff}
 .road-location{display:flex;align-items:center;gap:10px;margin:0 0 20px;flex-wrap:wrap}
 #roadsNearby{color:inherit;background:#282034;border:1px solid #ffffff35;border-radius:12px;padding:10px 14px;font:inherit;cursor:pointer}
 #roadsNearbyStatus{font-size:13px;color:#c2bbd0}
+.guide-map-actions{display:flex;gap:8px;flex-wrap:wrap}
+.guide-map-actions .cta{margin-right:0}
+.guide-map-actions [hidden],#moreWorldRoads[hidden]{display:none}
+#moreWorldRoads{display:block;margin:0 auto 28px;padding:12px 26px;border-radius:12px;border:1px solid #c9b7fc;color:#e7dbff;background:#261b35;font:inherit;cursor:pointer}

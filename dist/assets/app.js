@@ -1419,7 +1419,7 @@ $('builder').onchange=e=>{
 
 $('portal').hidden=true;loadDetailedMap();setDrawer(false);render();fit(0);
 
-if(state.origin==='auto')requestLocation(false);else if(actualOrigin())flyTo(actualOrigin(),4.4);
+if(state.origin==='auto'&&!new URLSearchParams(location.search).has('openRoad'))requestLocation(false);else if(actualOrigin())flyTo(actualOrigin(),4.4);
 
 let popularityFrame=0;
 $('popRange').oninput=()=>{
@@ -1451,3 +1451,24 @@ $('quickCards').addEventListener('click',event=>{
  toast.textContent=rememberDrivenRoad(road.name,driveStops(road))?'Добавлено в «Мои поездки»':'Не удалось сохранить поездку';
  toast.hidden=false;setTimeout(()=>toast.hidden=true,2800);
 });
+
+if(new URLSearchParams(location.search).has('openRoad')){
+ try{
+  const pending=JSON.parse(sessionStorage.getItem('vilazka.openRoad'));
+  sessionStorage.removeItem('vilazka.openRoad');
+  if(pending?.geometry?.[2]?.length>1){
+   const [km,minutes,line]=pending.geometry;
+   const [[name,lat,lon],...stops]=pending.places;
+   const area={name,lat,lon,bases:[],crossBorder:false};
+   loopView.open=true;loopView.picking=false;loopView.details=false;loopView.area=area;loopView.index=0;
+   loopView.cards=[{title:pending.name,start:area,source:location.origin+'/roads.html#'+encodeURIComponent(pending.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon})),done:true}];
+   pickTransport(document.querySelector('#modes [data-mode="car"]'));
+   $('tripBuilder').setAttribute('aria-pressed','true');$('nearby').hidden=true;
+   drawLoopCard();renderPins();paintRoute();
+   if(pending.rental){
+    flyTo([lat,lon],12);
+    window.addEventListener('load',()=>{const toggle=$('rentalLayer');if(toggle.getAttribute('aria-checked')!=='true')toggle.click()},{once:true});
+   }else loopFrame();
+  }
+ }catch{}
+}

@@ -70,3 +70,4 @@
 .country-clear{background:transparent;color:#dac8f5;border:0;font-size:20px;cursor:pointer;width:33px;height:33px}
 #countryRoads:has(.country-route-body[hidden]){display:table;margin-left:auto;padding:3px 5px;border-radius:999px}
 #countryRoads[hidden],#mobileResults:not([hidden])+#countryRoads{display:none!important}
+.country-catalog{display:inline-block;margin:9px 2px 3px;color:#d9c4ff;font:600 12px system-ui}

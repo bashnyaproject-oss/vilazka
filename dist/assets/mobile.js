@@ -89,7 +89,7 @@
    route.places.length>=2&&route.places.every(([,lat,lon])=>visaData.iso2[countryAt(lat,lon)]===code));
   const link=({route,i})=>'<a href="/guides.html#route-'+i+'"><strong>'+safe(route.name)+'</strong><small>'+safe(route.places[0][0])+' → '+safe(route.places.at(-1)[0])+'</small></a>';
   countryPanel.innerHTML='<div class="country-chip-row"><button class="country-route-chip" type="button" aria-expanded="'+countryOpen+'">'+safe(country)+' <span>'+routes.length+' · ⌄</span></button><button class="country-clear" type="button" aria-label="Убрать страну">×</button></div>'+
-   '<div class="country-route-body" '+(countryOpen?'':'hidden')+'><p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>В каталоге пока нет готовых маршрутов. Выбери город, чтобы подобрать поездку на карте.</p>')+'</div>';
+   '<div class="country-route-body" '+(countryOpen?'':'hidden')+'><p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>В каталоге пока нет готовых маршрутов. Выбери город, чтобы подобрать поездку на карте.</p>')+'<a class="country-catalog" href="/roads.html?q='+encodeURIComponent(country)+'">Все дороги в каталоге ↗</a></div>';
   countryPanel.querySelector('.country-route-chip').onclick=()=>{countryOpen=!countryOpen;showCountryRoutes(code)};
   countryPanel.querySelector('.country-clear').onclick=()=>{dismissedCountry=code;delete state.searchCountry;persist();selectCountry('')};
   countryPanel.hidden=false;
