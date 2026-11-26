@@ -161,3 +161,11 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .season-icon select{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}
 .season-icon:focus-within{outline:2px solid #c9b7fc}
 @media(max-width:760px){#weatherCorner{bottom:calc(83px + env(safe-area-inset-bottom));left:10px}}
+
+#nearby .story-foot[hidden]{display:none}
+#nearby .drive-card{width:100%;box-sizing:border-box}
+#nearby .drive-card .action{display:block;width:100%;box-sizing:border-box}
+.guest-trip-list,.road-review,.road-review label{display:grid;gap:10px}
+.road-review textarea{width:100%;font:inherit;color:inherit;background:#1c1b20;border:1px solid #ffffff35;border-radius:10px;padding:10px}
+.review-photos{display:flex;gap:8px}
+.review-photos img{width:100px;height:72px;object-fit:cover;border-radius:8px}

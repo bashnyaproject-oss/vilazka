@@ -115,13 +115,8 @@ function matches(d){
 let storyId=0;
 function storyCard(){
  const drive=activeDrive();if(drive)return driveCard(drive);driveShelf.current=null;
- if(flying())return airportCard();
- const d=visible.find(item=>item.id===storyId)||visible[0];
- if(!d)return '<p class="empty">Для этих фильтров мест пока нет.</p>';
- storyId=d.id;
- const scenic=d.id===0?' feature-scene':'';
- const label=actualOrigin()?names[defaultMode(d)]+' · ≈ '+price(d,defaultMode(d)).text:tripDays(d)+' дн. · '+d.tag;
- return '<button class="story-card" data-open="'+d.id+'"><span class="story-image photo'+scenic+'" style="'+seasonPos(d.id)+'--px:'+((d.id%4)/3*100)+'%;--py:'+(Math.floor(d.id/4)*50)+'%"></span><span class="story-copy"><small>'+d.country+'</small><strong>'+d.name+'</strong><span>'+label+'</span><b>Посмотреть место</b></span></button>';
+
+ return '<div class="drive-card"><h3>Дорога рядом</h3><p>'+(!actualOrigin()?'Укажи точку старта, чтобы найти дорогу рядом.':'Открой роад-трип, чтобы подобрать дорогу от твоего старта.')+'</p><button class="action" data-open-loops>Подобрать роад-трип →</button></div>';
 }
 function browseStory(step){
  if(activeDrive()){
@@ -156,6 +151,7 @@ function render(){
  }).join('')||(viewingSaved?'<p class="empty">Нажми на сердечко у поездки, чтобы добавить её сюда.</p>':'<p class="empty">В демокаталоге нет совпадений. Попробуй другой месяц или способ поездки.</p>');
  const useRail=!loopView.open&&!building&&!pickStage&&!pickStop&&!active&&!picking&&!viewingSaved&&document.querySelector('aside').hidden&&$('landmark').hidden&&$('portal').hidden;
  $('nearby').hidden=!useRail;
+ $('nearby').querySelector('.story-foot').hidden=true;
  const priorDrive=driveShelf.current;
  if(useRail)$('quickCards').innerHTML=storyCard();else driveShelf.current=null;
  if(priorDrive!==driveShelf.current)paintRoute();
@@ -774,7 +770,9 @@ document.addEventListener('click',e=>{
  if(k.ticketRoutes!==undefined&&ticketTarget){launchLoops(ticketTarget);return}
  if(k.routeStop!==undefined){const stop=loopView.cards[loopView.index]?.stops[Number(k.routeStop)];if(stop){loopView.details=true;drawLoopCard();$('loopDeck').querySelectorAll('.loop-detail li')[Number(k.routeStop)]?.scrollIntoView({block:'nearest'});}return}
  if(b.closest('#seasonList')){if(loopView.open)closeLoops();if(building)leaveTrip();$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
- if(k.openLoops!==undefined){launchLoops();return}
+ if(k.openLoops!==undefined){
+  const p=driveShelf.current?.places[0];launchLoops(p?{name:p[0],lat:p[1],lon:p[2]}:null);return;
+ }
  if(k.takeDrive!==undefined&&activeDrive()){takeDrive(activeDrive());return}
  if(k.site!==undefined)openCatalogue(+k.site);
  if(k.arrivalRegion!==undefined){const d=data[+k.arrivalRegion];launchLoops({name:d.name,lat:d.lat,lon:d.lon})}
@@ -1436,3 +1434,13 @@ $('popFilter').addEventListener('toggle',()=>{if($('popFilter').open){$('seasonM
 
 if(new URLSearchParams(location.search).has('directions'))$('explore').click();
 if(new URLSearchParams(location.search).has('ideas'))$('recommend').click();
+
+if(new URLSearchParams(location.search).has('trips'))openAccountTrips();
+
+$('quickCards').addEventListener('click',event=>{
+ const summary=event.target.closest('.nearby-start summary'),road=driveShelf.current;
+ if(!summary||summary.parentElement.open||!road?.line)return;
+ const toast=$('toast');
+ toast.textContent=rememberDrivenRoad(road.name,driveStops(road))?'Добавлено в «Мои поездки»':'Не удалось сохранить поездку';
+ toast.hidden=false;setTimeout(()=>toast.hidden=true,2800);
+});

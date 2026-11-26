@@ -15,29 +15,8 @@ function driveOptions(origin){
  const guides=publishedDrives.map(g=>{
   const places=[...g.places];if(km(places.at(-1))<km(places[0]))places.reverse();
   return {...g,places,approach:km(places[0])};
- }).filter(g=>g.approach<=driveRadius()&&g.places.every(local)).sort((a,b)=>a.approach-b.approach);
- const sites=[...russianPlaces.map(([n,,x,y])=>({p:[n,y,x],url:'https://www.openstreetmap.org/?mlat='+y+'&mlon='+x,source:'OpenStreetMap'})),
- ...heritage.map(([id,n,x,y])=>({p:[n,y,x],url:'https://whc.unesco.org/en/list/'+id+'/',source:'ЮНЕСКО'})),
- ...regionalSites.filter(r=>['Музей','Монастырь','Замок','Парк'].includes(r[4])&&r[0].startsWith('g')).map(([id,n,x,y])=>({p:[n,y,x],url:'https://www.geonames.org/'+id.slice(1),source:'GeoNames'}))];
- const nearby=sites.map(s=>({...s,km:km(s.p)})).filter(s=>s.km>1&&s.km<=driveRadius()&&local(s.p)).sort((a,b)=>a.km-b.km);
- const used=new Set(),locals=[];
- for(const site of nearby){
-  if(used.has(site.p[0]))continue;
-  const next=nearby.find(s=>!used.has(s.p[0])&&s.km>=site.km&&kmBetween(s.p.slice(1),site.p.slice(1))>3&&kmBetween(s.p.slice(1),site.p.slice(1))<35);
-  if(!next)continue;
-  const places=[site.p,next.p];places.forEach(p=>used.add(p[0]));
-  locals.push({name:site.p[0],why:'Подборка ближайших остановок от твоего старта.',source:site.source,url:site.url,places});
-  if(locals.length===3)break;
- }
- if(!guides.length&&!locals.length){
-  const towns=atlasCities.slice(0,russianStart).map(([n,,x,y])=>[n,y,x]).filter(p=>km(p)>4&&km(p)<=driveRadius()&&local(p)).sort((a,b)=>km(a)-km(b));
-  for(const p of towns.slice(0,3)){
-   const q=towns.find(t=>km(t)>km(p)&&kmBetween(p.slice(1),t.slice(1))<45);
-   if(!q)continue;
-   locals.push({name:p[0],why:'Поездка по окрестным городам.',source:'Посмотреть место в OpenStreetMap',url:'https://www.openstreetmap.org/?mlat='+p[1]+'&mlon='+p[2]+'#map=13/'+p[1]+'/'+p[2],places:q?[p,q]:[p]});
-  }
- }
- return [...guides,...locals];
+ }).filter(g=>g.approach<=Math.min(100,driveRadius())&&g.places.every(local)).sort((a,b)=>a.approach-b.approach);
+ return guides;
 }
 async function findMappedRoads(origin,key){
  const around='(around:55000,'+origin[0].toFixed(4)+','+origin[1].toFixed(4)+')';
@@ -68,12 +47,12 @@ async function findMappedRoads(origin,key){
 }
 function activeDrive(){
  const origin=actualOrigin();
- if(!origin||mode!=='car'||building||pickStage||pickStop||viewingSaved)return null;
+ if(!origin||!['all','car','rent'].includes(mode)||building||pickStage||pickStop||viewingSaved)return null;
  const key=origin.slice(0,2).join(',')+'/'+driveRadius();
  if(key!==driveShelf.key){
   driveShelf.key=key;driveShelf.options=driveOptions(origin);driveShelf.index=0;findMappedRoads(origin,key);
  }
- return driveShelf.options[driveShelf.index]||null;
+ return driveShelf.options[0]||null;
 }
 function driveStops(d){
  return [actualOrigin().slice(0,2),...d.places.map(p=>p.slice(1))].filter((p,i,a)=>!i||kmBetween(p,a[i-1])>.08);
@@ -105,7 +84,7 @@ function driveCard(d){
   const match=loopGallery.find(p=>kmBetween([lat,lon],p.slice(1,3))<1.5);
   return {name,lat,lon,photo:match?.[3],credit:match?.[4]};
  });
- return '<div class="loop-images drive-strip">'+stops.map(loopPhoto).join('')+'</div><div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong><button class="action" data-open-loops>Роад-трип →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
+ return '<div class="loop-images drive-strip">'+stops.map(loopPhoto).join('')+'</div><div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong>'+(d.line?'<div class="nearby-start">'+navigationLinks(driveStops(d),'Поехали')+'</div>':'')+'<button class="action" data-open-loops>Роад-трип от этой дороги →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
 
 }
 function takeDrive(d){
@@ -120,5 +99,5 @@ function takeDrive(d){
 function previewLines(){
  if(siteLine?.el.isConnected&&!$('landmark').hidden)return [siteLine.line];
  const d=driveShelf.current;
- return d&&!active&&!$('nearby').hidden&&d.line?[d.line]:[route];
+ return d&&highlightRoads()&&!active&&!$('nearby').hidden&&d.line?[d.line]:[route];
 }

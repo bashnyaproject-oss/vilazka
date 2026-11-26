@@ -54,9 +54,22 @@ function saveAccountItem(key,item,remove=false){
 }
 async function openAccountTrips(){
  if(!profileRemote?.remote.connected&&localStorage.getItem('vilazka-storage')){try{await profileStorage()}catch{}}
- const remote=profileRemote?.remote;if(!remote?.connected){accountOffer(true);return}
- const dialog=$('dialog');dialog.innerHTML='<div class="panel"><button data-dialog-close class="close" aria-label="Закрыть">×</button><h2>Мои поездки</h2><div id="cloudTrips" role="status">Загружаем поездки…</div></div>';
+ const remote=profileRemote?.remote;
+ const dialog=$('dialog');dialog.innerHTML='<div class="panel"><button data-dialog-close class="close" aria-label="Закрыть">×</button><h2>Мои поездки</h2><div id="cloudTrips" role="status"></div></div>';
  if(!dialog.open)dialog.showModal();const box=$('cloudTrips');
+ const local=document.createElement('div');local.className='guest-trip-list';box.before(local);
+ const trips=guestTrips();
+ if(trips.length){
+  const label=document.createElement('p');label.textContent='Поездки на этом устройстве';local.append(label);
+  for(const trip of trips){
+   const button=document.createElement('button');button.className='account-trip';button.textContent=trip.name;
+   button.onclick=()=>openRoadReview(trip,local);local.append(button);
+  }
+ }else local.textContent='Нажми «Поехали» у дороги, чтобы добавить поездку.';
+ if(!remote?.connected){
+  const connect=document.createElement('button');connect.className='action';connect.textContent='Подключить аккаунт';
+  connect.onclick=()=>accountOffer(true);box.append(connect);return;
+ }
  try{
   await Promise.all(pendingTripWrites.values());const r=await remote.get(tripFolder);
   if(r.statusCode!==404&&r.statusCode!==200)throw Error();
@@ -71,4 +84,54 @@ async function openAccountTrips(){
    box.append(btn);
   }
  }catch{box.textContent='Не удалось загрузить поездки. ';const retry=document.createElement('button');retry.textContent='Повторить';retry.onclick=openAccountTrips;box.append(retry)}
+}
+
+function openRoadReview(trip,box){
+ const heading=document.createElement('h3');heading.textContent=trip.name;
+ const back=document.createElement('button');back.type='button';back.textContent='← Все поездки';back.onclick=openAccountTrips;
+ box.replaceChildren(back,heading);
+ const remote=profileRemote?.remote;
+ if(!remote?.connected){
+  const connect=document.createElement('button');connect.className='action';connect.textContent='Войти, чтобы оставить отзыв';
+  connect.onclick=()=>accountOffer(true);box.append(connect);return;
+ }
+ if(!/^[\da-f-]{36}$/.test(trip.id))return;
+ const path='/vilazka/road-review-'+trip.id+'.json';
+ const form=document.createElement('form');form.className='road-review';
+ form.innerHTML='<label>Твой отзыв<textarea name="review" required maxlength="1500" rows="4"></textarea></label><label>Фото <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><small>До двух фото по 2 МБ. Отзыв сохранится в личном хранилище.</small><div class="review-photos"></div><button type="submit" class="action">Сохранить отзыв</button><p role="status"></p>';
+ box.append(form);
+ const status=form.querySelector('[role="status"]'),submit=form.querySelector('button'),preview=form.querySelector('.review-photos');
+ let photos=[];
+ function showPhotos(){
+  preview.replaceChildren();
+  for(const src of photos){
+   if(!/^data:image\/(?:jpeg|png|webp);base64,/.test(src))continue;
+   const img=document.createElement('img');img.src=src;img.alt='Фото к отзыву';preview.append(img);
+  }
+ }
+ submit.disabled=true;
+ remote.get(path).then(r=>{
+  if(r.statusCode===404)return;
+  if(r.statusCode!==200)throw Error();
+  const saved=typeof r.body==='string'?JSON.parse(r.body):r.body;
+  form.elements.review.value=saved.text||'';photos=Array.isArray(saved.photos)?saved.photos:[];showPhotos();
+ }).catch(()=>{status.textContent='Не удалось загрузить сохранённый отзыв.'}).finally(()=>{submit.disabled=false});
+ form.onsubmit=async e=>{
+  e.preventDefault();
+  const files=[...form.elements.photos.files],text=form.elements.review.value.trim();
+  if(!text){status.textContent='Напиши отзыв.';return}
+  if(files.length>2||files.some(f=>f.size>2*1024*1024||!/^image\/(jpeg|png|webp)$/.test(f.type))){
+   status.textContent='Выбери до двух фото JPEG, PNG или WebP по 2 МБ.';return;
+  }
+  submit.disabled=true;status.textContent='Сохраняем…';
+  try{
+   const next=files.length?await Promise.all(files.map(file=>new Promise((resolve,reject)=>{
+    const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);
+   }))):photos;
+   const r=await remote.put(path,JSON.stringify({name:trip.name,stops:trip.stops,text,photos:next}),'application/json');
+   if(r.statusCode<200||r.statusCode>=300)throw Error();
+   photos=next;form.elements.photos.value='';showPhotos();status.textContent='Отзыв сохранён.';
+  }catch{status.textContent='Сохранить отзыв не удалось. Попробуй ещё раз.'}
+  finally{submit.disabled=false}
+ };
 }

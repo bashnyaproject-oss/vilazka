@@ -313,7 +313,7 @@ function drawLoopCard(){
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
  (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.rejected?'<p role="status">'+(area.trying?'Проверяем соседние варианты…':'Подтверждённого маршрута для этих остановок нет. Попробуй старт в ближайшем городе.')+'</p>':'')+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.rejected&&area.roadStart?'<div class="road-start-option"><p>Выбранная точка находится в '+(area.roadStart.distance/1000).toLocaleString('ru',{maximumFractionDigits:1})+' км от ближайшей дороги в данных маршрутизатора.</p><button class="action" data-loop="road-start">Начать у дороги →</button></div>':'')+
- (c?.line?'<div class="loop-start">'+navigationLinks([c.start||area,...c.stops,...(c.ring||!c.source?[c.start||area]:[])],'Старт поездки')+'</div>':'')+
+ (c?.line?'<div class="loop-start">'+navigationLinks([c.start||area,...c.stops,...(c.ring||!c.source?[c.start||area]:[])],'Поехали')+'</div>':'')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
  '<details class="road-quality"'+(box.querySelector('.road-quality')?.open||state.loopAccess?' open':'')+'><summary>Качество дорог</summary><select id="loopAccess" aria-label="Качество дорог">'+roadOptions()+'</select></details>'+
  '<details class="loop-settings"'+(box.querySelector('.loop-settings')?.open?' open':'')+'><summary>Настройки маршрута</summary>'+
@@ -422,6 +422,16 @@ function initLoops(){
  deck.onchange=e=>{if(e.target.id==='loopBudget'||e.target.id==='loopLinear'){if(e.target.id==='loopBudget')state.loopBudget=e.target.value;else state.loopLinear=e.target.checked;const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated);return}if(e.target.id==='loopAccess'){state.loopAccess=e.target.value;const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,false);return}if(e.target.id==='driveRadius'){state.driveRadius=Number(e.target.value);const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,a.crossBorder,a.generated);return}if(e.target.id==='crossBorder'){const a=loopView.area;setLoopArea(a.lat,a.lon,a.name,e.target.checked,a.generated);return}if(e.target.id==='loopHomeCity'){state.loopHomeCity=e.target.value;persist();loopView.approach=null;drawLoopCard();refreshLoopApproach()}};
  deck.addEventListener('touchstart',e=>{touch=e.touches[0]},{passive:true});
  deck.addEventListener('touchend',e=>{if(!touch)return;const t=e.changedTouches[0],dx=t.clientX-touch.clientX;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(t.clientY-touch.clientY)*1.4)stepLoop(dx<0?1:-1);touch=null},{passive:true});
+ deck.addEventListener('click',event=>{
+  const summary=event.target.closest('.loop-start summary');
+  if(!summary||summary.parentElement.open)return;
+  const card=loopView.cards[loopView.index],start=card?.start||loopView.area;
+  if(!card?.line)return;
+  const points=[start,...card.stops,...(card.ring||!card.source?[start]:[])];
+  const toast=$('toast');
+  toast.textContent=rememberDrivenRoad(card.title,points)?'Добавлено в «Мои поездки»':'Не удалось сохранить поездку на этом устройстве';
+  toast.hidden=false;setTimeout(()=>toast.hidden=true,2800);
+ });
  deck.onclick=e=>{const action=e.target.closest('button')?.dataset.loop;
  if(action==='prev'||action==='next')stepLoop(action==='next'?1:-1);
  if(action==='details'||action==='back'){loopView.details=action==='details';drawLoopCard();return}
