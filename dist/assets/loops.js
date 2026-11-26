@@ -154,8 +154,16 @@ function validateLoop(path,start,closed,budget,country,crossBorder){
 async function osrmPath(points,round=false,radius=2200){
  const type=round?'trip':'route',coords=points.map(p=>p.lon.toFixed(5)+','+p.lat.toFixed(5)).join(';');
  const q='overview=full&geometries=geojson&steps=true&radiuses='+points.map(()=>radius).join(';')+(round?'&source=first&roundtrip=true':'');
- const r=await fetch('https://router.project-osrm.org/'+type+'/v1/driving/'+coords+'?'+q,{signal:AbortSignal.timeout(9000)});
- if(!r.ok)throw Error();const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];if(!path?.geometry?.coordinates?.length||(round&&j.trips.length!==1))throw Error();return {path,waypoints:j.waypoints};
+ for(const host of ['https://router.project-osrm.org','https://routing.openstreetmap.de/routed-car']){
+  try{
+   const r=await fetch(host+'/'+type+'/v1/driving/'+coords+'?'+q,{signal:AbortSignal.timeout(6500)});
+   if(!r.ok)continue;
+   const j=await r.json(),path=round?j.trips?.[0]:j.routes?.[0];
+   if(path?.geometry?.coordinates?.length>1&&(!round||j.trips.length===1))return {path,waypoints:j.waypoints};
+   if(j.code==='NoRoute'||j.code==='NoTrips'||j.code==='NoSegment')break;
+  }catch{/* Try the second routing service when the first is unavailable. */}
+ }
+ throw new Error('Дорога не подтверждена');
 }
 function ferrySegments(path){
  return (path?.legs||[]).flatMap(leg=>leg.steps||[]).filter(step=>step.mode==='ferry'&&step.geometry?.coordinates?.length>1).map(step=>step.geometry.coordinates);
@@ -183,7 +191,7 @@ async function loadLoop(card){
  const budget=loopBudget(),closed=!card.source||card.ring;
  async function checked(stops,optimize){
   const result=await osrmPath([start,...stops],optimize);
-  validateLoop(result.path,start,closed,budget,area.country,area.crossBorder);return result;
+  validateLoop(result.path,start,closed,[Infinity,Infinity],area.country,area.crossBorder);return result;
  }
  try{
   let result;
@@ -198,6 +206,7 @@ async function loadLoop(card){
   }
   const {path,waypoints}=result;
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
+  card.overBudget=path.distance>budget[0]*1000||path.duration>budget[1]*3600;
   card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.ferries=ferrySegments(path);card.length=Math.round(path.distance/1000)+' км · ≈ '+hours(path.duration)+' за рулём';
  }catch(error){if(!card.source&&loopView.area===area)checkRoadStart(area);card.length=['Превышен лимит поездки','Дорога в выбранных границах не подтверждена','Нет подтверждённого возврата к старту','Маршрут слишком часто повторяет ту же дорогу'].includes(error.message)?error.message:'Дорога не подтверждена';card.rejected=true}
  card.pending=false;card.done=true;
@@ -311,7 +320,7 @@ function drawLoopCard(){
  if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.rejected?'<p role="status">'+(area.trying?'Проверяем соседние варианты…':'Подтверждённого маршрута для этих остановок нет. Попробуй старт в ближайшем городе.')+'</p>':'')+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.overBudget?'<p role="status">Маршрут построен, но превышает лимит '+loopBudget()[0]+' км / '+loopBudget()[1]+' ч.</p>':'')+(c.rejected?'<p role="status">'+(area.trying?'Проверяем соседние варианты…':'Подтверждённого маршрута для этих остановок нет. Попробуй старт в ближайшем городе.')+'</p>':'')+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.rejected&&area.roadStart?'<div class="road-start-option"><p>Выбранная точка находится в '+(area.roadStart.distance/1000).toLocaleString('ru',{maximumFractionDigits:1})+' км от ближайшей дороги в данных маршрутизатора.</p><button class="action" data-loop="road-start">Начать у дороги →</button></div>':'')+
  (c?.line?'<div class="loop-start">'+navigationLinks([c.start||area,...c.stops,...(c.ring||!c.source?[c.start||area]:[])],'Поехали')+'</div>':'')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
@@ -391,7 +400,7 @@ function stepLoop(delta){
 }
 function saveLoop(){
  const c=loopView.cards[loopView.index];if(!c?.line)return;const area={...loopView.area,...c.start};
- itinerary.legs.push({name:area.name,lat:area.lat,lon:area.lon,arrival:true,domesticLoop:!area.crossBorder,crossBorder:area.crossBorder,roadBudget:loopBudget(),closedRoad:!c.source||c.ring,loopHome:loopHome()?.slice(0,2),approachByCar:!!loopView.approach&&!loopView.approach.air,stops:[...c.stops.map(({name,lat,lon})=>({name,lat,lon})),...(c.source?[]:[{name:area.name,lat:area.lat,lon:area.lon}])]});
+ itinerary.legs.push({name:area.name,lat:area.lat,lon:area.lon,arrival:true,domesticLoop:!area.crossBorder,crossBorder:area.crossBorder,roadBudget:c.overBudget?[Math.ceil(c.distanceKm),Math.ceil(c.durationHours)]:loopBudget(),closedRoad:!c.source||c.ring,loopHome:loopHome()?.slice(0,2),approachByCar:!!loopView.approach&&!loopView.approach.air,stops:[...c.stops.map(({name,lat,lon})=>({name,lat,lon})),...(c.source?[]:[{name:area.name,lat:area.lat,lon:area.lon}])]});
  saveAccountItem('road-'+crypto.randomUUID(),{name:c.title,lat:area.lat,lon:area.lon,stops:c.stops.map(({name,lat,lon})=>({name,lat,lon}))});
  selectedLeg=itinerary.legs.length-1;persist();closeLoops();enterTrip();loopFrame();
 }

@@ -21,7 +21,7 @@ let state={...defaults};
 try{state={...defaults,...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{}
 if(!visaIndexes.has(state.passport))state.passport='';
 if(!['auto','pin'].includes(state.origin)&&!Object.hasOwn(cities,state.origin))state.origin=defaults.origin;
-let gps=null,gpsWatch=null,destinationPicking=false;
+let gps=null,destinationPicking=false;
 let gpsStatus='idle';
 let geoRequest=0;
 const actualOrigin=()=>state.origin==='pin'?state.point:state.origin==='auto'?gps:cities[state.origin];
@@ -880,7 +880,8 @@ function openLandmark(key){
 }
 function updateLocation(){
  const chosen=actualOrigin();
- $('locationText').textContent=gpsStatus==='pending'?'Определяем местоположение…':gpsStatus==='denied'?'Геолокация запрещена в настройках сайта':gpsStatus==='timeout'?'Браузер не успел получить координаты. Можно повторить или выбрать точку на карте.':gpsStatus==='unsupported'?'Этот браузер не предоставляет геолокацию. Выбери точку на карте.':gpsStatus==='failed'?'Устройство не передало координаты. Попробуй снова или выбери точку на карте.':gps?'Ты на карте · '+placeName(gps):chosen?'Старт · '+originName():'';
+ $('locationText').textContent=gpsStatus==='pending'?'Определяем местоположение…':gpsStatus==='denied'?'Геолокация запрещена в настройках сайта':gpsStatus==='timeout'?'Браузер не успел получить координаты. Можно повторить или выбрать точку на карте.':gpsStatus==='embedded'?'В этом окне геолокация заблокирована. Открой сайт в отдельной вкладке.':gpsStatus==='unsupported'?'Этот браузер не предоставляет геолокацию. Выбери точку на карте.':gpsStatus==='failed'?'Устройство не передало координаты. Попробуй снова или выбери точку на карте.':gps?'Ты на карте · '+placeName(gps):chosen?'Старт · '+originName():'';
+ $('locationFallback').hidden=!['embedded','denied','timeout','failed','unsupported'].includes(gpsStatus);
  $('location').hidden=!$('locationText').textContent;
  $('myPosition').setAttribute('aria-busy',String(gpsStatus==='pending'));
  map.classList.toggle('locating',gpsStatus==='pending');
@@ -892,28 +893,30 @@ function flyTo(point,target){
  atlas.flyTo({center,zoom:target,speed:1.15,curve:1.2,maxDuration:1350});
 }
 function requestLocation(focus){
- if(!navigator.geolocation){gpsStatus='unsupported';updateLocation();return}
+ const geo=navigator.geolocation;
+ if(!geo||!window.isSecureContext){gpsStatus='unsupported';updateLocation();return}
+ const policy=document.permissionsPolicy||document.featurePolicy;
+ if(policy?.allowsFeature&&!policy.allowsFeature('geolocation')){gpsStatus='embedded';updateLocation();return}
  if(gps&&focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));renderPins()}
- if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
  const request=++geoRequest;
  gpsStatus='pending';updateLocation();
- let first=true;
- gpsWatch=navigator.geolocation.watchPosition(
-  ({coords})=>{
+ const found=({coords})=>{
+  if(request!==geoRequest)return;
+  gps=[coords.latitude,coords.longitude];gpsStatus='ready';
+  if(state.origin==='auto')$('portal').hidden=true;
+  render();
+  if(focus)flyTo(gps,Math.max(9,atlas?.getZoom()||0));
+  else if(state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
+ };
+ function attempt(precise){
+  geo.getCurrentPosition(found,error=>{
    if(request!==geoRequest)return;
-   const next=[coords.latitude,coords.longitude];
-   if(!first&&gpsStatus==='ready'&&gps&&kmBetween(gps,next)<.025)return;
-   gps=next;gpsStatus='ready';
-   updateLocation();renderPins();
-   if(!first)return;
-   first=false;
-   if(state.origin==='auto')$('portal').hidden=true;
-   if(focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));return}
-   if(state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
-  },
-  error=>{if(request!==geoRequest)return;gpsStatus=error.code===1?'denied':error.code===3?'timeout':'failed';updateLocation();$('startHint').textContent=$('locationText').textContent},
-  {enableHighAccuracy:false,timeout:20000,maximumAge:60000}
- );
+   if(error.code!==1&&focus&&!precise){attempt(true);return}
+   gpsStatus=gps?'ready':error.code===1?'denied':error.code===3?'timeout':'failed';
+   updateLocation();$('startHint').textContent=$('locationText').textContent;
+  },{enableHighAccuracy:precise,timeout:precise?15000:7000,maximumAge:precise?0:120000});
+ }
+ attempt(false);
 }
 let pendingDestination=null;
 let picking=false, route=[], routeRequest=0, routeInfo='', canvas=null;
@@ -1217,6 +1220,7 @@ $('manualOrigin').onclick=()=>{
 $('locate').onclick=()=>requestLocation(true);
 $('gpsStart').onclick=()=>{state.origin='auto';$('origin').value='auto';persist();finishPick();$('portal').hidden=false;$('startHint').textContent='Запрашиваем геопозицию…';requestLocation(true)};
 $('pickStart').onclick=beginPick;
+$('locationFallback').onclick=beginPick;
 $('cancelPick').onclick=finishPick;
 $('closeDrawer').onclick=()=>{setDrawer(false);viewingSaved=false;if(!actualOrigin())showStart();else render()};
 $('storyPrev').onclick=()=>browseStory(-1);
