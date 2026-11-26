@@ -151,3 +151,13 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 #nearby .story-foot>div,#loopDeck .route-navigation{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 #loopDeck .route-navigation button,#nearby .story-foot>div button{width:100%;min-width:0}
 #loopDeck .ferry-note{display:block;margin-top:6px;color:#89e2ff}
+
+#explore[hidden],#recommend[hidden]{display:none!important}
+#weatherCorner{position:fixed;z-index:8;left:16px;bottom:24px;display:flex;gap:6px}
+#weatherCorner button,#weatherCorner .season-icon{display:grid;place-items:center;position:relative;width:44px;height:44px;border:1px solid #ffffff35;border-radius:14px;background:#141316;color:#f0ebf7}
+#weatherCorner button[aria-pressed=true]{background:#c9b7fc;color:#201830}
+#weatherCorner svg{width:20px;height:20px}
+.season-icon span{font-size:24px}
+.season-icon select{position:absolute;inset:0;width:100%;opacity:0;cursor:pointer}
+.season-icon:focus-within{outline:2px solid #c9b7fc}
+@media(max-width:760px){#weatherCorner{bottom:calc(83px + env(safe-area-inset-bottom));left:10px}}

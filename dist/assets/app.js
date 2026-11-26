@@ -1433,3 +1433,6 @@ document.addEventListener('pointerdown',e=>{if(!e.target.closest('#popFilter'))$
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('popFilter').open){$('popFilter').open=false;$('popFilter').querySelector('summary').focus()}});
 
 $('popFilter').addEventListener('toggle',()=>{if($('popFilter').open){$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}});
+
+if(new URLSearchParams(location.search).has('directions'))$('explore').click();
+if(new URLSearchParams(location.search).has('ideas'))$('recommend').click();

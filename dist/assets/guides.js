@@ -88,10 +88,11 @@ function showRoadMap(g){
   if(coordinates.length>100){status.textContent='На карте отмечены остановки.';return}
   const coords=coordinates.map(p=>p.map(n=>n.toFixed(5)).join(',')).join(';');
   try{
-   const response=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson&radiuses='+coordinates.map(()=>2200).join(';'),
+   const saved=roadGeometry[g.url];
+   const response=saved?null:await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson&radiuses='+coordinates.map(()=>2200).join(';'),
     {signal:AbortSignal.any([request.signal,AbortSignal.timeout(12000)])});
-   if(!response.ok)throw Error();
-   const path=(await response.json()).routes?.[0];
+   if(response&&!response.ok)throw Error();
+   const path=saved?{distance:saved[0]*1000,duration:saved[1]*60,geometry:{type:"LineString",coordinates:saved[2]}}:(await response.json()).routes?.[0];
    if(request.signal.aborted)return;
    if(!path?.geometry?.coordinates?.length)throw Error();
    map.addSource('guide-road',{type:'geojson',data:{type:'Feature',geometry:path.geometry,properties:{}}});
@@ -101,20 +102,23 @@ function showRoadMap(g){
   }catch{if(!request.signal.aborted)status.textContent='Дорогу не удалось рассчитать. На карте отмечены остановки.'}
  });
 }
-const info=g=>g.distanceKm&&g.drivingMinutes?g.distanceKm+' км · '+Math.floor(g.drivingMinutes/60)+' ч '+g.drivingMinutes%60+' мин':g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
+const info=g=>roadGeometry[g.url]?roadGeometry[g.url][0]+' км · ≈ '+Math.floor(roadGeometry[g.url][1]/60)+' ч '+roadGeometry[g.url][1]%60+' мин':g.distanceKm&&g.drivingMinutes?g.distanceKm+' км · '+Math.floor(g.drivingMinutes/60)+' ч '+g.drivingMinutes%60+' мин':g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
 byId('access').innerHTML=roadOptions();
 function roadPreview(g){
- const points=g.places.map(([,y,x])=>[x,y]);
+ const points=roadGeometry[g.url]?.[2];
+ if(!points)return '';
  const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
  const minX=Math.min(...xs),minY=Math.min(...ys);
- const dx=Math.max(...xs)-minX||1,dy=Math.max(...ys)-minY||1;
- const path=points.map(([x,y])=>[24+272*(x-minX)/dx,112-88*(y-minY)/dy]);
- return '<svg class="road-preview" viewBox="0 0 320 136" role="img" aria-label="Схема остановок"><polyline points="'+path.map(p=>p.join(',')).join(' ')+'"/>'+path.map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="5"/>').join('')+'</svg>';
+ const cos=Math.cos((minY+Math.max(...ys))*Math.PI/360);
+ const width=(Math.max(...xs)-minX)*cos,height=Math.max(...ys)-minY;
+ const scale=Math.min(272/(width||1),88/(height||1));
+ const path=points.map(([x,y])=>[(160+((x-minX)*cos-width/2)*scale).toFixed(1),(68-((y-minY)-height/2)*scale).toFixed(1)]);
+ return '<svg class="road-preview" viewBox="0 0 320 136" role="img" aria-label="Линия по дорожной сети"><polyline points="'+path.map(p=>p.join(',')).join(' ')+'"/></svg>';
 }
 function list(){
  const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
  const scenic=document.documentElement.hasAttribute("data-scenic");
- const found=guides.filter(g=>(!scenic||g.separateStart)&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
+ const found=guides.filter(g=>(!scenic||g.separateStart&&roadGeometry[g.url])&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
  byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+(photo(g,'cover')||(scenic?roadPreview(g):''))+'<small>'+esc(accessLabel(g))+' · '+info(g)+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
 }
 function show(){
