@@ -47,20 +47,74 @@
  function camera(){return atlas?.getCenter()||{lat:55.75,lng:37.62}}
  function nearest(list,center){return list.map(p=>[p,kmBetween([center.lat,center.lng],[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1])}
  const countryPanel=$('countryRoads');
+ const countryButton=document.createElement('button');
+ countryButton.type='button';countryButton.className='country-picker';countryButton.textContent='◎';
+ countryButton.title='Поиск страны';countryButton.setAttribute('aria-label','Поиск страны');countryButton.setAttribute('aria-pressed','false');
+ field.closest('label').after(countryButton);
+ let countryOnly=false,detectedCountry='',selectedCountry='',dismissedCountry='',countryOpen=false;
+ function drawCountryHighlight(){
+  if(!atlas||canvas||!atlas.getStyle()?.layers)return;
+  const id='selected-country',code=selectedCountry;
+  const existing=atlas.getSource(id);
+  if(!existing&&!code)return;
+  if(existing?.countryCode===code)return;
+  const geo={type:'FeatureCollection',features:countryShapes.filter(([key])=>visaData.iso2[key]===code).map(([,,,,,rings])=>({type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:rings}}))};
+  if(existing)existing.setData(geo);
+  else{
+   atlas.addSource(id,{type:'geojson',data:geo});
+   const before=atlas.getStyle().layers.find(l=>l.type==='line'||l.type==='symbol');
+   atlas.addLayer({id,type:'fill',source:id,paint:{'fill-color':'#b18bff','fill-opacity':.19,'fill-outline-color':'#c8acff'}},before?.id);
+  }
+  atlas.getSource(id).countryCode=code;
+ }
+ window.paintCountryHighlight=(ctx)=>{
+  if(!selectedCountry)return;
+  ctx.save();ctx.fillStyle='#b18bff30';
+  for(const [key,,,,,rings] of countryShapes){
+   if(visaData.iso2[key]!==selectedCountry)continue;
+   ctx.beginPath();
+   for(const ring of rings){ctx.moveTo(...ring[0]);for(const point of ring.slice(1))ctx.lineTo(...point);ctx.closePath()}
+   ctx.fill('evenodd');
+  }
+  ctx.restore();
+ };
+ function selectCountry(code,open=false){
+  selectedCountry=code;countryOpen=open;
+  if(code)showCountryRoutes(code);else countryPanel.hidden=true;
+  drawCountryHighlight();canvas?.draw();
+ }
  function showCountryRoutes(code){
   const country=ruCountries.of(code);
   const routes=publishedDrives.map((route,i)=>({route,i})).filter(({route})=>
    route.places.length>=2&&route.places.every(([,lat,lon])=>visaData.iso2[countryAt(lat,lon)]===code));
   const link=({route,i})=>'<a href="/guides.html#route-'+i+'"><strong>'+safe(route.name)+'</strong><small>'+safe(route.places[0][0])+' → '+safe(route.places.at(-1)[0])+'</small></a>';
-  countryPanel.innerHTML='<button class="country-route-chip" type="button" aria-label="Убрать страну">'+safe(country)+' <span aria-hidden="true">×</span></button>'+
-   '<p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>В каталоге пока нет маршрутов по этой стране. Выбери город, чтобы подобрать поездку на карте.</p>');
-  countryPanel.querySelector('button').onclick=()=>{countryPanel.hidden=true;delete state.searchCountry;persist()};
+  countryPanel.innerHTML='<div class="country-chip-row"><button class="country-route-chip" type="button" aria-expanded="'+countryOpen+'">'+safe(country)+' <span>'+routes.length+' · ⌄</span></button><button class="country-clear" type="button" aria-label="Убрать страну">×</button></div>'+
+   '<div class="country-route-body" '+(countryOpen?'':'hidden')+'><p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>В каталоге пока нет готовых маршрутов. Выбери город, чтобы подобрать поездку на карте.</p>')+'</div>';
+  countryPanel.querySelector('.country-route-chip').onclick=()=>{countryOpen=!countryOpen;showCountryRoutes(code)};
+  countryPanel.querySelector('.country-clear').onclick=()=>{dismissedCountry=code;delete state.searchCountry;persist();selectCountry('')};
   countryPanel.hidden=false;
  }
- if(visaIndexes.has(state.searchCountry))showCountryRoutes(state.searchCountry);
+ if(visaIndexes.has(state.searchCountry)){selectedCountry=state.searchCountry;showCountryRoutes(selectedCountry);}
+ function detectCountry(){
+  if(!atlas)return;
+  if(atlas.getZoom()>=5){
+   const center=atlas.getCenter(),code=visaData.iso2[countryAt(center.lat,((center.lng+180)%360+360)%360-180)]||'';
+   if(code&&visaIndexes.has(code)&&code!==detectedCountry){
+    detectedCountry=code;
+    if(code!==dismissedCountry&&code!==selectedCountry){dismissedCountry='';selectCountry(code);}
+   }
+  }else detectedCountry='';
+  drawCountryHighlight();
+ }
+ countryButton.onclick=()=>{
+  countryOnly=!countryOnly;countryButton.setAttribute('aria-pressed',String(countryOnly));
+  field.placeholder=countryOnly?'Найти страну':'Город, страна или место';
+  field.value='';field.focus();search();
+ };
+
  function choose(p){
   if(!p)return;const roads=roadMode();closeSearch();menu(false);field.value='';
-  if(p.action==='country'){resetMap();state.searchCountry=p.id;persist();showCountryRoutes(p.id);flyTo([p.lat,p.lon],4);return}
+  if(p.action==='country'){resetMap();state.searchCountry=p.id;persist();countryOnly=false;countryButton.setAttribute('aria-pressed','false');field.placeholder='Город, страна или место';selectCountry(p.id,true);flyTo([p.lat,p.lon],4);return}
   if(roads){launchLoops({name:p.name,lat:p.lat,lon:p.lon});sync();return}
   resetMap();
   if(p.action==='site')openCatalogue(p.id);else if(p.action==='city')openCity(p.id);else open(data[p.id]);
@@ -68,8 +122,9 @@
  }
  function search(){
   menu(false);const q=normalize(field.value.trim()),center=camera();
-  const found=q?index().filter(p=>q.length===1?p.key.split(/[\s-]+/).some(part=>part.startsWith(q)):p.key.includes(q)):index().filter(p=>p.pic);
-  const ranked=nearest(russiaOnly?found.filter(p=>p.action==='country'?p.id==='RU':countryAt(p.lat,p.lon)==='RUS'):found,center);
+  const pool=countryOnly?index().filter(p=>p.action==='country').sort((a,b)=>a.name.localeCompare(b.name,'ru')):index();
+  const found=q?pool.filter(p=>q.length===1?p.key.split(/[\s-]+/).some(part=>part.startsWith(q)):p.key.includes(q)):countryOnly?pool:pool.filter(p=>p.pic);
+  const ranked=!q&&countryOnly?found.map(p=>[p,0]):nearest(russiaOnly?found.filter(p=>p.action==='country'?p.id==='RU':countryAt(p.lat,p.lon)==='RUS'):found,center);
   if(q)ranked.sort((a,b)=>Number(!normalize(a[0].name).startsWith(q))-Number(!normalize(b[0].name).startsWith(q)));
   if(q){const firstCountry=ranked.findIndex(([p])=>p.action==='country'&&normalize(p.name).startsWith(q));if(firstCountry>2)ranked.splice(2,0,...ranked.splice(firstCountry,1))}
   const seen=new Set();shortlist=ranked.filter(([p])=>{if(seen.has(p.name))return false;seen.add(p.name);return true}).slice(0,8);
@@ -90,7 +145,7 @@
    btn.append(img,label);btn.onclick=()=>choose(p);rail.append(btn);
   }
  }
- function schedule(){if(!size.matches)return;sync();clearTimeout(timer);timer=setTimeout(nearby,140)}
+ function schedule(){sync();clearTimeout(timer);timer=setTimeout(()=>{detectCountry();nearby()},140)}
  window.refreshPhoneMap=schedule;
  function setup(){
   if(size.matches){$('phoneControls').append(modes,seasons);sync();schedule()}
@@ -108,5 +163,5 @@
  document.addEventListener('pointerdown',e=>{if(e.target.closest('#mobileTop,#mobileSettings'))return;closeSearch();menu(false)});
  new MutationObserver(schedule).observe($('loopDeck'),{attributes:true,attributeFilter:['hidden']});
  new MutationObserver(schedule).observe($('builder'),{attributes:true,attributeFilter:['hidden']});
- size.addEventListener('change',setup);setup();
+ size.addEventListener('change',setup);setup();schedule();
 })();

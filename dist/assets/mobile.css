@@ -63,3 +63,10 @@
 .country-route-list a{display:grid;gap:3px;padding:9px;border-radius:9px;background:#211c28;color:inherit;text-decoration:none;font:14px system-ui}
 .country-route-list a:hover,.country-route-list a:focus-visible{background:#362847}
 .country-route-list small{color:#c4b6d0;font-size:11px}
+
+#mobileTop .country-picker{display:grid;place-items:center;flex:0 0 34px;height:34px;color:#d9c6ff;background:#251c30;border:1px solid #c9a4ff40;border-radius:10px;font-size:21px;cursor:pointer}
+#mobileTop .country-picker[aria-pressed=true]{background:#d9bfff;color:#271738}
+.country-chip-row{display:flex;align-items:center;gap:6px}
+.country-clear{background:transparent;color:#dac8f5;border:0;font-size:20px;cursor:pointer;width:33px;height:33px}
+#countryRoads:has(.country-route-body[hidden]){display:table;margin-left:auto;padding:3px 5px;border-radius:999px}
+#countryRoads[hidden],#mobileResults:not([hidden])+#countryRoads{display:none!important}

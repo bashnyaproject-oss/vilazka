@@ -1109,6 +1109,7 @@ function bootOffline(){
   ctx.fill(landShape,'nonzero');ctx.stroke(landShape);
   const nw=unproject(0,0),se=unproject(w,h);
   paintOfflineVisa(ctx,nw,se);
+  window.paintCountryHighlight?.(ctx);
   ctx.lineJoin='round';ctx.lineCap='round';
   const overview=overviewImages.get(mode==='train'&&!highlightRoads()?'railways':'highways');
   if(z<5.8&&overview?.naturalWidth&&(highlightRoads()||mode==='train')){
