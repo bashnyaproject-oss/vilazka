@@ -3,6 +3,23 @@
 let profileRemote=null,profileSdk=null;
 const profilePath='/vilazka/preferences.json';
 const prefKeys=['passport','passport2','drive','driveKm','taste'];
+const localProfileKey='vilazka.localProfile';
+function localProfile(){
+ try{return localStorage.getItem(localProfileKey)||''}catch{return ''}
+}
+function openLocalProfile(next=showProfile){
+ const dialog=$('dialog');
+ if(localProfile()){next();return}
+ dialog.innerHTML='<section class="panel local-signup" aria-labelledby="localSignupTitle"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><div class="signup-scene" aria-hidden="true"><i></i></div><form id="localSignup"><h2 id="localSignupTitle">Твой профиль</h2><p>Почта для профиля на этом устройстве</p><label>Электронная почта<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required maxlength="254"></label><button class="action">Продолжить →</button><p class="signup-status" role="status"></p><button class="signup-skip" type="button" data-dialog-close>Пока без профиля</button></form></section>';
+ if(!dialog.open)dialog.showModal();
+ const form=$('localSignup');
+ form.onsubmit=event=>{
+  event.preventDefault();
+  try{localStorage.setItem(localProfileKey,form.elements.email.value.trim().toLowerCase())}
+  catch{form.querySelector('[role="status"]').textContent='Браузер не сохранил профиль. Проверь настройки хранения сайта.';return}
+  next();
+ };
+}
 function profileStorage(){
  if(profileSdk)return profileSdk;
  profileSdk=new Promise((resolve,reject)=>{
@@ -67,8 +84,8 @@ async function openAccountTrips(){
   }
  }else local.textContent='Нажми «Поехали» у дороги, чтобы добавить поездку.';
  if(!remote?.connected){
-  const connect=document.createElement('button');connect.className='action';connect.textContent='Подключить аккаунт';
-  connect.onclick=()=>accountOffer(true);box.append(connect);return;
+  const connect=document.createElement('button');connect.className='action';connect.textContent=localProfile()?'Настройки профиля':'Создать профиль';
+  connect.onclick=()=>openLocalProfile();box.append(connect);return;
  }
  try{
   await Promise.all(pendingTripWrites.values());const r=await remote.get(tripFolder);
@@ -91,14 +108,23 @@ function openRoadReview(trip,box){
  const back=document.createElement('button');back.type='button';back.textContent='← Все поездки';back.onclick=openAccountTrips;
  box.replaceChildren(back,heading);
  const remote=profileRemote?.remote;
- if(!remote?.connected){
-  const connect=document.createElement('button');connect.className='action';connect.textContent='Войти, чтобы оставить отзыв';
-  connect.onclick=()=>accountOffer(true);box.append(connect);return;
+ if(!remote?.connected&&!localProfile()){
+  const connect=document.createElement('button');connect.className='action';connect.textContent='Создать профиль, чтобы оставить отзыв';
+  connect.onclick=()=>openLocalProfile(()=>{
+   const dialog=$('dialog');dialog.innerHTML='<div class="panel"><button class="close" type="button" data-dialog-close aria-label="Закрыть">×</button><div id="localRoadReview"></div></div>';
+   openRoadReview(trip,$('localRoadReview'));
+  });box.append(connect);return;
  }
  if(!/^[\da-f-]{36}$/.test(trip.id))return;
  const path='/vilazka/road-review-'+trip.id+'.json';
+ const localKey='vilazka.review.'+localProfile()+'.'+trip.id;
+ const connected=remote?.connected;
+ const storage=connected?remote:{
+  async get(){const body=localStorage.getItem(localKey);return {statusCode:body?200:404,body}},
+  async put(_path,body){localStorage.setItem(localKey,body);return {statusCode:200}}
+ };
  const form=document.createElement('form');form.className='road-review';
- form.innerHTML='<label>Твой отзыв<textarea name="review" required maxlength="1500" rows="4"></textarea></label><label>Фото <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><small>До двух фото по 2 МБ. Отзыв сохранится в личном хранилище.</small><div class="review-photos"></div><button type="submit" class="action">Сохранить отзыв</button><p role="status"></p>';
+ form.innerHTML='<label>Твой отзыв<textarea name="review" required maxlength="1500" rows="4"></textarea></label><label>Фото <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><small>До двух фото по 2 МБ. Отзыв сохранится '+(connected?'в личном хранилище':'на этом устройстве')+'.</small><div class="review-photos"></div><button type="submit" class="action">Сохранить отзыв</button><p role="status"></p>';
  box.append(form);
  const status=form.querySelector('[role="status"]'),submit=form.querySelector('button'),preview=form.querySelector('.review-photos');
  let photos=[];
@@ -110,7 +136,7 @@ function openRoadReview(trip,box){
   }
  }
  submit.disabled=true;
- remote.get(path).then(r=>{
+ storage.get(path).then(r=>{
   if(r.statusCode===404)return;
   if(r.statusCode!==200)throw Error();
   const saved=typeof r.body==='string'?JSON.parse(r.body):r.body;
@@ -128,7 +154,7 @@ function openRoadReview(trip,box){
    const next=files.length?await Promise.all(files.map(file=>new Promise((resolve,reject)=>{
     const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);
    }))):photos;
-   const r=await remote.put(path,JSON.stringify({name:trip.name,stops:trip.stops,text,photos:next}),'application/json');
+   const r=await storage.put(path,JSON.stringify({name:trip.name,stops:trip.stops,text,photos:next}),'application/json');
    if(r.statusCode<200||r.statusCode>=300)throw Error();
    photos=next;form.elements.photos.value='';showPhotos();status.textContent='Отзыв сохранён.';
   }catch{status.textContent='Сохранить отзыв не удалось. Попробуй ещё раз.'}

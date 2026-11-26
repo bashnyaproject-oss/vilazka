@@ -173,3 +173,27 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 #nearby .nearby-start summary,#loopDeck .loop-start summary{display:block;width:100%;box-sizing:border-box}
 #nearby .nearby-start .travel-links>div,#loopDeck .loop-start .travel-links>div{display:grid;grid-template-columns:minmax(0,1fr)}
 #nearby .nearby-start .travel-links a,#loopDeck .loop-start .travel-links a{display:block;text-align:center;width:100%;box-sizing:border-box}
+
+#dialog:has(.local-signup){margin:auto;padding:0;width:min(460px,calc(100vw - 30px));max-height:calc(100dvh - 24px);overflow:auto;border:1px solid #c990ed50;border-radius:24px;background:#120e1b;box-shadow:0 28px 100px #050207d9,0 0 50px #8e3ead30}
+#dialog:has(.local-signup)::backdrop{background:#090512b5;backdrop-filter:blur(7px)}
+#dialog .local-signup{position:relative;margin:0;padding:0;background:#120e1b;border:0;overflow:hidden}
+.local-signup .close{z-index:2;right:14px;top:14px}
+.signup-scene{height:145px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 75%,#ed6ca350,transparent 47%),linear-gradient(160deg,#151028,#32204a 57%,#201124)}
+.signup-scene:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 9px,#c987f31c 10px 11px);mask-image:linear-gradient(transparent 18%,black 80%)}
+.signup-scene:after{content:'';position:absolute;inset:24% 0 0;clip-path:polygon(48% 5%,54% 5%,92% 100%,12% 100%);background:linear-gradient(90deg,#ab77ff,#4c265e 12%,#181123 38%,#281635 60%,#653254 86%,#ff88ae)}
+.signup-scene i{position:absolute;z-index:1;left:50%;top:29%;width:8%;height:85%;background:linear-gradient(#ffb1ca,#d39aff);clip-path:polygon(46% 0,51% 0,57% 27%,51% 27%,57% 45%,65% 45%,77% 69%,63% 69%,72% 89%,88% 89%,98% 100%,72% 100%,40% 0);opacity:.8}
+#localSignup{display:grid;gap:12px;padding:22px 25px 19px}
+#localSignup h2,#localSignup p{margin:0}
+#localSignup h2{font-size:32px;letter-spacing:-.05em;color:#fbebff}
+#localSignup p,#localSignup label{color:#c8b3d5}
+#localSignup label{display:grid;gap:7px;font-size:13px}
+#localSignup input{width:100%;min-height:46px;box-sizing:border-box;background:#271c31;color:#fff;border:1px solid #c990ed50;border-radius:12px;padding:10px 12px;font:inherit}
+#localSignup .action{width:100%;min-height:45px;background:linear-gradient(110deg,#e0b0ff,#ffa7c4);color:#23112d;font-weight:750}
+.signup-skip{color:#d6bfdc;background:none;border:0;padding:6px;cursor:pointer}
+.signup-status:empty{display:none}
+@media(prefers-reduced-motion:no-preference){
+ #dialog[open]:has(.local-signup){animation:signup-arrive .35s cubic-bezier(.19,1,.22,1) both}
+ .signup-scene:before{animation:signup-lines 2.8s linear infinite}
+ @keyframes signup-arrive{from{opacity:0;transform:translateY(15px) scale(.97)}to{opacity:1;transform:none}}
+ @keyframes signup-lines{to{transform:translateY(11px)}}
+}

@@ -733,7 +733,7 @@ function limitChips(name,title,values,unit){
  return '<fieldset class="limit-chips"><legend>'+title+'</legend>'+values.map(v=>'<label><input type="radio" name="'+name+'" value="'+safe(v)+'" '+(v===current?'checked':'')+'><span>'+(v?safe(v)+' '+unit:'Без лимита')+'</span></label>').join('')+'</fieldset>';
 }
 function showProfile(){
- $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Профиль путешественника</h2><p>Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.</p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><details id="secondPassport" '+(state.passport2?'open':'')+'><summary>Второй паспорт</summary><label>Страна второго паспорта<select name="passport2"><option value="">Не указан</option>'+entryOptions()+'</select></label></details><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label>'+limitChips('drive','Время за рулём в день',['2','3','4','5','6','8'],'ч')+limitChips('driveKm','Расстояние в день',['','100','200','300','500','700'],'км')+'<button class="action">Сохранить профиль</button></form>';
+ $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Настройки поездок</h2>'+(localProfile()?'<small>'+safe(localProfile())+'</small>':'')+'<p>Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.</p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><details id="secondPassport" '+(state.passport2?'open':'')+'><summary>Второй паспорт</summary><label>Страна второго паспорта<select name="passport2"><option value="">Не указан</option>'+entryOptions()+'</select></label></details><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label>'+limitChips('drive','Время за рулём в день',['2','3','4','5','6','8'],'ч')+limitChips('driveKm','Расстояние в день',['','100','200','300','500','700'],'км')+'<button class="action">Сохранить профиль</button></form>';
  const form=$('profileForm');
  for(const key of ['passport','passport2','taste','drive','driveKm'])form.elements[key].value=state[key]||'';
  if(!visaIndexes.has(state.passport))form.elements.passport.value='';
@@ -741,7 +741,7 @@ function showProfile(){
  form.onsubmit=e=>{e.preventDefault();
  if(form.elements.passport2.value&&(!form.elements.passport.value||form.elements.passport.value===form.elements.passport2.value)){form.elements.passport2.setCustomValidity('Укажи два разных паспорта');form.elements.passport2.reportValidity();return}
  for(const key of ['passport','passport2','taste','drive','driveKm'])state[key]=form.elements[key].value;
- if(visaRequested&&state.passport){state.visaLayer=true;$('visaLegend').open=true}visaRequested=false;persist();$('dialog').close();$('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';updateVisaMap();canvas?.draw();if(loopView.open)drawLoopCard();else render();accountOffer()};
+ if(visaRequested&&state.passport){state.visaLayer=true;$('visaLegend').open=true}visaRequested=false;persist();$('dialog').close();$('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';updateVisaMap();canvas?.draw();if(loopView.open)drawLoopCard();else render()};
  if(!$('dialog').open)$('dialog').showModal();
 }
 function compare(){
@@ -750,7 +750,7 @@ function compare(){
  }).join('')+'</tbody></table></div>';
  $('dialog').showModal();
 }
-$('profile').onclick=showProfile;
+$('profile').onclick=()=>openLocalProfile();
 $('dialog').addEventListener('close',()=>{visaRequested=false});
 $('explore').onclick=()=>{const show=document.querySelector('aside').hidden||viewingSaved||russiaOnly;viewingSaved=false;setDrawer(show);render()};
 $('saved').onclick=openAccountTrips;
