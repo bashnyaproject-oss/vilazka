@@ -24,15 +24,22 @@
       if(!response.ok)throw Error();
       const data=await response.json();
       if(key!==box)return;
+      if(!Array.isArray(data.elements))throw Error();
       rows=data.elements;
       if(cache.size>=20)cache.delete(cache.keys().next().value);
       cache.set(box,rows);positionPins();
-     }catch(e){if(key===box&&e.name!=='AbortError')status.textContent='Не удалось загрузить пункты проката';}
+     }catch(e){if(key===box&&e.name!=='AbortError'){
+       status.textContent='Пункты проката не загрузились. ';
+       const center=atlas.getCenter(),link=document.createElement('a');
+       link.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Прокат авто '+center.lat+','+center.lng);
+       link.textContent='Поиск на карте ↗';link.target='_blank';link.rel='noopener';
+       status.append(link);
+      }}
     },500);
    }
   }
   if(!available||!enabled)return;
-  if(!key){status.textContent='Приблизь карту до города';return}
+  if(!key){status.textContent='Приближаем область поиска…';return}
   if(cache.has(key))status.textContent=rows.length?'Пункты проката · OpenStreetMap':'В этой области нет отмеченных пунктов';
   for(const row of rows){
    const lat=row.lat??row.center?.lat,lon=row.lon??row.center?.lon;
@@ -43,5 +50,21 @@
    link.target='_blank';link.rel='noopener';pinLayer.append(link);
   }
  };
- toggle.onclick=()=>{enabled=!enabled;toggle.setAttribute('aria-checked',String(enabled));positionPins()};
+ toggle.onclick=()=>{
+  enabled=!enabled;toggle.setAttribute('aria-checked',String(enabled));
+  if(!enabled){positionPins();return}
+  const center=atlas.getCenter();
+  if(atlas.getZoom()<10){
+   const area=loopView.open?loopView.area:null;
+   const origin=area?[area.lat,area.lon]:[center.lat,center.lng];
+   let target=origin,best=150;
+   for(const [, ,lon,lat,population] of atlasCities){
+    if(population<10000)continue;
+    const km=kmBetween(origin,[lat,lon]);
+    if(km<best){best=km;target=[lat,lon]}
+   }
+   flyTo(target,12);
+  }
+  positionPins();
+ };
 })();

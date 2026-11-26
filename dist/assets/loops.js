@@ -178,6 +178,7 @@ function checkRoadStart(area){
 async function loadLoop(card){
  if(!card||card.pending||card.done)return;
  card.pending=true;const area=loopView.area;
+ const selection=area.selection;
  const start=card.start||area;
  const budget=loopBudget(),closed=!card.source||card.ring;
  async function checked(stops,optimize){
@@ -202,16 +203,23 @@ async function loadLoop(card){
  card.pending=false;card.done=true;
  if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
  drawLoopCard();renderPins();paintRoute();if(card.line)loopFrame();
- if(card.line||area.browsed||area.trying)return;
+ if(card.line||area.trying)return;
  area.trying=true;
+ const current=()=>loopView.open&&loopView.area===area&&area.selection===selection&&loopView.cards[loopView.index]===card;
  try{
-  for(const next of loopView.cards.filter(c=>c!==card&&!c.done&&!c.pending).slice(0,5)){
-   if(!loopView.open||loopView.area!==area||area.browsed)break;
+  const cards=loopView.cards,index=loopView.index,direction=area.direction||1;
+  for(let offset=1;offset<=Math.min(5,cards.length-1);offset++){
+   const next=cards[(index+offset*direction+cards.length)%cards.length];
+   if(!current())break;
+   if(next.rejected||next.pending)continue;
    await loadLoop(next);
-   if(!loopView.open||loopView.area!==area||area.browsed)break;
-   if(next.line){loopView.index=loopView.cards.indexOf(next);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();loopFrame();break}
+   if(!current())break;
+   if(next.line){loopView.index=cards.indexOf(next);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();loopFrame();break}
   }
- }finally{area.trying=false}
+ }finally{
+  area.trying=false;
+  if(current())drawLoopCard();
+ }
 }
 
 function refreshLoopApproach(){loopView.approach=null;approachTo({...loopView.area,...loopView.cards[loopView.index]?.start},++loopView.serial)}
@@ -303,7 +311,7 @@ function drawLoopCard(){
  if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.rejected?'<p role="status">'+(area.trying?'Проверяем соседние варианты…':'Подтверждённого маршрута для этих остановок нет. Попробуй старт в ближайшем городе.')+'</p>':'')+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.rejected&&area.roadStart?'<div class="road-start-option"><p>Выбранная точка находится в '+(area.roadStart.distance/1000).toLocaleString('ru',{maximumFractionDigits:1})+' км от ближайшей дороги в данных маршрутизатора.</p><button class="action" data-loop="road-start">Начать у дороги →</button></div>':'')+
  (c?.line?'<div class="loop-start">'+navigationLinks([c.start||area,...c.stops,...(c.ring||!c.source?[c.start||area]:[])],'Старт поездки')+'</div>':'')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
@@ -378,7 +386,7 @@ function closeLoops(){
  loopView.open=false;loopView.picking=false;loopView.serial++;$('loopDeck').hidden=true;$('pickTip').hidden=true;$('tripBuilder').setAttribute('aria-pressed','false');render();paintRoute();
 }
 function stepLoop(delta){
- const n=loopView.cards.length;if(n<2)return;loopView.area.browsed=true;loopView.details=false;
+ const n=loopView.cards.length;if(n<2)return;loopView.area.browsed=true;loopView.area.direction=delta;loopView.area.selection=(loopView.area.selection||0)+1;loopView.details=false;
  loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();loopFrame();loadLoop(loopView.cards[loopView.index]);refreshLoopApproach();
 }
 function saveLoop(){
