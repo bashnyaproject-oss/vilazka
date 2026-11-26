@@ -212,6 +212,7 @@ async function loadLoop(card){
  card.pending=false;card.done=true;
  if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
  drawLoopCard();renderPins();paintRoute();
+ if(card.line)focusCalculatedLoop();
  if(card.line||area.trying)return;
  area.trying=true;
  const current=()=>loopView.open&&loopView.area===area&&area.selection===selection&&loopView.cards[loopView.index]===card;
@@ -223,7 +224,7 @@ async function loadLoop(card){
    if(next.rejected||next.pending)continue;
    await loadLoop(next);
    if(!current())break;
-   if(next.line){loopView.index=cards.indexOf(next);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();break}
+   if(next.line){loopView.index=cards.indexOf(next);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();focusCalculatedLoop();break}
   }
   if(current()&&!state.loopLinear&&!area.generated&&!cards.some(c=>c.linearFallback)){
    const alternate=makeLoops(area,[],false,true)[0];
@@ -231,7 +232,7 @@ async function loadLoop(card){
     cards.push(alternate);
     await loadLoop(alternate);
     if(current()&&alternate.line){
-     loopView.index=cards.indexOf(alternate);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();
+     loopView.index=cards.indexOf(alternate);refreshLoopApproach();drawLoopCard();renderPins();paintRoute();focusCalculatedLoop();
     }
    }
   }
@@ -351,6 +352,12 @@ function drawLoopCard(){
  $('loopAccess').value=state.loopAccess||'';
  $('loopBudget').value=state.loopBudget||'day';
 }
+let loopCameraRevision=0;
+for(const event of ['pointerdown','wheel','keydown'])map.addEventListener(event,()=>{loopCameraRevision++},{capture:true,passive:true});
+function focusCalculatedLoop(){
+ if(loopView.area.cameraRevision!==loopCameraRevision)return;
+ loopFrame();
+}
 function loopFrame(){
  const area=loopView.area,c=loopView.cards[loopView.index];if(!atlas)return;
  if(!c){flyTo(xy(area),7);return}
@@ -361,7 +368,7 @@ function loopFrame(){
 }
 function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&&countryAt(lat,lon)===area.country)}
 function setLoopArea(lat,lon,name,crossBorder=false,generated=false){
- loopView.area={lat,lon,name,country:countryAt(lat,lon),crossBorder,generated};lastLoopPoint={lat,lon,name};state.loopArea=lastLoopPoint;state.selectedDestination={lat,lon,name};persist();loopView.picking=false;$('pickTip').hidden=true;
+ loopView.area={lat,lon,name,country:countryAt(lat,lon),crossBorder,generated,cameraRevision:loopCameraRevision};lastLoopPoint={lat,lon,name};state.loopArea=lastLoopPoint;state.selectedDestination={lat,lon,name};persist();loopView.picking=false;$('pickTip').hidden=true;
  const area=loopView.area;
  area.bases=nearbyBases(area);loopView.serial++;loopView.approach=null;loopView.index=0;loopView.details=false;
  loopView.cards=generated?[]:makeLoops(area,[]);
@@ -410,8 +417,8 @@ function closeLoops(){
  loopView.open=false;loopView.picking=false;loopView.serial++;$('loopDeck').hidden=true;$('pickTip').hidden=true;$('tripBuilder').setAttribute('aria-pressed','false');render();paintRoute();
 }
 function stepLoop(delta){
- const n=loopView.cards.length;if(n<2)return;loopView.area.browsed=true;loopView.area.direction=delta;loopView.area.selection=(loopView.area.selection||0)+1;loopView.details=false;
- loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();loadLoop(loopView.cards[loopView.index]);refreshLoopApproach();
+ const n=loopView.cards.length;if(n<2)return;loopView.area.cameraRevision=loopCameraRevision;loopView.area.browsed=true;loopView.area.direction=delta;loopView.area.selection=(loopView.area.selection||0)+1;loopView.details=false;
+ loopView.index=(loopView.index+n+delta)%n;drawLoopCard();renderPins();paintRoute();if(loopView.cards[loopView.index].line)focusCalculatedLoop();else loadLoop(loopView.cards[loopView.index]);refreshLoopApproach();
 }
 function saveLoop(){
  const c=loopView.cards[loopView.index];if(!c?.line)return;const area={...loopView.area,...c.start};

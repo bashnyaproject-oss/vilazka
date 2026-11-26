@@ -46,9 +46,21 @@
  }
  function camera(){return atlas?.getCenter()||{lat:55.75,lng:37.62}}
  function nearest(list,center){return list.map(p=>[p,kmBetween([center.lat,center.lng],[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1])}
+ const countryPanel=$('countryRoads');
+ function showCountryRoutes(code){
+  const country=ruCountries.of(code);
+  const routes=publishedDrives.map((route,i)=>({route,i})).filter(({route})=>
+   route.places.length>=2&&route.places.every(([,lat,lon])=>visaData.iso2[countryAt(lat,lon)]===code));
+  const link=({route,i})=>'<a href="/guides.html#route-'+i+'"><strong>'+safe(route.name)+'</strong><small>'+safe(route.places[0][0])+' → '+safe(route.places.at(-1)[0])+'</small></a>';
+  countryPanel.innerHTML='<button class="country-route-chip" type="button" aria-label="Убрать страну">'+safe(country)+' <span aria-hidden="true">×</span></button>'+
+   '<p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>В каталоге пока нет маршрутов по этой стране. Выбери город, чтобы подобрать поездку на карте.</p>');
+  countryPanel.querySelector('button').onclick=()=>{countryPanel.hidden=true;delete state.searchCountry;persist()};
+  countryPanel.hidden=false;
+ }
+ if(visaIndexes.has(state.searchCountry))showCountryRoutes(state.searchCountry);
  function choose(p){
   if(!p)return;const roads=roadMode();closeSearch();menu(false);field.value='';
-  if(p.action==='country'){resetMap();flyTo([p.lat,p.lon],4);return}
+  if(p.action==='country'){resetMap();state.searchCountry=p.id;persist();showCountryRoutes(p.id);flyTo([p.lat,p.lon],4);return}
   if(roads){launchLoops({name:p.name,lat:p.lat,lon:p.lon});sync();return}
   resetMap();
   if(p.action==='site')openCatalogue(p.id);else if(p.action==='city')openCity(p.id);else open(data[p.id]);
