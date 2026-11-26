@@ -55,7 +55,8 @@ function stopPhoto([name,lat,lon,,url]){
  return guidePhotos.get(name.toLowerCase().trim())?.find(p=>Math.hypot(p.lat-lat,(p.lon-lon)*Math.cos(lat*Math.PI/180))<.02);
 }
 function photo(g,cls){
- const image=g.pic?{url:g.pic}:g.places?.map(stopPhoto).find(Boolean);
+ const known=g.source==='Norwegian Scenic Routes'&&Object.entries(scenicPhotos).find(([name])=>g.name.toLowerCase().includes(name.toLowerCase()))?.[1];
+ const image=g.pic?{url:g.pic}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean);
  return image?'<figure class="guide-image '+cls+'"><img loading="lazy" decoding="async" alt="'+esc(g.name)+'" src="'+esc(image.url)+'">'+
  (cls==='hero'&&image.credit?'<figcaption><a target="_blank" rel="noopener" href="'+esc(image.credit)+'">Источник фотографии ↗</a></figcaption>':'')+'</figure>':'';
 }
@@ -125,11 +126,30 @@ function roadPreview(g){
  const path=points.map(([x,y])=>[(160+((x-minX)*cos-width/2)*scale).toFixed(1),(68-((y-minY)-height/2)*scale).toFixed(1)]);
  return '<svg class="road-preview" viewBox="0 0 320 136" role="img" aria-label="Линия по дорожной сети"><polyline points="'+path.map(p=>p.join(',')).join(' ')+'"/></svg>';
 }
+let roadOrigin;
+const nearbyButton=byId('roadsNearby');
+if(nearbyButton)nearbyButton.onclick=()=>{
+ const status=byId('roadsNearbyStatus');
+ if(roadOrigin){roadOrigin=null;nearbyButton.textContent='Рядом со мной';status.textContent='';list();return}
+ if(!navigator.geolocation){status.textContent='Геолокация недоступна';return}
+ nearbyButton.disabled=true;status.textContent='Определяем местоположение…';
+ navigator.geolocation.getCurrentPosition(({coords})=>{
+  roadOrigin=[coords.latitude,coords.longitude];nearbyButton.disabled=false;
+  nearbyButton.textContent='Сбросить сортировку';status.textContent='По расстоянию до старта по прямой';list();
+ },()=>{nearbyButton.disabled=false;status.textContent='Не удалось определить местоположение. Можно найти дорогу по названию.'},{timeout:10000});
+};
+function distanceToRoad(g){
+ const [,lat,lon]=g.places[0],rad=Math.PI/180;
+ const dy=(lat-roadOrigin[0])*rad,dx=(lon-roadOrigin[1])*rad;
+ const a=Math.sin(dy/2)**2+Math.cos(lat*rad)*Math.cos(roadOrigin[0]*rad)*Math.sin(dx/2)**2;
+ return 12742*Math.asin(Math.sqrt(Math.min(1,a)));
+}
 function list(){
  const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
  const scenic=document.documentElement.hasAttribute("data-scenic");
- const found=guides.filter(g=>(!scenic||g.separateStart&&savedRoad(g))&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
- byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+(photo(g,'cover')||(scenic?roadPreview(g):''))+'<small>'+esc(accessLabel(g))+' · '+info(g)+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
+ const found=guides.filter(g=>(!scenic||savedRoad(g))&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
+ if(roadOrigin&&scenic)found.sort((a,b)=>distanceToRoad(a)-distanceToRoad(b));
+ byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+(scenic?'<div class="road-tile-art">'+photo(g,'cover')+roadPreview(g)+'</div>':photo(g,'cover'))+'<small>'+esc(accessLabel(g))+' · '+info(g)+(roadOrigin&&scenic?' · '+Math.round(distanceToRoad(g))+' км до старта':'')+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
 }
 function show(){
  mapRequest?.abort();guideMap?.remove();mapRequest=null;guideMap=null;

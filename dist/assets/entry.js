@@ -26,7 +26,7 @@ function entryInfo(code){
 }
 function updateVisaMap(){
  const on=visaVisible();$('visaLayer').setAttribute('aria-pressed',String(on));$('visaLegend').hidden=!on;
- if(on)$('visaPassport').textContent=[state.passport,state.passport2].filter(p=>visaIndexes.has(p)).map(p=>regionNames.of(p)).join(' / ');
+ if(on){$('visaEditPassport').value=state.passport;$('visaPassport').textContent=[state.passport,state.passport2].filter(p=>visaIndexes.has(p)).map(p=>regionNames.of(p)).join(' / ');}
  if(!atlas||canvas||!atlas.getStyle()?.layers)return;
  const id='passport-entry';
  if(!on){if(atlas.getLayer(id))atlas.setLayoutProperty(id,'visibility','none');return}
@@ -51,7 +51,14 @@ function paintOfflineVisa(ctx,nw,se){
  ctx.restore();
 }
 function initVisa(){
- const legend=$('visaLegend');legend.innerHTML='<summary>Условия въезда · <b id="visaPassport"></b></summary><div class="visa-key">'+visaLabels.map((v,i)=>'<span><i style="background:'+visaColors[i]+'"></i>'+v+'</span>').join('')+'</div><label>Куда едешь? <select id="visaCountry"><option value="">Выбери страну</option>'+entryOptions()+'</select></label><div id="visaResult"></div><small>Туризм · база 17.02.2026, поправки по 10.08.2026. <a href="'+visaSource+'" target="_blank" rel="noopener">Данные · CC BY 4.0 ↗</a></small>';
+ const legend=$('visaLegend');legend.innerHTML='<summary>Условия въезда · <b id="visaPassport"></b></summary><label>Паспорт <select id="visaEditPassport">'+entryOptions()+'</select></label><div class="visa-key">'+visaLabels.map((v,i)=>'<span><i style="background:'+visaColors[i]+'"></i>'+v+'</span>').join('')+'</div><label>Куда едешь? <select id="visaCountry"><option value="">Выбери страну</option>'+entryOptions()+'</select></label><div id="visaResult"></div><small>Туризм · база 17.02.2026, поправки по 10.08.2026. <a href="'+visaSource+'" target="_blank" rel="noopener">Данные · CC BY 4.0 ↗</a></small>';
+ $('visaEditPassport').onchange=e=>{
+  const code=e.target.value;if(!visaIndexes.has(code))return;
+  if(state.passport2===code)state.passport2=state.passport;
+  state.passport=code;persist();updateVisaMap();canvas?.draw();
+  $('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';
+  render();
+ };
  $('visaCountry').onchange=e=>$('visaResult').innerHTML=e.target.value?entryInfo(e.target.value):'';
  $('visaLayer').onclick=()=>{
   if(!visaIndexes.has(state.passport)){visaRequested=true;showProfile();return}

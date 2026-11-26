@@ -169,3 +169,7 @@ body #seasonMenu{position:absolute;z-index:10;left:50%;top:auto;bottom:18px;tran
 .road-review textarea{width:100%;font:inherit;color:inherit;background:#1c1b20;border:1px solid #ffffff35;border-radius:10px;padding:10px}
 .review-photos{display:flex;gap:8px}
 .review-photos img{width:100px;height:72px;object-fit:cover;border-radius:8px}
+#nearby .story-foot:not([hidden])>div,#loopDeck .route-navigation,#nearby .nearby-start{width:100%;box-sizing:border-box}
+#nearby .nearby-start summary,#loopDeck .loop-start summary{display:block;width:100%;box-sizing:border-box}
+#nearby .nearby-start .travel-links>div,#loopDeck .loop-start .travel-links>div{display:grid;grid-template-columns:minmax(0,1fr)}
+#nearby .nearby-start .travel-links a,#loopDeck .loop-start .travel-links a{display:block;text-align:center;width:100%;box-sizing:border-box}

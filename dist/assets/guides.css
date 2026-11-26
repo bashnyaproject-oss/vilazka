@@ -33,3 +33,11 @@ header>a:last-child{color:#d4c1ff}
 
 .guide-go{width:100%;border:0;min-height:48px;font:700 16px system-ui;cursor:pointer}
 .guide-go[hidden]{display:none}
+.road-tile-art{position:relative;aspect-ratio:1.95;overflow:hidden;background:#231c30}
+.road-tile-art .cover{position:absolute;inset:0}
+.road-tile-art .road-preview{position:absolute;inset:0;height:100%;background:none}
+.road-tile-art:has(img) .road-preview{background:linear-gradient(180deg,#18102236,#18102288)}
+.road-tile-art polyline{stroke:#f6ddff;filter:drop-shadow(0 1px 3px #140c22);stroke-width:3.5}
+.road-location{display:flex;align-items:center;gap:10px;margin:0 0 20px;flex-wrap:wrap}
+#roadsNearby{color:inherit;background:#282034;border:1px solid #ffffff35;border-radius:12px;padding:10px 14px;font:inherit;cursor:pointer}
+#roadsNearbyStatus{font-size:13px;color:#c2bbd0}
