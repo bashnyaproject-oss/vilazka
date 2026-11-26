@@ -892,6 +892,8 @@ function flyTo(point,target){
  if(reduced.matches){atlas.jumpTo({center,zoom:target});return}
  atlas.flyTo({center,zoom:target,speed:1.15,curve:1.2,maxDuration:1350});
 }
+let mapInteracted=false;
+document.addEventListener('pointerdown',()=>{mapInteracted=true},{once:true,capture:true});
 function requestLocation(focus){
  const geo=navigator.geolocation;
  if(!geo||!window.isSecureContext){gpsStatus='unsupported';updateLocation();return}
@@ -906,7 +908,7 @@ function requestLocation(focus){
   if(state.origin==='auto')$('portal').hidden=true;
   render();
   if(focus)flyTo(gps,Math.max(9,atlas?.getZoom()||0));
-  else if(state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
+  else if(!mapInteracted&&state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
  };
  function attempt(precise){
   geo.getCurrentPosition(found,error=>{
