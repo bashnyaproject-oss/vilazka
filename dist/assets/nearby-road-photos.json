@@ -13,12 +13,26 @@
   "Tony Webster from Minneapolis, Minnesota",
   14
  ],
+ "baltimore's historic charles street": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/2016-07-13_15_20_10_View_south_along_Maryland_State_Route_139_%28Charles_Street%29_at_Bellona_Avenue_in_Towson%2C_Baltimore_County%2C_Maryland.jpg/960px-2016-07-13_15_20_10_View_south_along_Maryland_State_Route_139_%28Charles_Street%29_at_Bellona_Avenue_in_Towson%2C_Baltimore_County%2C_Maryland.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:2016-07-13_15_20_10_View_south_along_Maryland_State_Route_139_(Charles_Street)_at_Bellona_Avenue_in_Towson,_Baltimore_County,_Maryland.jpg",
+  "CC BY-SA 4.0",
+  "Famartin",
+  20
+ ],
  "big sur coast byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Central_Coast%2C_CA_-_panoramio_%285%29.jpg/960px-Central_Coast%2C_CA_-_panoramio_%285%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "https://commons.wikimedia.org/wiki/File:Central_Coast,_CA_-_panoramio_(5).jpg",
   "CC BY-SA 3.0",
   "catlin.wolfard",
   24
+ ],
+ "cherohala skyway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/View_from_a_Cherohala_Skyway_overlook_-_panoramio_-_Idawriter_%281%29.jpg/960px-View_from_a_Cherohala_Skyway_overlook_-_panoramio_-_Idawriter_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:View_from_a_Cherohala_Skyway_overlook_-_panoramio_-_Idawriter_(1).jpg",
+  "CC BY-SA 3.0",
+  "Idawriter",
+  7
  ],
  "chesapeake country byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/2022-06-22_16_29_22_View_south_along_Maryland_State_Route_213_%28North_Main_Street%29_at_Seminary_Avenue_in_Galena%2C_Kent_County%2C_Maryland.jpg/960px-2022-06-22_16_29_22_View_south_along_Maryland_State_Route_213_%28North_Main_Street%29_at_Seminary_Avenue_in_Galena%2C_Kent_County%2C_Maryland.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -33,6 +47,13 @@
   "CC BY 2.0",
   "David Herrera from Albuquerque, NM, Bernalillo",
   18
+ ],
+ "city of las vegas, las vegas boulevard state scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Las_Vegas_Bouldevard_and_Fremont_Street.jpg/960px-Las_Vegas_Bouldevard_and_Fremont_Street.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Las_Vegas_Bouldevard_and_Fremont_Street.jpg",
+  "CC BY-SA 3.0",
+  "Peter Angritt",
+  8
  ],
  "colorado river headwaters byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Byer%27s_Canyon%2C_Colorado_8-31-12_%288164598073%29.jpg/960px-Byer%27s_Canyon%2C_Colorado_8-31-12_%288164598073%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -62,6 +83,13 @@
   "Kunstee",
   85
  ],
+ "delaware river scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/Guard_Lock_and_Bridge%2C_Bull%27s_Island%2C_NJ.jpg/960px-Guard_Lock_and_Bridge%2C_Bull%27s_Island%2C_NJ.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Guard_Lock_and_Bridge,_Bull%27s_Island,_NJ.jpg",
+  "CC BY-SA 4.0",
+  "Zeete",
+  14
+ ],
  "dinosaur diamond prehistoric highway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Rope_Canyon_1904.jpg/960px-Rope_Canyon_1904.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "https://commons.wikimedia.org/wiki/File:Rope_Canyon_1904.jpg",
@@ -76,6 +104,13 @@
   "Gregory Veen",
   6
  ],
+ "edisto island national scenic byway": [
+  "https://upload.wikimedia.org/wikipedia/commons/5/5d/Wescott_Road_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "https://commons.wikimedia.org/wiki/File:Wescott_Road_1.jpg",
+  "CC BY-SA 3.0",
+  "Katherine Owens",
+  86
+ ],
  "flaming gorge-uintas national scenic byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Flaming_Gorge_National_Recreational_Area_-_49226941812.jpg/960px-Flaming_Gorge_National_Recreational_Area_-_49226941812.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "https://commons.wikimedia.org/wiki/File:Flaming_Gorge_National_Recreational_Area_-_49226941812.jpg",
@@ -89,6 +124,13 @@
   "CC BY-SA 4.0",
   "Ryan Sholin",
   261
+ ],
+ "forest heritage national scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Nine_picea_rubens_cones_from_Pisgah_National_Forest.jpg/960px-Nine_picea_rubens_cones_from_Pisgah_National_Forest.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Nine_picea_rubens_cones_from_Pisgah_National_Forest.jpg",
+  "CC BY 2.0",
+  "Derivative: RhododendritesOriginal photographs: Gary Peeples/USFWS",
+  274
  ],
  "frontier pathways scenic and historic byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Colorado_State_Highway_165_northern_terminus.JPG/960px-Colorado_State_Highway_165_northern_terminus.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -110,6 +152,13 @@
   "CC BY 2.0",
   "Tony Webster",
   5
+ ],
+ "grand rounds scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Brownie_Lake%2C_June_2016.jpg/960px-Brownie_Lake%2C_June_2016.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Brownie_Lake,_June_2016.jpg",
+  "CC BY 4.0",
+  "Collin Knopp-Schwyn",
+  19
  ],
  "gunflint trail scenic byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Swamper_Lake_in_Winter%2C_Gunflint_Trail%2C_Minnesota_%2839895273585%29.jpg/960px-Swamper_Lake_in_Winter%2C_Gunflint_Trail%2C_Minnesota_%2839895273585%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -138,6 +187,13 @@
   "CC BY-SA 4.0",
   "Famartin",
   31
+ ],
+ "indian river lagoon national scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/North_Beach%2C_FL%2C_USA_-_panoramio_%283%29.jpg/960px-North_Beach%2C_FL%2C_USA_-_panoramio_%283%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:North_Beach,_FL,_USA_-_panoramio_(3).jpg",
+  "CC BY-SA 3.0",
+  "William “Patrick” Ma…",
+  285
  ],
  "international selkirk loop": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Kootenay_Lake_-_panoramio_-_Kiwibirdman.jpg/960px-Kootenay_Lake_-_panoramio_-_Kiwibirdman.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -174,12 +230,40 @@
   "Patrick Nouhailler's…",
   18
  ],
+ "lariat loop scenic and historic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Bear_Creek_Canyon_Scenic_Mountain_Drive.JPG/960px-Bear_Creek_Canyon_Scenic_Mountain_Drive.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Bear_Creek_Canyon_Scenic_Mountain_Drive.JPG",
+  "CC BY-SA 3.0",
+  "Jeffrey Beall",
+  18
+ ],
+ "millstone valley scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/TMR_at_Canal_Road.JPG/960px-TMR_at_Canal_Road.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:TMR_at_Canal_Road.JPG",
+  "Public domain",
+  "Chemicalinterest (talk) (Transferred by  ksd5/Originally uploaded by Chemicalinterest)",
+  31
+ ],
+ "mohawk towpath byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Sunset_on_the_Eastern_Mohawk_River_area_NY_8808_%284854475398%29.jpg/960px-Sunset_on_the_Eastern_Mohawk_River_area_NY_8808_%284854475398%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Sunset_on_the_Eastern_Mohawk_River_area_NY_8808_(4854475398).jpg",
+  "CC BY 2.0",
+  "bobistraveling",
+  20
+ ],
  "mt. hood scenic byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Mirror_Lake_-_Mount_Hood_Oregon_%2836899444956%29.jpg/960px-Mirror_Lake_-_Mount_Hood_Oregon_%2836899444956%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "https://commons.wikimedia.org/wiki/File:Mirror_Lake_-_Mount_Hood_Oregon_(36899444956).jpg",
   "CC BY-SA 2.0",
   "m01229",
   14
+ ],
+ "north cascades scenic highway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Diablo_Lake_looking_toward_Diablo_Dam.jpg/960px-Diablo_Lake_looking_toward_Diablo_Dam.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Diablo_Lake_looking_toward_Diablo_Dam.jpg",
+  "CC BY-SA 3.0",
+  "Ryan Adams",
+  302
  ],
  "outback scenic byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Summer_Lake_%2837148519180%29.jpg/960px-Summer_Lake_%2837148519180%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -208,6 +292,13 @@
   "CC BY-SA 2.0",
   "w_lemay",
   58
+ ],
+ "pyramid lake scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Pyramid_Lake_%2815133896602%29.jpg/960px-Pyramid_Lake_%2815133896602%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Pyramid_Lake_(15133896602).jpg",
+  "CC BY 2.0",
+  "Billie Grace Ward from New York, USA",
+  40
  ],
  "red river gorge scenic byway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/White-haired_goldenrod_found_in_or_near_rock_shelters_in_the_Red_River_Gorge_on_the_Daniel_Boone_National_Forest.jpg/960px-White-haired_goldenrod_found_in_or_near_rock_shelters_in_the_Red_River_Gorge_on_the_Daniel_Boone_National_Forest.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -341,6 +432,13 @@
   "CC BY 2.0",
   "Ian Murphy from Manchester, NH, US",
   248
+ ],
+ "wichita mountains byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/Little_Baldy_Mountain.jpg/960px-Little_Baldy_Mountain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "https://commons.wikimedia.org/wiki/File:Little_Baldy_Mountain.jpg",
+  "CC BY 2.0",
+  "Larry Smith (flickr.com)",
+  16
  ],
  "wilderness road heritage highway": [
   "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Pine_Street_Bridge_Pineville_KY_2025.jpg/960px-Pine_Street_Bridge_Pineville_KY_2025.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
