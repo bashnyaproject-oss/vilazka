@@ -45,3 +45,7 @@ header>a:last-child{color:#d4c1ff}
 .guide-map-actions .cta{margin-right:0}
 .guide-map-actions [hidden],#moreWorldRoads[hidden]{display:none}
 #moreWorldRoads{display:block;margin:0 auto 28px;padding:12px 26px;border-radius:12px;border:1px solid #c9b7fc;color:#e7dbff;background:#261b35;font:inherit;cursor:pointer}
+
+.road-photo-filters{display:flex;gap:8px;margin-top:14px}
+.road-photo-filters button{border:1px solid #c9b7fc60;border-radius:999px;padding:8px 14px;background:#241c30;color:#eadfff;font:inherit;cursor:pointer}
+.road-photo-filters button[aria-pressed=true]{background:#d9c5ff;color:#22102d}

@@ -1,1 +1,74 @@
-{"blue ridge parkway": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Blue_Ridge_Parkway_shield.png/330px-Blue_Ridge_Parkway_shield.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail", "https://en.wikipedia.org/wiki/File:Blue_Ridge_Parkway_shield.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"], "skyline drive": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Logo_of_the_United_States_National_Park_Service.svg/330px-Logo_of_the_United_States_National_Park_Service.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail", "https://en.wikipedia.org/wiki/File:960px-Logo_of_the_United_States_National_Park_Service.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"], "natchez trace parkway": ["https://upload.wikimedia.org/wikipedia/commons/6/67/Natchez_Trace_Parkway_Logo.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled", "https://en.wikipedia.org/wiki/File:Natchez_Trace_Parkway_Logo.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"], "beartooth highway": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/US_212.svg/330px-US_212.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail", "https://en.wikipedia.org/wiki/File:960px-US_212.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"], "kancamagus scenic byway": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/NH_Route_112.svg/330px-NH_Route_112.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail", "https://en.wikipedia.org/wiki/File:960px-NH_Route_112.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"], "historic columbia river highway": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Historic_Columbia_River_Highway_100_%28no_overlaps%29.svg/330px-Historic_Columbia_River_Highway_100_%28no_overlaps%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail", "https://en.wikipedia.org/wiki/File:1280px-Historic_Columbia_River_Highway_100_%28no_overlaps%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"], "trail ridge road / beaver meadow road": ["https://upload.wikimedia.org/wikipedia/commons/7/76/Trail_Ridge_Road_map_small.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled", "https://en.wikipedia.org/wiki/File:Trail_Ridge_Road_map_small.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"], "badlands loop scenic byway": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/MK00609_Badlands.jpg/330px-MK00609_Badlands.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail", "https://en.wikipedia.org/wiki/File:MK00609_Badlands.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"]}
+{
+ "blue ridge parkway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Blue_Ridge_Parkway_shield.png/330px-Blue_Ridge_Parkway_shield.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "https://en.wikipedia.org/wiki/File:Blue_Ridge_Parkway_shield.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ ],
+ "skyline drive": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Logo_of_the_United_States_National_Park_Service.svg/330px-Logo_of_the_United_States_National_Park_Service.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "https://en.wikipedia.org/wiki/File:960px-Logo_of_the_United_States_National_Park_Service.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ ],
+ "natchez trace parkway": [
+  "https://upload.wikimedia.org/wikipedia/commons/6/67/Natchez_Trace_Parkway_Logo.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+  "https://en.wikipedia.org/wiki/File:Natchez_Trace_Parkway_Logo.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ ],
+ "beartooth highway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/US_212.svg/330px-US_212.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "https://en.wikipedia.org/wiki/File:960px-US_212.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ ],
+ "kancamagus scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/NH_Route_112.svg/330px-NH_Route_112.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "https://en.wikipedia.org/wiki/File:960px-NH_Route_112.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ ],
+ "historic columbia river highway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Historic_Columbia_River_Highway_100_%28no_overlaps%29.svg/330px-Historic_Columbia_River_Highway_100_%28no_overlaps%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "https://en.wikipedia.org/wiki/File:1280px-Historic_Columbia_River_Highway_100_%28no_overlaps%29.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail"
+ ],
+ "trail ridge road / beaver meadow road": [
+  "https://upload.wikimedia.org/wikipedia/commons/7/76/Trail_Ridge_Road_map_small.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+  "https://en.wikipedia.org/wiki/File:Trail_Ridge_Road_map_small.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ ],
+ "badlands loop scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/MK00609_Badlands.jpg/330px-MK00609_Badlands.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "https://en.wikipedia.org/wiki/File:MK00609_Badlands.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ ],
+ "las vegas strip": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Las_Vegas_Strip_09_2017_4897.jpg/960px-Las_Vegas_Strip_09_2017_4897.jpg",
+  "https://en.wikipedia.org/wiki/File:Las_Vegas_Strip_09_2017_4897.jpg"
+ ],
+ "lincoln highway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Lincoln_Theater_Cheyenne.JPG/960px-Lincoln_Theater_Cheyenne.JPG",
+  "https://en.wikipedia.org/wiki/File:Lincoln_Theater_Cheyenne.JPG"
+ ],
+ "midland trail": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/US_RT_60_Ceredo_WV.jpg/960px-US_RT_60_Ceredo_WV.jpg",
+  "https://en.wikipedia.org/wiki/File:US_RT_60_Ceredo_WV.jpg"
+ ],
+ "rangeley lakes scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Rangeley_Lakes_Scenic_Byway_-_Tourists_at_Height_of_Land_Lookout_-_NARA_-_7721168.jpg/960px-Rangeley_Lakes_Scenic_Byway_-_Tourists_at_Height_of_Land_Lookout_-_NARA_-_7721168.jpg",
+  "https://en.wikipedia.org/wiki/File:Rangeley_Lakes_Scenic_Byway_-_Tourists_at_Height_of_Land_Lookout_-_NARA_-_7721168.jpg"
+ ],
+ "buffalo bill cody scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Rocky_cliffs.jpg/960px-Rocky_cliffs.jpg",
+  "https://en.wikipedia.org/wiki/File:Rocky_cliffs.jpg"
+ ],
+ "chain of craters road": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Lava-streaming-into-ocean.jpg/960px-Lava-streaming-into-ocean.jpg",
+  "https://en.wikipedia.org/wiki/File:Lava-streaming-into-ocean.jpg"
+ ],
+ "bradshaw trail": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/WINNER-_Bradshaw_Trail_in_the_Palm_Springs-South_Coast_Field_Office_%2846579461105%29.jpg/960px-WINNER-_Bradshaw_Trail_in_the_Palm_Springs-South_Coast_Field_Office_%2846579461105%29.jpg",
+  "https://en.wikipedia.org/wiki/File:WINNER-_Bradshaw_Trail_in_the_Palm_Springs-South_Coast_Field_Office_%2846579461105%29.jpg"
+ ],
+ "high road to taos": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Truchas-NM-May05.jpg/960px-Truchas-NM-May05.jpg",
+  "https://en.wikipedia.org/wiki/File:Truchas-NM-May05.jpg"
+ ],
+ "black hills scenic byway": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Needles_Highway_05.jpg/960px-Needles_Highway_05.jpg",
+  "https://en.wikipedia.org/wiki/File:Needles_Highway_05.jpg"
+ ],
+ "cordell hull": [
+  "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/HULL%2C_CORDELL._HONORABLE_LCCN2016862713_%28cropped%29%282%29.jpg/960px-HULL%2C_CORDELL._HONORABLE_LCCN2016862713_%28cropped%29%282%29.jpg",
+  "https://en.wikipedia.org/wiki/File:HULL%2C_CORDELL._HONORABLE_LCCN2016862713_%28cropped%29%282%29.jpg"
+ ]
+}
