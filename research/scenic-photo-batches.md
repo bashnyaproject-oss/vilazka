@@ -7,3 +7,5 @@
 Партии запускаются отдельно: `python3 scripts/find-scenic-road-photos.py --batch 1` … `--batch 20`. У каждой свой выходной файл в `dist/assets/road-photos/`, а повторный запуск продолжает незаполненную партию. Общее разбиение выдаёт `node scripts/scenic-photo-batches.mjs`.
 
 Галерея показывает фактически найденное количество. Карточки с недостаточным числом фотографий остаются в каталоге.
+
+Отдельный источник для США — [Digital Photographs Relating to America’s Byways](https://commons.wikimedia.org/wiki/Category:US_National_Archives_series:_Digital_Photographs_Relating_to_America%27s_Byways), коллекция Национального архива США на Wikimedia Commons. Фотографии привязаны по названию дороги и штату. Для архивных кадров без геометки галерея указывает архив, а расстояние до линии не вычисляется.

@@ -54,9 +54,17 @@ function stopPhoto([name,lat,lon,,url]){
  if(url)return {url};
  return guidePhotos.get(name.toLowerCase().trim())?.find(p=>Math.hypot(p.lat-lat,(p.lon-lon)*Math.cos(lat*Math.PI/180))<.02);
 }
+function galleryPhotoCaption(source,license,author,distance){
+ const context=Number.isFinite(distance)?'Снято в '+distance+' м от линии дороги':
+   decodeURIComponent(source).replaceAll('_',' ').includes(' - NARA - ')?'Национальный архив США':'';
+ return [author,license,context].filter(Boolean).join(' · ');
+}
+let galleryCovers={};
 function guidePhoto(g){
  const known=g.source==='Norwegian Scenic Routes'&&Object.entries(scenicPhotos).find(([name])=>g.name.toLowerCase().includes(name.toLowerCase()))?.[1];
- return g.pic?{url:g.pic,credit:g.pictureSource,caption:g.pictureCaption}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean);
+ const [url,credit,license,author,distance]=galleryCovers[g.id]||[];
+ return g.pic?{url:g.pic,credit:g.pictureSource,caption:g.pictureCaption}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean)||
+  (url?{url,credit,caption:galleryPhotoCaption(credit,license,author,distance)}:undefined);
 }
 function photo(g,cls){
  const image=guidePhoto(g);
@@ -150,7 +158,8 @@ async function loadWorldRoads(){
   async function photosFrom(file){
    try{const reply=await fetch('assets/'+file);return reply.ok?await reply.json():{}}catch{return {}}
   }
-  const [pictures,nearbyPictures]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json')]);
+  const [pictures,nearbyPictures,covers]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json')]);
+  galleryCovers=covers;
   for(const [id,name,region,source,url,km,points] of rows){
    const [x,y]=points[0],[ex,ey]=points.at(-1);
    const picture=pictures[name.toLowerCase()]||nearbyPictures[name.toLowerCase()];
@@ -207,7 +216,7 @@ async function showRoadGallery(g){
  const cover=guidePhoto(g),photos=new Map();
  if(cover?.url&&cover.credit)photos.set(cover.credit,[cover.url,cover.credit,cover.caption||'']);
  for(const [url,source,license,author,distance] of rows){
-  if(!photos.has(source))photos.set(source,[url,source,[author,license,Number.isFinite(distance)?'Снято в '+distance+' м от линии дороги':''].filter(Boolean).join(' · ')]);
+  if(!photos.has(source))photos.set(source,[url,source,galleryPhotoCaption(source,license,author,distance)]);
  }
  const items=[...photos.values()].slice(0,5);
  if(!items.length)return;
