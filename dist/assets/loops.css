@@ -65,3 +65,19 @@
 .stop-index{align-self:start;display:grid;place-items:center;width:24px;height:24px;border:1px solid #c9b7fc;border-radius:50%;color:#f4eaff;background:#35284b;font:650 12px system-ui}
 .road-start-option{margin:8px 14px 12px;padding:11px;background:#211b2b;border:1px solid #ffffff1c;border-radius:12px;font-size:12px}
 #loopDeck .road-start-option .action{display:block;width:100%;margin:9px 0 0;min-height:42px;border-radius:9px;background:#c9b7fc;color:#211434;font-weight:700}
+
+#nearby .story-foot>div,#loopDeck .route-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+#nearby .story-foot>div button,#loopDeck .route-navigation button{width:100%;min-height:48px;padding:8px 10px;white-space:normal}
+#loopDeck .loop-start{padding:0 14px}
+#loopDeck .loop-start summary{background:#e1d3ff;color:#231733;text-align:center;padding:14px;border-radius:12px;font-weight:750}
+#loopDeck .loop-detail-action button{min-height:36px;font-size:13px;background:transparent}
+.road-quality summary{cursor:pointer;padding:12px 0}
+@media(prefers-reduced-motion:no-preference){
+ #loopDeck .loop-copy{animation:route-enter .23s ease-out}
+ @keyframes route-enter{from{opacity:.55;transform:translateY(5px)}to{opacity:1;transform:none}}
+}
+#loopDeck>.road-quality{margin:0 14px 8px;border-top:1px solid #ffffff20}
+#loopDeck>.road-quality select{width:100%;padding:8px 12px;margin-bottom:10px}
+#rentalLayer[hidden],#rentalStatus[hidden]{display:none}
+#rentalStatus{font-size:11px;color:#ddd0f4}
+.rental-pin{position:absolute;top:0;left:0;pointer-events:auto;color:#211632;background:#ddd0ff;border-radius:8px;padding:5px;text-decoration:none;font-size:15px}

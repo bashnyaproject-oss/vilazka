@@ -197,7 +197,7 @@ async function loadLoop(card){
   }
   const {path,waypoints}=result;
   if(!card.source)card.stops=card.stops.map((p,i)=>({p,i:waypoints[i+1].waypoint_index})).sort((a,b)=>a.i-b.i).map(v=>v.p);
-  card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.ferries=ferrySegments(path);card.length=Math.round(path.distance/1000)+' км · '+hours(path.duration);
+  card.distanceKm=path.distance/1000;card.durationHours=path.duration/3600;card.line=path.geometry.coordinates;card.ferries=ferrySegments(path);card.length=Math.round(path.distance/1000)+' км · ≈ '+hours(path.duration)+' за рулём';
  }catch(error){if(!card.source&&loopView.area===area)checkRoadStart(area);card.length=['Превышен лимит поездки','Дорога в выбранных границах не подтверждена','Нет подтверждённого возврата к старту','Маршрут слишком часто повторяет ту же дорогу'].includes(error.message)?error.message:'Дорога не подтверждена';card.rejected=true}
  card.pending=false;card.done=true;
  if(!loopView.open||loopView.area!==area||loopView.cards[loopView.index]!==card)return;
@@ -305,12 +305,13 @@ function drawLoopCard(){
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
  (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.rejected&&area.roadStart?'<div class="road-start-option"><p>Выбранная точка находится в '+(area.roadStart.distance/1000).toLocaleString('ru',{maximumFractionDigits:1})+' км от ближайшей дороги в данных маршрутизатора.</p><button class="action" data-loop="road-start">Начать у дороги →</button></div>':'')+
+ (c?.line?'<div class="loop-start">'+navigationLinks([c.start||area,...c.stops,...(c.ring||!c.source?[c.start||area]:[])],'Старт поездки')+'</div>':'')+
  (c?'<div class="route-navigation" aria-label="Варианты рядом с выбранной точкой"><button data-loop="prev" '+(cards.length<2?'disabled':'')+'>← Назад</button><button data-loop="next" '+(cards.length<2?'disabled':'')+'>Следующий маршрут →</button></div><div class="loop-detail-action"><button data-loop="details" '+(!c.line?'disabled':'')+'>Подробнее</button></div>':'')+
+ '<details class="road-quality"'+(box.querySelector('.road-quality')?.open||state.loopAccess?' open':'')+'><summary>Качество дорог</summary><select id="loopAccess" aria-label="Качество дорог">'+roadOptions()+'</select></details>'+
  '<details class="loop-settings"'+(box.querySelector('.loop-settings')?.open?' open':'')+'><summary>Настройки маршрута</summary>'+
  '<label class="radius-control"><span>Радиус поиска от старта</span><output>'+driveRadius()+' км</output><input type="range" id="driveRadius" min="100" max="2000" step="50" value="'+driveRadius()+'"></label>'+
  '<label class="loop-access">Весь маршрут<select id="loopBudget"><option value="short">До 200 км · 5 ч</option><option value="day">До 350 км · 8 ч</option><option value="weekend">До 600 км · 12 ч</option></select></label>'+
  '<div class="loop-border"><label><input type="checkbox" id="loopLinear" '+(state.loopLinear?'checked':'')+'> Показать линейные маршруты</label></div>'+
- '<label class="loop-access">Доступность<select id="loopAccess">'+accessOptions()+'</select></label>'+
  '<div class="loop-wishes" aria-label="Пожелания">'+[['all','Всё'],['nature','Природа'],['culture','Культура']].map(([id,label])=>'<button data-loop="preference" data-value="'+id+'" aria-pressed="'+((state.loopPreference||'all')===id)+'">'+label+'</button>').join('')+'</div>'+
  '<button class="loop-generate" data-loop="generate">'+(area.generated?'К готовым маршрутам':'Собрать свой маршрут')+'</button>'+
  ((!c||c.done&&!c.line)&&area.bases.length?'<div class="loop-bases"><small>Начать ближе к дороге</small>'+area.bases.slice(0,2).map((p,i)=>'<button data-loop="base" data-index="'+i+'">'+safe(p.name)+' · '+Math.round(p.km)+' км ↗</button>').join('')+'</div>':'')+

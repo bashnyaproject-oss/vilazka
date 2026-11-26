@@ -22,7 +22,7 @@ function flightLinks(origin,destination,expanded=false){
  (to?'<small>'+(from?from+' → ':'Аэропорт назначения · ')+to+'</small>':'')+
  '<div>'+sites.map(([name,url])=>travelLink(url,name)).join('')+'</div></details>';
 }
-function navigationLinks(points){
+function navigationLinks(points,label="Открыть в навигаторе"){
  const coords=points.map(p=>Array.isArray(p)?p:[p.lat,p.lon])
   .filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1])&&Math.abs(p[0])<=90&&Math.abs(p[1])<=180)
   .map(p=>p.slice(0,2).join(',')).filter((p,i,a)=>i===0||p!==a[i-1]);
@@ -39,7 +39,7 @@ function navigationLinks(points){
  setPoint(coords[0],'from');setPoint(coords.at(-1),'to');
  coords.slice(1,-1).forEach((point,i)=>setPoint(point,'via_'+i));
  const web=new URLSearchParams({rtext:coords.join('~'),rtt:'auto'});
- return '<details class="travel-links"><summary>Открыть в навигаторе</summary><div>'+google+
+ return '<details class="travel-links"><summary>'+safe(label)+'</summary><div>'+google+
  travelLink('yandexnavi://build_route_on_map?'+yandex,'Яндекс Навигатор',false)+
  travelLink('https://yandex.ru/maps/?'+web,'Яндекс Карты · веб')+'</div></details>';
 }

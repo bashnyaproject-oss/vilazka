@@ -546,7 +546,7 @@ function pickTransport(button){
 let pinAnchor=null;
 function positionPins(){
  if(!atlas)return;
- pinLayer.style.transform='';
+ window.drawRentalPins?.();pinLayer.style.transform='';
  pinAnchor={center:atlas.getCenter(),zoom:atlas.getZoom()};
  for(const node of pinLayer.children){
   const point=node.mapPoint??=node.dataset.at.split(',').map(Number);

@@ -21,3 +21,12 @@ header>a:last-child{color:#d4c1ff}
 .guide-stop img{width:100%;max-width:230px;aspect-ratio:2;object-fit:cover;border-radius:10px;display:block}
 .guide-stop figure{margin-bottom:5px}
 .cta{background:#c9b7fc;color:#211432}
+
+.road-intro{color:#c2bbd0;margin:-8px 0 24px}
+.road-preview{display:block;width:100%;aspect-ratio:1.95;background:radial-gradient(ellipse at 25% 20%,#38294c,#17151e)}
+.road-preview polyline{fill:none;stroke:#c9b7fc;stroke-width:3;stroke-linejoin:round}
+.road-preview circle{fill:#f3ebff;stroke:#533973;stroke-width:2}
+@media(prefers-reduced-motion:no-preference){
+ .tile{transition:transform .18s,background .18s,border-color .18s}
+ .tile:hover{transform:translateY(-3px)}
+}

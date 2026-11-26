@@ -16,7 +16,7 @@ function drawLoopDetails(box,card,area,approach){
  box.innerHTML='<div class="loop-bar"><button data-loop="back">← К вариантам</button><button data-loop="close" aria-label="Закрыть">×</button></div>'+
  '<div class="loop-detail"><h2>'+safe(card.title)+'</h2>'+routePhotoStrip(card)+'<p>'+safe(card.length||'Считаем по дорогам…')+'</p>'+(card.ferries?.length?'<p class="ferry-note">Есть паром · на карте голубой пунктир. Проверь расписание перед выездом.</p>':'')+(card.why?'<p>'+safe(card.why)+'</p>':'')+
  (card.line?navigationLinks(stops):'')+
- '<section><h3>Сложность и дорога</h3><p>'+safe(accessLabel(card))+'</p><p>'+safe(card.surface||'Данных о покрытии нет. Расчёт проезда основан на дорожной карте.')+'</p></section>'+
+ '<details class="road-quality"><summary>Качество дорог</summary><p>'+safe(accessLabel(card))+'</p><p>'+safe(card.surface||'Данных о покрытии нет. Расчёт проезда основан на дорожной карте.')+'</p></details>'+
  '<section><h3>Как добраться до старта</h3><p>'+safe(start.name)+'</p>'+
  '<p>'+safe(positioned?'Ты рядом со стартом':approach?.label||'Укажи местоположение или открой карту для построения пути')+'</p>'+
  (approach?.air?flightLinks(approach.from,approach.to):'')+link(directions,'Маршрут до старта')+'</section>'+

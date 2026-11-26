@@ -97,16 +97,25 @@ function showRoadMap(g){
    map.addSource('guide-road',{type:'geojson',data:{type:'Feature',geometry:path.geometry,properties:{}}});
    map.addLayer({id:'guide-road',type:'line',source:'guide-road',layout:{'line-join':'round','line-cap':'round'},paint:{'line-width':4,'line-color':'#c9b7fc'}});
    path.geometry.coordinates.forEach(p=>bounds.extend(p));map.fitBounds(bounds,{padding:40,maxZoom:13,duration:0});
-   status.textContent=Math.round(path.distance/1000)+' км по дорожной сети';
+   status.textContent=Math.round(path.distance/1000)+' км · ≈ '+Math.round(path.duration/60)+' мин за рулём';
   }catch{if(!request.signal.aborted)status.textContent='Дорогу не удалось рассчитать. На карте отмечены остановки.'}
  });
 }
 const info=g=>g.distanceKm&&g.drivingMinutes?g.distanceKm+' км · '+Math.floor(g.drivingMinutes/60)+' ч '+g.drivingMinutes%60+' мин':g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
-byId('access').innerHTML=accessOptions();
+byId('access').innerHTML=roadOptions();
+function roadPreview(g){
+ const points=g.places.map(([,y,x])=>[x,y]);
+ const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+ const minX=Math.min(...xs),minY=Math.min(...ys);
+ const dx=Math.max(...xs)-minX||1,dy=Math.max(...ys)-minY||1;
+ const path=points.map(([x,y])=>[24+272*(x-minX)/dx,112-88*(y-minY)/dy]);
+ return '<svg class="road-preview" viewBox="0 0 320 136" role="img" aria-label="Схема остановок"><polyline points="'+path.map(p=>p.join(',')).join(' ')+'"/>'+path.map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="5"/>').join('')+'</svg>';
+}
 function list(){
  const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
- const found=guides.filter(g=>(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
- byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+photo(g,'cover')+'<small>'+esc(accessLabel(g))+' · '+info(g)+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
+ const scenic=document.documentElement.hasAttribute("data-scenic");
+ const found=guides.filter(g=>(!scenic||g.separateStart)&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
+ byId('grid').innerHTML=found.map(g=>'<a class="tile" href="#'+g.id+'">'+(photo(g,'cover')||(scenic?roadPreview(g):''))+'<small>'+esc(accessLabel(g))+' · '+info(g)+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
 }
 function show(){
  mapRequest?.abort();guideMap?.remove();mapRequest=null;guideMap=null;
