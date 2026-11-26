@@ -192,12 +192,36 @@ function list(){
  }
  byId('grid').innerHTML=found.slice(0,scenic?visibleCount:undefined).map(g=>'<a class="tile" href="#'+g.id+'">'+(scenic?'<div class="road-tile-art">'+photo(g,'cover')+roadPreview(g)+'</div>':photo(g,'cover'))+'<small>'+esc(accessLabel(g))+' · '+info(g)+(roadOrigin&&scenic?' · '+Math.round(distanceToRoad(g))+' км до старта':'')+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
 }
+const galleryRequests=new Map();
+function photoData(file){
+ if(!galleryRequests.has(file))galleryRequests.set(file,fetch('assets/road-photos/'+file)
+  .then(r=>r.ok?r.json():null).catch(()=>null));
+ return galleryRequests.get(file);
+}
+async function showRoadGallery(g){
+ const slot=byId('roadGallery');
+ if(!slot||!savedRoad(g))return;
+ const index=await photoData('index.json'),batch=index?.[g.id];
+ const rows=batch?(await photoData('batch-'+String(batch).padStart(2,'0')+'.json'))?.[g.id]||[]:[];
+ if(!slot.isConnected||location.hash!=='#'+g.id)return;
+ const cover=guidePhoto(g),photos=new Map();
+ if(cover?.url&&cover.credit)photos.set(cover.credit,[cover.url,cover.credit,cover.caption||'']);
+ for(const [url,source,license,author,distance] of rows){
+  if(!photos.has(source))photos.set(source,[url,source,[author,license,Number.isFinite(distance)?'Снято в '+distance+' м от линии дороги':''].filter(Boolean).join(' · ')]);
+ }
+ const items=[...photos.values()].slice(0,5);
+ if(!items.length)return;
+ slot.innerHTML='<h2>Фото дороги <small>'+items.length+' / 5</small></h2><div class="road-gallery-grid">'+items.map(([url,source,caption])=>
+  '<figure><a href="'+esc(source)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" alt="'+esc(g.name)+'" loading="lazy" decoding="async"></a>'+
+  '<figcaption>'+(caption?esc(caption)+' · ':'')+'<a href="'+esc(source)+'" target="_blank" rel="noopener">Источник ↗</a></figcaption></figure>').join('')+'</div>';
+ slot.hidden=false;
+}
 function show(){
  mapRequest?.abort();guideMap?.remove();mapRequest=null;guideMap=null;
  const g=guides.find(g=>'#'+g.id===location.hash);
  byId('library').hidden=!!g;byId('article').hidden=!g;if(!g){list();return}
  const phases=g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(renderStop).join('')+'</ol></section>').join('');
- byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?'<section class="guide-map-shell"><h2>Карта маршрута</h2><div id="guideMap"></div><p id="guideMapStatus" role="status">Строим путь по дорогам…</p><div class="guide-map-actions"><a class="cta" href="/?openRoad=1" id="guideOpenMap" hidden>Открыть на общей карте ↗</a><a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>Прокат авто у старта ↗</a></div><button class="cta guide-go" id="guideGo" hidden>Поехали</button><p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></section>':'')+phases;window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);
+ byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?'<section class="guide-map-shell"><h2>Карта маршрута</h2><div id="guideMap"></div><p id="guideMapStatus" role="status">Строим путь по дорогам…</p><div class="guide-map-actions"><a class="cta" href="/?openRoad=1" id="guideOpenMap" hidden>Открыть на общей карте ↗</a><a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>Прокат авто у старта ↗</a></div><button class="cta guide-go" id="guideGo" hidden>Поехали</button><p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></section>':'')+'<section id="roadGallery" hidden></section>'+phases;window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showRoadGallery(g);
 }
 document.addEventListener('error',e=>{if(e.target.tagName==='IMG'){const frame=e.target.closest('figure');if(frame)frame.hidden=true;else e.target.hidden=true}},true);
 byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();

@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import html
 import json
 import math
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -35,56 +36,64 @@ def fetch_candidates(x,y):
     except (subprocess.CalledProcessError,ValueError):
         return []
 
-def find(row):
-    _,name,*_,line=row
-    # Try two spaced locations so a dry midpoint does not rule out a good cover.
-    for i in dict.fromkeys([len(line)//2,len(line)//4,3*len(line)//4]):
-        candidates=[]
-        for p in fetch_candidates(*line[i]):
-            title=p.get('title','').replace('_',' ')
-            images=p.get('imageinfo',[])
-            coords=p.get('coordinates',[])
-            if not images or not coords or not ROAD.search(title) or EXCLUDE.search(title):
-                continue
-            im=images[0]
-            metadata=im.get('extmetadata',{})
-            license=metadata.get('LicenseShortName',{}).get('value','')
-            if not FREE.search(license) or im.get('mime') not in ('image/jpeg','image/webp') or im.get('width',0)<640 or im.get('height',0)<320 or im['width']<im['height']*1.17:
-                continue
-            distance=distance_to_line(coords[0]['lon'],coords[0]['lat'],line)
-            if distance>.4 or not im.get('thumburl') or not im.get('descriptionurl'):
-                continue
-            author=html.unescape(re.sub(r'<[^>]+>','',metadata.get('Artist',{}).get('value',''))).strip()
-            if license.upper().startswith('CC BY') and not author:
-                continue
-            candidates.append((distance,[im['thumburl'],im['descriptionurl'],license,author[:160],round(distance*1000)]))
-        if candidates:
-            return name.casefold(),min(candidates,key=lambda c:c[0])[1]
-    return None
+def find_at(line,i):
+    candidates=[]
+    for p in fetch_candidates(*line[i]):
+        title=p.get('title','').replace('_',' ')
+        images=p.get('imageinfo',[])
+        coords=p.get('coordinates',[])
+        if not images or not coords or not ROAD.search(title) or EXCLUDE.search(title):
+            continue
+        im=images[0]
+        metadata=im.get('extmetadata',{})
+        license=metadata.get('LicenseShortName',{}).get('value','')
+        if not FREE.search(license) or im.get('mime') not in ('image/jpeg','image/webp') or im.get('width',0)<640 or im.get('height',0)<320 or im['width']<im['height']*1.17:
+            continue
+        distance=distance_to_line(coords[0]['lon'],coords[0]['lat'],line)
+        if distance>.4 or not im.get('thumburl') or not im.get('descriptionurl'):
+            continue
+        author=html.unescape(re.sub(r'<[^>]+>','',metadata.get('Artist',{}).get('value',''))).strip()
+        if license.upper().startswith('CC BY') and not author:
+            continue
+        candidates.append((distance,[im['thumburl'],im['descriptionurl'],license,author[:160],round(distance*1000)]))
+    return [photo for _,photo in sorted(candidates,key=lambda c:c[0])]
+
+def find_gallery(road):
+    line=road['line']
+    photos={}
+    for i in dict.fromkeys(round((len(line)-1)*f) for f in (.5,.25,.75,.08,.92)):
+        for photo in find_at(line,i):
+            photos.setdefault(photo[1],photo)
+            if len(photos)==5:
+                return list(photos.values())
+    return list(photos.values())
+
+def write_json(path,value):
+    temporary=path.with_suffix('.'+str(os.getpid())+'.tmp')
+    temporary.write_text(json.dumps(value,ensure_ascii=False,separators=(',',':'))+'\n')
+    temporary.replace(path)
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--limit',type=int,default=250)
+    parser.add_argument('--batch',type=int,choices=range(1,21),required=True)
     args=parser.parse_args()
-    root=Path(__file__).resolve().parents[1]/'dist/assets'
-    roads=json.loads((root/'world-scenic-roads.json').read_text())
-    destination=root/'nearby-road-photos.json'
-    covers=json.loads(destination.read_text()) if destination.exists() else {}
-    direct=json.loads((root/'byway-photos.json').read_text())
-    used={photo[1] for photo in [*covers.values(),*direct.values()]}
-    remaining=[r for r in roads if r[1].casefold() not in covers and r[1].casefold() not in direct]
-    with ThreadPoolExecutor(6) as pool:
-        for f in as_completed([pool.submit(find,row) for row in remaining[:args.limit]]):
-            result=f.result()
-            if not result or result[1][1] in used:
-                continue
-            name,photo=result
-            covers[name]=photo
-            used.add(photo[1])
-            temporary=destination.with_suffix('.tmp')
-            temporary.write_text(json.dumps(dict(sorted(covers.items())),ensure_ascii=False,indent=1)+'\n')
-            temporary.replace(destination)
-            print(len(covers),name,flush=True)
+    root=Path(__file__).resolve().parents[1]/'dist/assets/road-photos'
+    root.mkdir(exist_ok=True)
+    manifest=Path(__file__).with_name('scenic-photo-batches.mjs')
+    batches=json.loads(subprocess.check_output(['node',str(manifest)]))
+    index={road['id']:i for i,batch in enumerate(batches,1) for road in batch}
+    write_json(root/'index.json',index)
+    destination=root/f'batch-{args.batch:02}.json'
+    photos=json.loads(destination.read_text()) if destination.exists() else {}
+    pending=[road for road in batches[args.batch-1] if len(photos.get(road['id'],[]))<4]
+    with ThreadPoolExecutor(3) as pool:
+        jobs={pool.submit(find_gallery,road):road for road in pending}
+        for future in as_completed(jobs):
+            road=jobs[future]
+            merged={p[1]:p for p in [*photos.get(road['id'],[]),*future.result()]}
+            photos[road['id']]=list(merged.values())[:5]
+            write_json(destination,photos)
+            print(args.batch,road['id'],len(photos[road['id']]),flush=True)
 
 if __name__=='__main__':
     main()
