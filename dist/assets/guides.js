@@ -55,7 +55,7 @@ function stopPhoto([name,lat,lon,,url]){
  return guidePhotos.get(name.toLowerCase().trim())?.find(p=>Math.hypot(p.lat-lat,(p.lon-lon)*Math.cos(lat*Math.PI/180))<.02);
 }
 function galleryPhotoCaption(source,license,author,distance){
- const context=Number.isFinite(distance)?'Снято в '+distance+' м от линии дороги':
+ const context=Number.isFinite(distance)?'Геометка · '+distance+' м от линии дороги':
    decodeURIComponent(source).replaceAll('_',' ').includes(' - NARA - ')?'Национальный архив США':'';
  return [author,license,context].filter(Boolean).join(' · ');
 }
@@ -63,8 +63,8 @@ let galleryCovers={};
 function guidePhoto(g){
  const known=g.source==='Norwegian Scenic Routes'&&Object.entries(scenicPhotos).find(([name])=>g.name.toLowerCase().includes(name.toLowerCase()))?.[1];
  const [url,credit,license,author,distance]=galleryCovers[g.id]||[];
- return g.pic?{url:g.pic,credit:g.pictureSource,caption:g.pictureCaption}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean)||
-  (url?{url,credit,caption:galleryPhotoCaption(credit,license,author,distance)}:undefined);
+ return url?{url,credit,caption:galleryPhotoCaption(credit,license,author,distance)}:
+  g.pic?{url:g.pic,credit:g.pictureSource,caption:g.pictureCaption}:known?{url:known[0],credit:known[1]}:g.places?.map(stopPhoto).find(Boolean);
 }
 function photo(g,cls){
  const image=guidePhoto(g);
