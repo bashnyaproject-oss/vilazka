@@ -353,7 +353,6 @@ function drawLoopCard(){
  $('loopBudget').value=state.loopBudget||'day';
 }
 let loopCameraRevision=0;
-for(const event of ['pointerdown','wheel','keydown'])map.addEventListener(event,()=>{loopCameraRevision++},{capture:true,passive:true});
 function focusCalculatedLoop(){
  if(loopView.area.cameraRevision!==loopCameraRevision)return;
  loopFrame();
@@ -445,6 +444,7 @@ function loopMarkers(at){
  return selectedRoutePin(area,at)+start+stops;
 }
 function initLoops(){
+ for(const event of ['pointerdown','wheel','keydown'])map.addEventListener(event,()=>{loopCameraRevision++},{capture:true,passive:true});
  const deck=$('loopDeck');let touch,dragX=null,wheelAt=0;
  deck.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.target.closest('.loop-images'))dragX=e.clientX});
  deck.addEventListener('pointerup',e=>{if(dragX!==null&&Math.abs(e.clientX-dragX)>45)stepLoop(e.clientX<dragX?1:-1);dragX=null});
