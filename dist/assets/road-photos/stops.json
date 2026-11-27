@@ -14,5 +14,452 @@
       "Yakov Fedorov",
       null
     ]
+  },
+  "route-0": {
+    "Храм Гарни": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Garni_Temple_at_Sunset%2C_Armenia.jpg/960px-Garni_Temple_at_Sunset%2C_Armenia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Garni_Temple_at_Sunset,_Armenia.jpg",
+      "CC BY-SA 4.0",
+      "mk4oto https://www.instagram.com/mk4oto/",
+      null
+    ],
+    "Монастырь Гегард": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2a/-%D4%B1%D5%B5%D6%80%D5%AB%D5%BE%D5%A1%D5%B6%D6%84_%D5%AF%D5%A1%D5%B4_%D4%B3%D5%A5%D5%B2%D5%A1%D6%80%D5%A4.jpg/960px--%D4%B1%D5%B5%D6%80%D5%AB%D5%BE%D5%A1%D5%B6%D6%84_%D5%AF%D5%A1%D5%B4_%D4%B3%D5%A5%D5%B2%D5%A1%D6%80%D5%A4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:-%D4%B1%D5%B5%D6%80%D5%AB%D5%BE%D5%A1%D5%B6%D6%84_%D5%AF%D5%A1%D5%B4_%D4%B3%D5%A5%D5%B2%D5%A1%D6%80%D5%A4.jpg",
+      "CC BY-SA 4.0",
+      "Soghomon Matevosyan",
+      null
+    ]
+  },
+  "route-1": {
+    "Звартноц": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/IMG_-Zvatnots.jpg/960px-IMG_-Zvatnots.jpg",
+      "https://commons.wikimedia.org/wiki/File:IMG_-Zvatnots.jpg",
+      "CC BY-SA 4.0",
+      "Vahagn Grigoryan",
+      null
+    ]
+  },
+  "route-32": {
+    "Городец": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/%D0%93%D0%BE%D1%80%D0%BE%D0%B4_%D0%BC%D0%B0%D1%81%D1%82%D0%B5%D1%80%D0%BE%D0%B2_%D0%B2_%D0%93%D0%BE%D1%80%D0%BE%D0%B4%D1%86%D0%B5.jpg/960px-%D0%93%D0%BE%D1%80%D0%BE%D0%B4_%D0%BC%D0%B0%D1%81%D1%82%D0%B5%D1%80%D0%BE%D0%B2_%D0%B2_%D0%93%D0%BE%D1%80%D0%BE%D0%B4%D1%86%D0%B5.jpg",
+      "https://commons.wikimedia.org/wiki/File:%D0%93%D0%BE%D1%80%D0%BE%D0%B4_%D0%BC%D0%B0%D1%81%D1%82%D0%B5%D1%80%D0%BE%D0%B2_%D0%B2_%D0%93%D0%BE%D1%80%D0%BE%D0%B4%D1%86%D0%B5.jpg",
+      "CC0",
+      "WildPea",
+      null
+    ]
+  },
+  "route-62": {
+    "Havøysund": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/Hav%C3%B8ysund_winter.jpg/960px-Hav%C3%B8ysund_winter.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Hav%C3%B8ysund_winter.jpg",
+      "CC BY-SA 3.0",
+      "Janter~commonswiki",
+      null
+    ]
+  },
+  "route-63": {
+    "Botnhamn": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Botnhamn.jpg/960px-Botnhamn.jpg",
+      "https://commons.wikimedia.org/wiki/File:Botnhamn.jpg",
+      "Public domain",
+      "Morten Meyer",
+      null
+    ],
+    "Gryllefjord": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d7/Gryllefjord-From-Ballesvikskaret.jpg/960px-Gryllefjord-From-Ballesvikskaret.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Gryllefjord-From-Ballesvikskaret.jpg",
+      "CC BY-SA 3.0",
+      "Bjørn Christian Tørrissen",
+      null
+    ]
+  },
+  "route-74": {
+    "Lærdalsøyri": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/P1000425Laerdal.JPG/960px-P1000425Laerdal.JPG",
+      "https://commons.wikimedia.org/wiki/File:P1000425Laerdal.JPG",
+      "CC BY 3.0",
+      "G.Lanting",
+      null
+    ],
+    "Aurlandsvangen": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Aurlandsvangen.jpg/960px-Aurlandsvangen.jpg",
+      "https://commons.wikimedia.org/wiki/File:Aurlandsvangen.jpg",
+      "CC BY 2.0",
+      "Jonas Lamis",
+      null
+    ]
+  },
+  "route-75": {
+    "Låtefoss": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Laatefossen_Odde.jpg/960px-Laatefossen_Odde.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Laatefossen_Odde.jpg",
+      "Public domain",
+      "Knud Knudsen",
+      null
+    ]
+  },
+  "route-76": {
+    "Vøringsfossen": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/Voringsfossen_waterfall_at_Eidfjord%2C_Norway.jpg/960px-Voringsfossen_waterfall_at_Eidfjord%2C_Norway.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Voringsfossen_waterfall_at_Eidfjord,_Norway.jpg",
+      "CC BY-SA 4.0",
+      "Netha Hussain",
+      null
+    ]
+  },
+  "route-79": {
+    "Тингведлир": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Thingvellir-62-Loegberg-2018-gje.jpg/960px-Thingvellir-62-Loegberg-2018-gje.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Thingvellir-62-Loegberg-2018-gje.jpg",
+      "CC BY-SA 4.0",
+      "Gerd Eichmann",
+      null
+    ]
+  },
+  "route-83": {
+    "Норатус": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Noratus_Village.JPG/960px-Noratus_Village.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Noratus_Village.JPG",
+      "CC BY-SA 3.0",
+      "Liveon001 ©Travis Witt",
+      null
+    ],
+    "Севанаванк": [
+      "https://upload.wikimedia.org/wikipedia/commons/7/77/Sevanavanq5.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "https://commons.wikimedia.org/wiki/File:Sevanavanq5.jpg",
+      "CC BY-SA 3.0",
+      "Vigen Hakhverdyan",
+      null
+    ]
+  },
+  "route-84": {
+    "Хор Вирап": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/540_Monast%C3%A8re_de_Khor_Virap_vu_de_pr%C3%A8s.JPG/960px-540_Monast%C3%A8re_de_Khor_Virap_vu_de_pr%C3%A8s.JPG",
+      "https://commons.wikimedia.org/wiki/File:540_Monast%C3%A8re_de_Khor_Virap_vu_de_pr%C3%A8s.JPG",
+      "CC BY-SA 3.0",
+      "Moreau.henri",
+      null
+    ],
+    "Нораванк": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Noravank_2023.2.jpg/960px-Noravank_2023.2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Noravank_2023.2.jpg",
+      "CC BY-SA 4.0",
+      "Well-read MountainMan",
+      null
+    ]
+  },
+  "route-87": {
+    "Есик": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/The_View_of_Esik_Near_the_River%2C_2023.jpg/960px-The_View_of_Esik_Near_the_River%2C_2023.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:The_View_of_Esik_Near_the_River,_2023.jpg",
+      "CC0",
+      "TakingOver",
+      null
+    ]
+  },
+  "route-91": {
+    "Караганда": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/%D0%9A%D0%B0%D1%80%D0%B0%D0%B3%D0%B0%D0%BD%D0%B4%D0%B0%2C_%D0%A1%D0%BE%D0%B1%D0%BE%D1%80_%D0%9F%D1%80%D0%B5%D1%81%D0%B2%D1%8F%D1%82%D0%BE%D0%B9_%D0%94%D0%B5%D0%B2%D1%8B_%D0%9C%D0%B0%D1%80%D0%B8%D0%B8_%D0%A4%D0%B0%D1%82%D0%B8%D0%BC%D1%81%D0%BA%D0%BE%D0%B9.jpg/960px-%D0%9A%D0%B0%D1%80%D0%B0%D0%B3%D0%B0%D0%BD%D0%B4%D0%B0%2C_%D0%A1%D0%BE%D0%B1%D0%BE%D1%80_%D0%9F%D1%80%D0%B5%D1%81%D0%B2%D1%8F%D1%82%D0%BE%D0%B9_%D0%94%D0%B5%D0%B2%D1%8B_%D0%9C%D0%B0%D1%80%D0%B8%D0%B8_%D0%A4%D0%B0%D1%82%D0%B8%D0%BC%D1%81%D0%BA%D0%BE%D0%B9.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:%D0%9A%D0%B0%D1%80%D0%B0%D0%B3%D0%B0%D0%BD%D0%B4%D0%B0,_%D0%A1%D0%BE%D0%B1%D0%BE%D1%80_%D0%9F%D1%80%D0%B5%D1%81%D0%B2%D1%8F%D1%82%D0%BE%D0%B9_%D0%94%D0%B5%D0%B2%D1%8B_%D0%9C%D0%B0%D1%80%D0%B8%D0%B8_%D0%A4%D0%B0%D1%82%D0%B8%D0%BC%D1%81%D0%BA%D0%BE%D0%B9.jpg",
+      "CC BY-SA 4.0",
+      "Nikolai Bulykin",
+      null
+    ],
+    "Каркаралинск": [
+      "https://upload.wikimedia.org/wikipedia/commons/f/f1/Kunabaev_Mosque.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "https://commons.wikimedia.org/wiki/File:Kunabaev_Mosque.jpg",
+      "CC BY-SA 3.0",
+      "John Thompson05",
+      null
+    ]
+  },
+  "route-93": {
+    "Шымкент": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Shymkent_independence_square_in_2023.jpg/960px-Shymkent_independence_square_in_2023.jpg",
+      "https://commons.wikimedia.org/wiki/File:Shymkent_independence_square_in_2023.jpg",
+      "CC0",
+      "ほっきー",
+      null
+    ]
+  },
+  "route-94": {
+    "Кольмар": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Colmar%2C_straatzicht_Rue_Kleber-rue_des_T%C3%AAtes_positie2_foto1_2013-07-24_11.09.jpg/960px-Colmar%2C_straatzicht_Rue_Kleber-rue_des_T%C3%AAtes_positie2_foto1_2013-07-24_11.09.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Colmar,_straatzicht_Rue_Kleber-rue_des_T%C3%AAtes_positie2_foto1_2013-07-24_11.09.jpg",
+      "CC BY-SA 3.0",
+      "Michielverbeek",
+      null
+    ],
+    "Риквир": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/0_Riquewihr_%282%29.jpg/960px-0_Riquewihr_%282%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:0_Riquewihr_(2).jpg",
+      "CC BY 4.0",
+      "Jean-Pol GRANDMONT",
+      null
+    ]
+  },
+  "route-95": {
+    "Кольмар": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Colmar%2C_straatzicht_Rue_Kleber-rue_des_T%C3%AAtes_positie2_foto1_2013-07-24_11.09.jpg/960px-Colmar%2C_straatzicht_Rue_Kleber-rue_des_T%C3%AAtes_positie2_foto1_2013-07-24_11.09.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Colmar,_straatzicht_Rue_Kleber-rue_des_T%C3%AAtes_positie2_foto1_2013-07-24_11.09.jpg",
+      "CC BY-SA 3.0",
+      "Michielverbeek",
+      null
+    ],
+    "Руффак": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Rouffach_Mairie_02.JPG/960px-Rouffach_Mairie_02.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Rouffach_Mairie_02.JPG",
+      "CC BY-SA 4.0",
+      "© Ralph Hammann - Wikimedia Commons",
+      null
+    ]
+  },
+  "route-96": {
+    "Оберне": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Obernai_place_marche.JPG/960px-Obernai_place_marche.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Obernai_place_marche.JPG",
+      "Public domain",
+      "OTCOM",
+      null
+    ]
+  },
+  "route-97": {
+    "Рига": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Riga_%2833844464828%29.jpg/960px-Riga_%2833844464828%29.jpg",
+      "https://commons.wikimedia.org/wiki/File:Riga_(33844464828).jpg",
+      "CC BY 2.0",
+      "Jorge Franganillo from Barcelona, Spain",
+      null
+    ],
+    "Сигулда": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/The_new_Sigulda_castle_%282%29.JPG/960px-The_new_Sigulda_castle_%282%29.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:The_new_Sigulda_castle_(2).JPG",
+      "CC BY-SA 4.0",
+      "PIERRE ANDRE LECLERCQ",
+      null
+    ],
+    "Цесис": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Skats_no_Vidzemes_koncertz%C4%81le_C%C4%93sis_jumta_-_panoramio_%282%29.jpg/960px-Skats_no_Vidzemes_koncertz%C4%81le_C%C4%93sis_jumta_-_panoramio_%282%29.jpg",
+      "https://commons.wikimedia.org/wiki/File:Skats_no_Vidzemes_koncertz%C4%81le_C%C4%93sis_jumta_-_panoramio_(2).jpg",
+      "CC BY-SA 3.0",
+      "Guntars Mednis",
+      null
+    ]
+  },
+  "route-98": {
+    "Каунас": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Kauno_senamiestis_by_Augustas_Didzgalvis.jpg/960px-Kauno_senamiestis_by_Augustas_Didzgalvis.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Kauno_senamiestis_by_Augustas_Didzgalvis.jpg",
+      "CC BY-SA 4.0",
+      "BigHead",
+      null
+    ]
+  },
+  "route-99": {
+    "Братислава": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Hlavn%C3%A9_Namestie_%2835096533142%29.jpg/960px-Hlavn%C3%A9_Namestie_%2835096533142%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Hlavn%C3%A9_Namestie_(35096533142).jpg",
+      "CC BY-SA 2.0",
+      "Rob Hurson from Kentstown, Ireland",
+      null
+    ],
+    "Модра": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Modra_%28Modern%2C_Modor%29_-_Horn%C3%A1_br%C3%A1na.JPG/960px-Modra_%28Modern%2C_Modor%29_-_Horn%C3%A1_br%C3%A1na.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Modra_(Modern,_Modor)_-_Horn%C3%A1_br%C3%A1na.JPG",
+      "CC BY-SA 3.0",
+      "Pudelek (Marcin Szala)",
+      null
+    ]
+  },
+  "route-100": {
+    "Yerres": [
+      "https://upload.wikimedia.org/wikipedia/commons/c/c8/Yerres_Parc_Caillebotte%2C_Cassin.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "https://commons.wikimedia.org/wiki/File:Yerres_Parc_Caillebotte,_Cassin.jpg",
+      "CC BY-SA 3.0",
+      "Christophe Dioux",
+      null
+    ],
+    "Дворец и парк в Версале": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Vue_a%C3%A9rienne_du_domaine_de_Versailles_par_ToucanWings_-_Creative_Commons_By_Sa_3.0_-_073.jpg/960px-Vue_a%C3%A9rienne_du_domaine_de_Versailles_par_ToucanWings_-_Creative_Commons_By_Sa_3.0_-_073.jpg",
+      "https://commons.wikimedia.org/wiki/File:Vue_a%C3%A9rienne_du_domaine_de_Versailles_par_ToucanWings_-_Creative_Commons_By_Sa_3.0_-_073.jpg",
+      "CC BY-SA 3.0",
+      "ToucanWings",
+      null
+    ]
+  },
+  "route-101": {
+    "Valmiera": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Church_of_Saint_Simon_in_Valmiera_%281%29.jpg/960px-Church_of_Saint_Simon_in_Valmiera_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Church_of_Saint_Simon_in_Valmiera_(1).jpg",
+      "CC BY-SA 4.0",
+      "AgrisR",
+      null
+    ],
+    "Цесис": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Skats_no_Vidzemes_koncertz%C4%81le_C%C4%93sis_jumta_-_panoramio_%282%29.jpg/960px-Skats_no_Vidzemes_koncertz%C4%81le_C%C4%93sis_jumta_-_panoramio_%282%29.jpg",
+      "https://commons.wikimedia.org/wiki/File:Skats_no_Vidzemes_koncertz%C4%81le_C%C4%93sis_jumta_-_panoramio_(2).jpg",
+      "CC BY-SA 3.0",
+      "Guntars Mednis",
+      null
+    ]
+  },
+  "route-102": {
+    "Сигулда": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/The_new_Sigulda_castle_%282%29.JPG/960px-The_new_Sigulda_castle_%282%29.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:The_new_Sigulda_castle_(2).JPG",
+      "CC BY-SA 4.0",
+      "PIERRE ANDRE LECLERCQ",
+      null
+    ]
+  },
+  "route-104": {
+    "Ротенбург-об-дер-Таубер": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Rothenburg_BW_4.JPG/960px-Rothenburg_BW_4.JPG",
+      "https://commons.wikimedia.org/wiki/File:Rothenburg_BW_4.JPG",
+      "Public domain",
+      "Berthold Werner",
+      null
+    ],
+    "Динкельсбюль": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Dinkelsbuehl_Kirchturm_West.jpg/960px-Dinkelsbuehl_Kirchturm_West.jpg",
+      "https://commons.wikimedia.org/wiki/File:Dinkelsbuehl_Kirchturm_West.jpg",
+      "CC BY-SA 3.0",
+      "Mylius",
+      null
+    ],
+    "Нёрдлинген": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/N%C3%B6rdlingen_009.jpg/960px-N%C3%B6rdlingen_009.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:N%C3%B6rdlingen_009.jpg",
+      "CC BY-SA 4.0",
+      "Wolkenkratzer",
+      null
+    ],
+    "Аугсбург": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Augsburg_-_Markt.jpg/960px-Augsburg_-_Markt.jpg",
+      "https://commons.wikimedia.org/wiki/File:Augsburg_-_Markt.jpg",
+      "CC BY 3.0",
+      "Guido Radig",
+      null
+    ],
+    "Фюссен": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/F%C3%BCssen_-.JPG/960px-F%C3%BCssen_-.JPG",
+      "https://commons.wikimedia.org/wiki/File:F%C3%BCssen_-.JPG",
+      "CC BY-SA 3.0",
+      "Wolkenkratzer",
+      null
+    ]
+  },
+  "route-105": {
+    "Баден-Баден": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Baden-Baden_10-2015_img24_Stiftskirche.jpg/960px-Baden-Baden_10-2015_img24_Stiftskirche.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Baden-Baden_10-2015_img24_Stiftskirche.jpg",
+      "CC BY-SA 3.0",
+      "A.Savin",
+      null
+    ]
+  },
+  "route-106": {
+    "Оберштауфен": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Oberstaufen_-_Steibis_-_Imbergalpe_Ri_Steibis%2C_Oberstaufen.JPG/960px-Oberstaufen_-_Steibis_-_Imbergalpe_Ri_Steibis%2C_Oberstaufen.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Oberstaufen_-_Steibis_-_Imbergalpe_Ri_Steibis,_Oberstaufen.JPG",
+      "CC BY-SA 4.0",
+      "Flodur63",
+      null
+    ],
+    "Фюссен": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/F%C3%BCssen_-.JPG/960px-F%C3%BCssen_-.JPG",
+      "https://commons.wikimedia.org/wiki/File:F%C3%BCssen_-.JPG",
+      "CC BY-SA 3.0",
+      "Wolkenkratzer",
+      null
+    ],
+    "Этталь": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Kloster_Ettal_Winter.jpg/960px-Kloster_Ettal_Winter.jpg",
+      "https://commons.wikimedia.org/wiki/File:Kloster_Ettal_Winter.jpg",
+      "CC BY-SA 1.0",
+      "Bbb",
+      null
+    ]
+  },
+  "route-109": {
+    "Сан-Мартин-де-лос-Андес": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/SAN_MARTIN_DE_LOS_ANDES_LACAR.JPG/960px-SAN_MARTIN_DE_LOS_ANDES_LACAR.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:SAN_MARTIN_DE_LOS_ANDES_LACAR.JPG",
+      "Public domain",
+      "No machine-readable author provided. Albasmalko assumed (based on copyright claims).",
+      null
+    ]
+  },
+  "route-110": {
+    "Те-Анау": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Te_Anau_and_Murchison_Mountains.jpg/960px-Te_Anau_and_Murchison_Mountains.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Te_Anau_and_Murchison_Mountains.jpg",
+      "CC BY-SA 4.0",
+      "Tim Burgess",
+      null
+    ]
+  },
+  "route-112": {
+    "Дармштадт": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Luisenplatz%2C_Darmstadt.jpg/960px-Luisenplatz%2C_Darmstadt.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Luisenplatz,_Darmstadt.jpg",
+      "CC BY-SA 3.0",
+      "Heidas",
+      null
+    ],
+    "Хайдельберг": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Heidelberg_corr.jpg/960px-Heidelberg_corr.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Heidelberg_corr.jpg",
+      "CC BY-SA 3.0",
+      "Miholz",
+      null
+    ],
+    "Вислох": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Wiesloch-D%C3%B6rndl.JPG/960px-Wiesloch-D%C3%B6rndl.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Wiesloch-D%C3%B6rndl.JPG",
+      "CC BY-SA 3.0",
+      "Peter Schmelzle",
+      null
+    ]
+  },
+  "route-113": {
+    "Ханау": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Hanau_20091128_002.jpg/960px-Hanau_20091128_002.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Hanau_20091128_002.jpg",
+      "CC BY-SA 3.0",
+      "Sterilgutassistentin",
+      null
+    ],
+    "Марбург": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Marburg_Oberstadt_von_SO_%28cropped%29.jpg/960px-Marburg_Oberstadt_von_SO_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Marburg_Oberstadt_von_SO_(cropped).jpg",
+      "CC BY-SA 4.0",
+      "Heinrich Stürzl",
+      null
+    ],
+    "Хамельн": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Hameln_vor_Anker.jpg/960px-Hameln_vor_Anker.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Hameln_vor_Anker.jpg",
+      "CC BY-SA 3.0",
+      "Thomas Fietzek",
+      null
+    ]
+  },
+  "route-115": {
+    "Тингведлир": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Thingvellir-62-Loegberg-2018-gje.jpg/960px-Thingvellir-62-Loegberg-2018-gje.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Thingvellir-62-Loegberg-2018-gje.jpg",
+      "CC BY-SA 4.0",
+      "Gerd Eichmann",
+      null
+    ],
+    "Керид": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Keri%C3%B0_crater_lake_view_from_crater_rim_towards_parking_lot.jpg/960px-Keri%C3%B0_crater_lake_view_from_crater_rim_towards_parking_lot.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Keri%C3%B0_crater_lake_view_from_crater_rim_towards_parking_lot.jpg",
+      "CC BY 3.0",
+      "Alexander Grebenkov",
+      null
+    ]
   }
 }
