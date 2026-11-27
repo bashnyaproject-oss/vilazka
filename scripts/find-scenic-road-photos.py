@@ -91,9 +91,11 @@ def main():
         for future in as_completed(jobs):
             road=jobs[future]
             merged={p[1]:p for p in [*photos.get(road['id'],[]),*future.result()]}
-            photos[road['id']]=list(merged.values())[:5]
-            write_json(destination,photos)
-            print(args.batch,road['id'],len(photos[road['id']]),flush=True)
+            gallery=list(merged.values())[:5]
+            if gallery and gallery != photos.get(road['id']):
+                photos[road['id']]=gallery
+                write_json(destination,photos)
+            print(args.batch,road['id'],len(gallery),flush=True)
 
 if __name__=='__main__':
     main()
