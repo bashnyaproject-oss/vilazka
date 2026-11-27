@@ -87,17 +87,17 @@ function makeLoops(area,points,generated=false,linearFallback=false){
    const known=points.find(p=>kmBetween(xy(p),[lat,lon])<3&&p.photo&&p.name===name);
    return {...known,name,lat,lon,description,photo:photo||known?.photo,credit:photo?g.url:known?.credit};
   });
-  if(!gp.every(p=>allowsStop(area,p.lat,p.lon)))continue;
-  const approach=kmBetween(xy(area),xy(gp[0]));if(approach>driveRadius())continue;
+  if(gp.length<2||!gp.every(p=>allowsStop(area,p.lat,p.lon)&&kmBetween(xy(area),xy(p))<=driveRadius()))continue;
+  const approach=kmBetween(xy(area),xy(gp[0]));
+  if(approach>Math.min(driveRadius(),100,loopBudget()[0]/3))continue;
   const stops=gp.filter(p=>kmBetween(xy(area),xy(p))>1);
-  if(gp.length<2)continue;
   const ring=kmBetween(xy(gp[0]),xy(gp.at(-1)))<.05;
   if(linearFallback?ring:!ring&&!state.loopLinear)continue;
   const end=stops[stops.length-1]||gp.at(-1),sector=(Math.round(Math.atan2((end.lon-area.lon)*Math.cos(area.lat*Math.PI/180),end.lat-area.lat)*4/Math.PI)+8)%8;
   cards.push({sector,title:g.name,start:gp[0],stops:gp.slice(1),line:null,ring,why:g.why,access:g.access,surface:g.surface,source:g.url,publisher:g.source,approach,linearFallback,length:null});
  }
  if(generated&&state.loopAccess&&state.loopAccess!=='unknown')return cards;
- if(!generated)return cards.sort((a,b)=>Number(b.ring)-Number(a.ring)||a.approach-b.approach);
+ if(!generated)return cards.sort((a,b)=>a.approach-b.approach||Number(b.ring)-Number(a.ring));
  for(const seed of points){
   if(cards.length>=64)break;
   if((used.get(seed)||0)>=3||cards.filter(c=>c.sector===seed.sector).length>=8)continue;
@@ -359,7 +359,7 @@ function drawLoopCard(){
  if(c&&loopView.details){drawLoopDetails(box,c,area,approach);return}
  const title=area.name||'Выбранная точка';
  box.innerHTML='<div class="loop-bar"><button data-loop="pick" title="Выбрать другую точку прибытия">⚑ '+safe(title)+' ⌄</button><button aria-label="Закрыть роад-трип" data-loop="close">×</button></div>'+
- (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.linearFallback?'<p>Ближайшая альтернатива · в одну сторону</p>':'')+(c.overBudget?'<p role="status">Маршрут построен, но превышает лимит '+loopBudget()[0]+' км / '+loopBudget()[1]+' ч.</p>':'')+(c.rejected?'<p role="status">'+(area.trying?'Проверяем соседние варианты…':'Подтверждённого маршрута для этих остановок нет. Попробуй старт в ближайшем городе.')+'</p>':'')+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
+ (c?'<div class="loop-copy"><small>'+(c.source?(c.ring?'Готовое кольцо':'Линейный маршрут'):'Кольцо от старта')+' · '+(index+1)+' / '+cards.length+'</small><h2>'+safe(c.title)+'</h2>'+routePhotoStrip(c)+'<strong>'+safe(c.length||'Считаем по дорогам…')+'</strong>'+(c.linearFallback?'<p>В одну сторону'+(c.approach>=1?' · старт в '+Math.round(c.approach)+' км по прямой':'')+'</p>':'')+(c.overBudget?'<p role="status">Маршрут построен, но превышает лимит '+loopBudget()[0]+' км / '+loopBudget()[1]+' ч.</p>':'')+(c.rejected?'<p role="status">'+(area.trying?'Проверяем соседние варианты…':'Подтверждённого маршрута для этих остановок нет. Попробуй старт в ближайшем городе.')+'</p>':'')+(c.ferries?.length?'<small class="ferry-note">Паром · голубой пунктир на карте</small>':'')+''+'</div>':'<div class="loop-copy"><h2>'+ (area.searching?'Ищем остановки рядом…':'В выбранном радиусе нет остановок')+'</h2>'+(!area.searching&&driveRadius()<2000?'<button data-loop="widen">Расширить поиск до '+Math.min(2000,driveRadius()*2)+' км</button>':'<button data-loop="pick">Выбрать другую точку</button>')+'</div>')+
  (c?.rejected&&area.roadStart?'<div class="road-start-option"><p>Выбранная точка находится в '+(area.roadStart.distance/1000).toLocaleString('ru',{maximumFractionDigits:1})+' км от ближайшей дороги в данных маршрутизатора.</p><button class="action" data-loop="road-start">Начать у дороги →</button></div>':'')+
  (c?.line?'<div class="loop-detail-action"><button data-loop="frame">Показать весь маршрут</button></div>':'')+
  (c?.line?'<div class="loop-start">'+navigationLinks([c.start||area,...c.stops,...(c.ring||!c.source?[c.start||area]:[])],'Поехали')+'</div>':'')+
@@ -466,7 +466,7 @@ function loopMarkers(at){
  const stops=(c?.stops||[]).map((p,i)=>{
   if(kmBetween(xy(p),xy(area))<.05)return '';
   const [photo]=findRoutePhoto(p);
-  return '<button class="drive-stop route-stop'+(photo?' with-photo':'')+'" data-route-stop="'+i+'" title="'+safe(p.name)+'" aria-label="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+
+  return '<button class="drive-stop route-stop'+(c.scenic?' scenic-stop':'')+(photo?' with-photo':'')+'" data-route-stop="'+i+'" title="'+safe(p.name)+'" aria-label="'+safe(p.name)+'"'+at(p.lat,p.lon)+'>'+
    (photo?'<img alt="" loading="lazy" src="'+safe(photo)+'">':'')+'<b>'+(i+1)+'</b></button>';
  }).join('');
  return selectedRoutePin(area,at)+start+stops;

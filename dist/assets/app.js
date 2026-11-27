@@ -568,7 +568,7 @@ function openScenicRoad(road,fromCatalog=false){
  const [[name,lat,lon],...stops]=road.places;
  const area={name,lat,lon,bases:[],crossBorder:false};
  loopView.open=true;loopView.picking=false;loopView.details=false;loopView.area=area;loopView.index=0;
- loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(road.id,name)})),done:true,scenicMap:fromCatalog}];
+ loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(road.id,name)})),done:true,scenic:true,scenicMap:fromCatalog}];
  pickTransport(document.querySelector('#modes [data-mode="car"]'));
  $('tripBuilder').setAttribute('aria-pressed','true');$('nearby').hidden=true;
  drawLoopCard();renderPins();paintRoute();
@@ -1055,6 +1055,7 @@ function visibleFerries(){
  if(!active&&!$('nearby').hidden)return driveShelf.current?.ferries||[];
  return routeFerries;
 }
+function tripRouteColor(){return loopView.open&&loopView.cards[loopView.index]?.scenic?'#efd18a':'#cbbaff'}
 function paintRoute(){
  if(!atlas)return;
  if(canvas){canvas.draw();return}
@@ -1075,7 +1076,8 @@ function paintRoute(){
  else mapView.addSource('trip-route',{type:'geojson',data});
  if(!mapView.getLayer('trip-route'))mapView.addLayer({id:'trip-route',type:'line',source:'trip-route',
   filter:['==','ferry',false],layout:{'line-join':'round','line-cap':'round'},
-  paint:{'line-color':'#cbbaff','line-width':4}});
+  paint:{'line-color':tripRouteColor(),'line-width':4}});
+ else mapView.setPaintProperty('trip-route','line-color',tripRouteColor());
  if(!mapView.getLayer('trip-ferry'))mapView.addLayer({id:'trip-ferry',type:'line',source:'trip-route',
   filter:['==','ferry',true],paint:{'line-color':'#89e2ff','line-width':5,'line-dasharray':[2,2]}});
 }
@@ -1222,7 +1224,7 @@ function bootOffline(){
   for(const [line,ferry] of [...draws.map(line=>[line,false]),...visibleFerries().map(line=>[line,true])]){
    if(line.length<2)continue;
    const confirmed=loopView.open&&loopView.cards[loopView.index]?.line;
-   ctx.strokeStyle=ferry?'#89e2ff':'#cbbaff';ctx.lineWidth=ferry?5:confirmed?4:2;ctx.setLineDash(!ferry&&confirmed?[]:[6,4]);ctx.beginPath();
+   ctx.strokeStyle=ferry?'#89e2ff':tripRouteColor();ctx.lineWidth=ferry?5:confirmed?4:2;ctx.setLineDash(!ferry&&confirmed?[]:[6,4]);ctx.beginPath();
    line.forEach((p,i)=>{const {x,y}=project(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});
    ctx.stroke();ctx.setLineDash([]);
   }
