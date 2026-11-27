@@ -540,7 +540,7 @@ function pickTransport(button){
 }
 
 let scenicLayer=false,scenicRoads=null,scenicRoadsRequest;
-const scenicToggle=$('scenicLayer');
+const scenicToggle=$('scenicLayer'),placesToggle=$('placesLayer');
 function loadScenicRoads(){
  if(scenicRoadsRequest)return scenicRoadsRequest;
  const load=(file,fallback)=>fetch('assets/'+file).then(r=>{
@@ -583,21 +583,25 @@ function openScenicRoad(road,fromCatalog=false){
   window.addEventListener('load',()=>{const toggle=$('rentalLayer');if(toggle.getAttribute('aria-checked')!=='true')toggle.click()},{once:true});
  }else loopFrame();
 }
-scenicToggle.onclick=async()=>{
- scenicLayer=!scenicLayer;
- scenicToggle.setAttribute('aria-pressed',String(scenicLayer));
- if(scenicLayer){
+async function setScenicLayer(enabled){
+ const changed=scenicLayer!==enabled;
+ scenicLayer=enabled;
+ scenicToggle.setAttribute('aria-pressed',String(enabled));
+ placesToggle.setAttribute('aria-pressed',String(!enabled));
+ if(changed&&enabled){
   if(loopView.open)closeLoops();
   if(building)leaveTrip();
   if(picking)finishPick();
   if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true}
   active=null;closeLandmark();setDrawer(false);$('nearby').hidden=true;$('detail').hidden=true;$('portal').hidden=true;clearRoute();
- }else if(loopView.open&&loopView.cards[loopView.index]?.scenicMap)closeLoops();
- render();paintRoute();
+ }else if(changed&&loopView.open&&loopView.cards[loopView.index]?.scenicMap)closeLoops();
+ if(changed){render();paintRoute()}
  if(!scenicLayer||scenicRoads)return;
  try{await loadScenicRoads();if(scenicLayer)renderPins()}
- catch{if(scenicLayer)$('zoomHint').textContent='Дороги не загрузились. Повтори попытку.'}
-};
+ catch{if(scenicLayer)$('zoomHint').textContent='Дороги не загрузились. Нажми «Лучшие дороги», чтобы повторить.'}
+}
+scenicToggle.onclick=()=>setScenicLayer(true);
+placesToggle.onclick=()=>setScenicLayer(false);
 function scenicRoadPins(at){
  return (scenicRoads||[]).map(({name,geometry},i)=>{
   const line=geometry[2],[lon,lat]=line[Math.floor(line.length/2)];
