@@ -539,6 +539,67 @@ function pickTransport(button){
  closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();if(destination&&ticketMode())showTicketDestination(destination);else if(mode!=='all'||!leavingRoad)fitTransport();
 }
 
+let scenicLayer=false,scenicRoads=null,scenicRoadsRequest;
+const scenicToggle=$('scenicLayer');
+function loadScenicRoads(){
+ if(scenicRoadsRequest)return scenicRoadsRequest;
+ const load=(file,fallback)=>fetch('assets/'+file).then(r=>{
+  if(!r.ok)throw Error(file);
+  return r.json();
+ }).catch(error=>{if(fallback===undefined)throw error;return fallback});
+ scenicRoadsRequest=Promise.all([load('world-scenic-roads.json'),load('russia-scenic-roads.json',[]),load('road-itineraries.json',{})])
+  .then(([world,russia,itineraries])=>{
+   const curated=publishedDrives.flatMap((g,i)=>{
+    const key=g.places.map(([,lat,lon])=>lon.toFixed(5)+','+lat.toFixed(5)).join(';');
+    const geometry=roadGeometry[key],id='route-'+i;
+    return geometry?[{id,name:g.name,geometry,places:itineraries[id]?.places||g.places}]:[];
+   });
+   const imported=[...russia,...world].map(([id,name,,,,km,line])=>{
+    const [x,y]=line[0],[ex,ey]=line.at(-1);
+    return {id,name,geometry:[km,null,line],places:itineraries[id]?.places||[['Начало участка',y,x],['Конец участка',ey,ex]]};
+   });
+   scenicRoads=[...curated,...imported];
+  }).catch(error=>{scenicRoadsRequest=null;throw error});
+ return scenicRoadsRequest;
+}
+function openScenicRoad(road,fromCatalog=false){
+ const [km,minutes,line]=road.geometry;
+ const [[name,lat,lon],...stops]=road.places;
+ const area={name,lat,lon,bases:[],crossBorder:false};
+ loopView.open=true;loopView.picking=false;loopView.details=false;loopView.area=area;loopView.index=0;
+ loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon})),done:true,scenicMap:fromCatalog}];
+ pickTransport(document.querySelector('#modes [data-mode="car"]'));
+ $('tripBuilder').setAttribute('aria-pressed','true');$('nearby').hidden=true;
+ drawLoopCard();renderPins();paintRoute();
+ if(road.rental){
+  flyTo([lat,lon],12);
+  window.addEventListener('load',()=>{const toggle=$('rentalLayer');if(toggle.getAttribute('aria-checked')!=='true')toggle.click()},{once:true});
+ }else loopFrame();
+}
+scenicToggle.onclick=async()=>{
+ scenicLayer=!scenicLayer;
+ scenicToggle.setAttribute('aria-pressed',String(scenicLayer));
+ if(scenicLayer){
+  if(loopView.open)closeLoops();
+  if(building)leaveTrip();
+  if(picking)finishPick();
+  if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true}
+  active=null;closeLandmark();setDrawer(false);$('nearby').hidden=true;$('detail').hidden=true;$('portal').hidden=true;clearRoute();
+ }else if(loopView.open&&loopView.cards[loopView.index]?.scenicMap)closeLoops();
+ render();paintRoute();
+ if(!scenicLayer||scenicRoads)return;
+ try{await loadScenicRoads();if(scenicLayer)renderPins()}
+ catch{if(scenicLayer)$('zoomHint').textContent='Дороги не загрузились. Повтори попытку.'}
+};
+function scenicRoadPins(at){
+ return (scenicRoads||[]).map(({name,geometry},i)=>{
+  const line=geometry[2],[lon,lat]=line[Math.floor(line.length/2)];
+  const {x,y}=atlas.project([lon,lat]);
+  if(x<-24||x>map.clientWidth+24||y<-24||y>map.clientHeight+24)return '';
+  return '<button type="button" class="scenic-road-dot" data-scenic-road="'+i+'" title="'+safe(name)+'" aria-label="'+safe(name)+'"'+at(lat,lon)+'></button>';
+ }).join('');
+}
+
 let pinAnchor=null;
 function positionPins(){
  if(!atlas)return;
@@ -559,6 +620,11 @@ function renderPins(){
  if(loopView.open&&!loopView.picking){pinLayer.innerHTML=locationPin+loopMarkers(at);positionPins();return}
  if(building&&!pickStage){
   pinLayer.innerHTML=locationPin+stagePins(at);positionPins();return;
+ }
+ if(scenicLayer){
+  $('nearby').hidden=true;
+  $('zoomHint').textContent=scenicRoads?'Лучшие дороги · нажми на точку':'Загружаем лучшие дороги…';
+  pinLayer.innerHTML=locationPin+scenicRoadPins(at);positionPins();return;
  }
  const groups=[],minorDots=[];
  for(const d of russiaOnly?[]:visible){
@@ -767,6 +833,7 @@ $('filters').onchange=e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
+ if(k.scenicRoad!==undefined&&scenicLayer){const road=scenicRoads?.[Number(k.scenicRoad)];if(road)openScenicRoad(road,true);return}
  if(k.ticketRoutes!==undefined&&ticketTarget){launchLoops(ticketTarget);return}
  if(k.routeStop!==undefined){const stop=loopView.cards[loopView.index]?.stops[Number(k.routeStop)];if(stop){loopView.details=true;drawLoopCard();$('loopDeck').querySelectorAll('.loop-detail li')[Number(k.routeStop)]?.scrollIntoView({block:'nearest'});}return}
  if(b.closest('#seasonList')){if(loopView.open)closeLoops();if(building)leaveTrip();$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
@@ -938,6 +1005,7 @@ function finishPick(){
  $('cancelPick').hidden=true;$('pickStart').hidden=false;$('portal').hidden=!!actualOrigin();
 }
 function selectStart(point){
+ if(scenicLayer&&!destinationPicking&&!picking&&!loopView.picking&&!pickStop&&!pickStage)return;
  if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true;const target={lat:point.lat,lon:point.lng,name:placeName([point.lat,point.lng])};if(ticketMode())showTicketDestination(target);else launchLoops(target);return}
  if(loopView.open){if(loopView.picking)setLoopArea(point.lat,point.lng,'Точка прибытия');return}
  if((pickStop||pickStage)&&pointChoice(point.lat,point.lng,'Точка '+point.lat.toFixed(3)+', '+point.lng.toFixed(3)))return;
@@ -969,6 +1037,7 @@ let routePaintPending=null,routeFerries=[];
 function visibleFerries(){
  if(loopView.open)return loopView.cards[loopView.index]?.ferries||[];
  if(building)return drivingFerries;
+ if(scenicLayer)return [];
  if(siteLine?.el.isConnected&&!$('landmark').hidden)return siteLine.ferries||[];
  if(!active&&!$('nearby').hidden)return driveShelf.current?.ferries||[];
  return routeFerries;
@@ -985,7 +1054,7 @@ function paintRoute(){
   })}
   return;
  }
- const lines=loopView.open?loopLine():building?drivingLines:previewLines();
+ const lines=loopView.open?loopLine():building?drivingLines:scenicLayer?[]:previewLines();
  const features=[...lines.map(line=>[line,false]),...visibleFerries().map(line=>[line,true])]
   .filter(([line])=>line.length>1).map(([line,ferry])=>({type:'Feature',geometry:{type:'LineString',coordinates:line},properties:{ferry}}));
  const data={type:'FeatureCollection',features};
@@ -1136,7 +1205,7 @@ function bootOffline(){
    if(x>=0&&x<=w&&y>=0&&y<=h)ctx.fillText(name,x,y);
   }
   ctx.textAlign='start';
-  const draws=loopView.open?loopLine():building?drivingLines:previewLines();
+  const draws=loopView.open?loopLine():building?drivingLines:scenicLayer?[]:previewLines();
   for(const [line,ferry] of [...draws.map(line=>[line,false]),...visibleFerries().map(line=>[line,true])]){
    if(line.length<2)continue;
    const confirmed=loopView.open&&loopView.cards[loopView.index]?.line;
@@ -1456,19 +1525,6 @@ if(new URLSearchParams(location.search).has('openRoad')){
  try{
   const pending=JSON.parse(sessionStorage.getItem('vilazka.openRoad'));
   sessionStorage.removeItem('vilazka.openRoad');
-  if(pending?.geometry?.[2]?.length>1){
-   const [km,minutes,line]=pending.geometry;
-   const [[name,lat,lon],...stops]=pending.places;
-   const area={name,lat,lon,bases:[],crossBorder:false};
-   loopView.open=true;loopView.picking=false;loopView.details=false;loopView.area=area;loopView.index=0;
-   loopView.cards=[{title:pending.name,start:area,source:location.origin+'/roads.html#'+encodeURIComponent(pending.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon})),done:true}];
-   pickTransport(document.querySelector('#modes [data-mode="car"]'));
-   $('tripBuilder').setAttribute('aria-pressed','true');$('nearby').hidden=true;
-   drawLoopCard();renderPins();paintRoute();
-   if(pending.rental){
-    flyTo([lat,lon],12);
-    window.addEventListener('load',()=>{const toggle=$('rentalLayer');if(toggle.getAttribute('aria-checked')!=='true')toggle.click()},{once:true});
-   }else loopFrame();
-  }
+  if(pending?.geometry?.[2]?.length>1)openScenicRoad(pending);
  }catch{}
 }
