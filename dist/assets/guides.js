@@ -71,9 +71,10 @@ function photo(g,cls){
  return image?'<figure class="guide-image '+cls+'"><img loading="lazy" decoding="async" alt="'+esc(g.name)+'" src="'+esc(image.url)+'">'+
  (cls==='hero'&&image.credit?'<figcaption><a target="_blank" rel="noopener" href="'+esc(image.credit)+'">Источник фотографии ↗</a>'+(image.caption?' · '+esc(image.caption):'')+'</figcaption>':'')+'</figure>':'';
 }
-function renderStop([name,lat,lon,description,url]){
- const image=stopPhoto([name,lat,lon,description,url]);
- return '<li class="guide-stop">'+(image?'<figure><img loading="lazy" alt="'+esc(name)+'" src="'+esc(image.url)+'">'+(image.credit?'<figcaption><a href="'+esc(image.credit)+'" target="_blank" rel="noopener">Источник фото ↗</a></figcaption>':'')+'</figure>':'')+
+function renderStop([name,lat,lon,description,url], verifiedPhotos={}){
+ const verified=Object.hasOwn(verifiedPhotos,name)?verifiedPhotos[name]:null;
+ const image=verified?{url:verified[0],credit:verified[1],caption:[verified[3],verified[2]].filter(Boolean).join(' · ')}:stopPhoto([name,lat,lon,description,url]);
+ return '<li class="guide-stop">'+(image?'<figure><img loading="lazy" alt="'+esc(name)+'" src="'+esc(image.url)+'">'+(image.credit?'<figcaption><a href="'+esc(image.credit)+'" target="_blank" rel="noopener">Источник фото ↗</a>'+ (image.caption?' · '+esc(image.caption):'')+'</figcaption>':'')+'</figure>':'')+
  '<div><a target="_blank" rel="noopener" href="'+mapLink(lat+','+lon)+'">'+esc(name)+' ↗</a>'+(description?'<p>'+esc(description)+'</p>':'')+'</div></li>';
 }
 const savedRoad=g=>g.geometry||(g.places&&roadGeometry[g.places.map(([,lat,lon])=>lon.toFixed(5)+','+lat.toFixed(5)).join(';')]);
@@ -207,30 +208,22 @@ function photoData(file){
   .then(r=>r.ok?r.json():null).catch(()=>null));
  return galleryRequests.get(file);
 }
-async function showRoadGallery(g){
- const slot=byId('roadGallery');
- if(!slot||!savedRoad(g))return;
- const index=await photoData('index.json'),batch=index?.[g.id];
- const rows=batch?(await photoData('batch-'+String(batch).padStart(2,'0')+'.json'))?.[g.id]||[]:[];
- if(!slot.isConnected||location.hash!=='#'+g.id)return;
- const cover=guidePhoto(g),photos=new Map();
- if(cover?.url&&cover.credit)photos.set(cover.credit,[cover.url,cover.credit,cover.caption||'']);
- for(const [url,source,license,author,distance] of rows){
-  if(!photos.has(source))photos.set(source,[url,source,galleryPhotoCaption(source,license,author,distance)]);
- }
- const items=[...photos.values()].slice(0,5);
- if(!items.length)return;
- slot.innerHTML='<h2>Фото дороги <small>'+items.length+' / 5</small></h2><div class="road-gallery-grid">'+items.map(([url,source,caption])=>
-  '<figure><a href="'+esc(source)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" alt="'+esc(g.name)+'" loading="lazy" decoding="async"></a>'+
-  '<figcaption>'+(caption?esc(caption)+' · ':'')+'<a href="'+esc(source)+'" target="_blank" rel="noopener">Источник ↗</a></figcaption></figure>').join('')+'</div>';
- slot.hidden=false;
+async function showStopPhotos(g){
+ const slot=byId('routeStops');
+ if(!slot||g.days)return;
+ const index=await photoData('stops.json');
+ if(!slot.isConnected||location.hash!=='#'+g.id||!index?.[g.id])return;
+ slot.innerHTML=renderPhases(g,index[g.id]);
+}
+function renderPhases(g,verifiedPhotos){
+ return g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol></section>').join('');
 }
 function show(){
  mapRequest?.abort();guideMap?.remove();mapRequest=null;guideMap=null;
  const g=guides.find(g=>'#'+g.id===location.hash);
  byId('library').hidden=!!g;byId('article').hidden=!g;if(!g){list();return}
- const phases=g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(renderStop).join('')+'</ol></section>').join('');
- byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?'<section class="guide-map-shell"><h2>Карта маршрута</h2><div id="guideMap"></div><p id="guideMapStatus" role="status">Строим путь по дорогам…</p><div class="guide-map-actions"><a class="cta" href="/?openRoad=1" id="guideOpenMap" hidden>Открыть на общей карте ↗</a><a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>Прокат авто у старта ↗</a></div><button class="cta guide-go" id="guideGo" hidden>Поехали</button><p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></section>':'')+'<section id="roadGallery" hidden></section>'+phases;window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showRoadGallery(g);
+
+ byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?'<section class="guide-map-shell"><h2>Карта маршрута</h2><div id="guideMap"></div><p id="guideMapStatus" role="status">Строим путь по дорогам…</p><div class="guide-map-actions"><a class="cta" href="/?openRoad=1" id="guideOpenMap" hidden>Открыть на общей карте ↗</a><a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>Прокат авто у старта ↗</a></div><button class="cta guide-go" id="guideGo" hidden>Поехали</button><p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></section>':'')+'<div id="routeStops">'+renderPhases(g)+'</div>';window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showStopPhotos(g);
 }
 document.addEventListener('error',e=>{if(e.target.tagName==='IMG'){const frame=e.target.closest('figure');if(frame)frame.hidden=true;else e.target.hidden=true}},true);
 byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();

@@ -1,0 +1,18 @@
+{
+  "route-88": {
+    "Щучинск": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Lake_Shchuchye.jpg/960px-Lake_Shchuchye.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Lake_Shchuchye.jpg",
+      "CC BY-SA 4.0",
+      "Otteokers",
+      null
+    ],
+    "Бурабай": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Abylai_Khan_Square_in_Burabai.jpg/960px-Abylai_Khan_Square_in_Burabai.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Abylai_Khan_Square_in_Burabai.jpg",
+      "CC BY-SA 4.0",
+      "Yakov Fedorov",
+      null
+    ]
+  }
+}
