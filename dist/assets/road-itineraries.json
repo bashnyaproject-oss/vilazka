@@ -938,5 +938,320 @@
         42.538
       ]
     ]
+  },
+  "drive-ru-cola": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Кандалакша",
+        67.15694,
+        32.41167
+      ],
+      [
+        "Апатиты",
+        67.5675,
+        33.39333
+      ],
+      [
+        "Мончегорск",
+        67.93944,
+        32.91556
+      ],
+      [
+        "Мурманск",
+        68.96667,
+        33.08333
+      ]
+    ]
+  },
+  "drive-ru-kalevala": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Кемь",
+        64.95,
+        34.6
+      ],
+      [
+        "Калевала",
+        65.2,
+        31.16667
+      ]
+    ]
+  },
+  "drive-ru-black-sea": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Джубга",
+        44.318337,
+        38.700412
+      ],
+      [
+        "Туапсе",
+        44.100016,
+        39.083223
+      ],
+      [
+        "Лазаревское",
+        43.91323,
+        39.332777
+      ],
+      [
+        "Сочи",
+        43.58528,
+        39.72028
+      ]
+    ]
+  },
+  "drive-ru-elbrus": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Баксан",
+        43.683333,
+        43.533333
+      ],
+      [
+        "Тырныауз",
+        43.3892665,
+        42.9189065
+      ],
+      [
+        "Эльбрус",
+        43.25621,
+        42.643979
+      ],
+      [
+        "Терскол",
+        43.255775,
+        42.513551
+      ]
+    ]
+  },
+  "drive-ru-serov": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Екатеринбург",
+        56.83333,
+        60.58333
+      ],
+      [
+        "Невьянск",
+        57.48333,
+        60.2
+      ],
+      [
+        "Нижний Тагил",
+        57.91667,
+        59.96667
+      ],
+      [
+        "Серов",
+        59.58333,
+        60.56667
+      ]
+    ]
+  },
+  "drive-ru-usinsky": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Абакан",
+        53.71667,
+        91.41667
+      ],
+      [
+        "Шушенское",
+        53.32583,
+        91.93944
+      ],
+      [
+        "Буйбинский перевал",
+        52.8097,
+        93.2657
+      ],
+      [
+        "Туран",
+        52.1446,
+        93.9181
+      ],
+      [
+        "Кызыл",
+        51.7,
+        94.36667
+      ]
+    ]
+  },
+  "drive-ru-kamchatka": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Петропавловск-Камчатский",
+        53.01667,
+        158.65
+      ],
+      [
+        "Мильково",
+        54.68333,
+        158.61667
+      ],
+      [
+        "Ключи",
+        56.31667,
+        160.85
+      ],
+      [
+        "Усть-Камчатск",
+        56.23333,
+        162.53333
+      ]
+    ]
+  },
+  "drive-ru-krasnaya-polyana": {
+    "source": "https://travel.yandex.ru/journal/10-zhivopisnyh-avtomarshrutov-rossii-i-zarubezhya/",
+    "places": [
+      [
+        "Адлер",
+        43.43361,
+        39.91611
+      ],
+      [
+        "Красная Поляна",
+        43.679095,
+        40.205537
+      ],
+      [
+        "Эстосадок",
+        43.684845,
+        40.260995
+      ]
+    ]
+  },
+  "drive-ru-dombay": {
+    "source": "https://etokavkaz.ru/nestandartnyi-marshrut/krasivo-edem-samye-zhivopisnye-avtomobilnye-marshruty-kavkaza",
+    "places": [
+      [
+        "Карачаевск",
+        43.769713,
+        41.911369
+      ],
+      [
+        "Домбай",
+        43.289843,
+        41.624341
+      ]
+    ]
+  },
+  "drive-ru-north-ossetia": {
+    "source": "https://etokavkaz.ru/nestandartnyi-marshrut/krasivo-edem-samye-zhivopisnye-avtomobilnye-marshruty-kavkaza",
+    "places": [
+      [
+        "Владикавказ",
+        43.01667,
+        44.683315
+      ],
+      [
+        "Кармадон",
+        42.84083,
+        44.50722
+      ],
+      [
+        "Даргавс",
+        42.836359,
+        44.435882
+      ]
+    ]
+  },
+  "drive-ru-lower-chuya": {
+    "source": "https://altai.travel/tourism/tours/chuyskiy-trakt",
+    "places": [
+      [
+        "Усть-Сема",
+        51.6425,
+        85.76028
+      ],
+      [
+        "Черга",
+        51.57,
+        85.56694
+      ],
+      [
+        "Семинский перевал",
+        51.0453,
+        85.6042
+      ],
+      [
+        "Онгудай",
+        50.74806,
+        86.13833
+      ]
+    ]
+  },
+  "drive-ru-aktash-kosh": {
+    "source": "https://experience.tripster.ru/journal/articles/samye-krasivye-dorogi-rossii/",
+    "places": [
+      [
+        "Акташ",
+        50.31111,
+        87.59917
+      ],
+      [
+        "Кош-Агач",
+        49.9925,
+        88.66361
+      ]
+    ]
+  },
+  "drive-ru-baikal-south": {
+    "source": "https://travel.yandex.ru/journal/10-zhivopisnyh-avtomarshrutov-rossii-i-zarubezhya/",
+    "places": [
+      [
+        "Слюдянка",
+        51.66667,
+        103.7
+      ],
+      [
+        "Байкальск",
+        51.51722,
+        104.15611
+      ]
+    ]
+  },
+  "drive-ru-kolyma": {
+    "source": "https://profilerussia.com/2024/10/11/10-samyh-krasivyh-dorog-rossii-reiting-spisok/",
+    "places": [
+      [
+        "Магадан",
+        59.56667,
+        150.8
+      ],
+      [
+        "Сокол",
+        59.91611,
+        150.72944
+      ],
+      [
+        "Палатка",
+        60.10361,
+        150.93806
+      ]
+    ]
+  },
+  "drive-ru-teriberka": {
+    "source": "https://oopt-murman.ru/spaces/1",
+    "places": [
+      [
+        "Мурманск",
+        68.96667,
+        33.08333
+      ],
+      [
+        "Териберка",
+        69.16666667,
+        35.16666667
+      ]
+    ]
   }
 }
