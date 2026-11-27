@@ -12,9 +12,9 @@ function driveOptions(origin){
  const km=p=>kmBetween(origin,p.slice(1));
  const country=countryAt(...origin.slice(0,2));
  const local=p=>country&&countryAt(p[1],p[2])===country;
- const guides=publishedDrives.map(g=>{
+ const guides=publishedDrives.map((g,i)=>{
   const places=[...g.places];if(km(places.at(-1))<km(places[0]))places.reverse();
-  return {...g,places,approach:km(places[0])};
+  return {...g,id:'route-'+i,places,approach:km(places[0])};
  }).filter(g=>g.approach<=Math.min(100,driveRadius())&&g.places.every(local)).sort((a,b)=>a.approach-b.approach);
  return guides;
 }
@@ -80,11 +80,13 @@ function driveCard(d){
   });
  }
  driveShelf.current=d;
- const stops=d.places.map(([name,lat,lon])=>{
-  const match=loopGallery.find(p=>kmBetween([lat,lon],p.slice(1,3))<1.5);
-  return {name,lat,lon,photo:match?.[3],credit:match?.[4]};
- });
- return '<div class="loop-images drive-strip">'+stops.map(loopPhoto).join('')+'</div><div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong>'+(d.line?'<div class="nearby-start">'+navigationLinks(driveStops(d),'Поехали')+'</div>':'')+'<button class="action" data-open-loops>Роад-трип от этой дороги →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
+ if(d.id&&!verifiedRoadPhotos&&!d.photoRequest){
+  d.photoRequest=loadVerifiedRoadPhotos().then(photos=>{
+   if(photos&&driveShelf.current===d&&!$('nearby').hidden)$('quickCards').innerHTML=driveCard(d);
+  });
+ }
+ const stops=d.places.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(d.id,name)}));
+ return routePhotoStrip({stops})+'<div class="drive-card"><h3>'+safe(d.name)+'</h3><strong>'+safe(d.status)+'</strong>'+(d.line?'<div class="nearby-start">'+navigationLinks(driveStops(d),'Поехали')+'</div>':'')+'<button class="action" data-open-loops>Роад-трип от этой дороги →</button><a target="_blank" rel="noopener" href="'+safe(d.url)+'">'+safe(d.source)+' ↗</a></div>';
 
 }
 function takeDrive(d){

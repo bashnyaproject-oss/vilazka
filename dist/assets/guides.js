@@ -179,6 +179,8 @@ async function loadWorldRoads(){
    const options=[...countriesInCatalog].map(code=>[code,countryNames.of(code)]);
    options.sort((a,b)=>a[1].localeCompare(b[1],document.documentElement.lang));
    for(const [code,name] of options)countryFilter.add(new Option(name,code));
+   const requestedCountry=new URLSearchParams(location.search).get('country');
+   if(options.some(([code])=>code===requestedCountry))countryFilter.value=requestedCountry;
   }
   show();
  }catch{const status=byId('worldRoadStatus');if(status)status.textContent='Мировой каталог не загрузился. Доступна основная подборка.'}

@@ -51,7 +51,8 @@
  countryButton.type='button';countryButton.className='country-picker';countryButton.textContent='◎';
  countryButton.title='Поиск страны';countryButton.setAttribute('aria-label','Поиск страны');countryButton.setAttribute('aria-pressed','false');
  field.closest('label').after(countryButton);
- let countryOnly=false,detectedCountry='',selectedCountry='',dismissedCountry='',countryOpen=false;
+ let countryOnly=false,detectedCountry='',selectedCountry='',dismissedCountry='',countryOpen=false,pinnedCountry=false;
+ let countryRoadIndex=null,countryRoadsLoading=false;
  function drawCountryHighlight(){
   if(!atlas||canvas||!atlas.getStyle()?.layers)return;
   const id='selected-country',code=selectedCountry;
@@ -85,18 +86,32 @@
  }
  function showCountryRoutes(code){
   const country=ruCountries.of(code);
-  const routes=publishedDrives.map((route,i)=>({route,i})).filter(({route})=>
-   route.places.length>=2&&route.places.every(([,lat,lon])=>visaData.iso2[countryAt(lat,lon)]===code));
-  const link=({route,i})=>'<a href="/guides.html#route-'+i+'"><strong>'+safe(route.name)+'</strong><small>'+safe(route.places[0][0])+' → '+safe(route.places.at(-1)[0])+'</small></a>';
+  const routes=countryRoadIndex?.filter(route=>route.country===code)||[];
+  if(!countryRoadIndex&&!countryRoadsLoading){
+   countryRoadsLoading=true;
+   loadScenicRoads().then(roads=>{
+    countryRoadIndex=roads;
+    if(selectedCountry)showCountryRoutes(selectedCountry);
+   }).catch(()=>{}).finally(()=>{countryRoadsLoading=false});
+  }
+  const link=route=>'<a href="/roads.html#'+encodeURIComponent(route.id)+'"><strong>'+safe(route.name)+'</strong><small>'+safe(route.places[0][0])+' → '+safe(route.places.at(-1)[0])+'</small></a>';
   countryPanel.innerHTML='<div class="country-chip-row"><button class="country-route-chip" type="button" aria-expanded="'+countryOpen+'">'+safe(country)+' <span>'+routes.length+' · ⌄</span></button><button class="country-clear" type="button" aria-label="Убрать страну">×</button></div>'+
-   '<div class="country-route-body" '+(countryOpen?'':'hidden')+'><p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>В каталоге пока нет готовых маршрутов. Выбери город, чтобы подобрать поездку на карте.</p>')+'<a class="country-catalog" href="/roads.html?q='+encodeURIComponent(country)+'">Все дороги в каталоге ↗</a></div>';
+   '<div class="country-route-body" '+(countryOpen?'':'hidden')+'><p>Дорожные маршруты · '+routes.length+'</p>'+(routes.length?'<div class="country-route-list">'+routes.map(link).join('')+'</div>':'<p>'+(countryRoadIndex?'В каталоге пока нет готовых маршрутов.':'Загружаем дороги…')+'</p>')+'<a class="country-catalog" href="/roads.html?country='+encodeURIComponent(code)+'">Все дороги в каталоге ↗</a></div>';
   countryPanel.querySelector('.country-route-chip').onclick=()=>{countryOpen=!countryOpen;showCountryRoutes(code)};
-  countryPanel.querySelector('.country-clear').onclick=()=>{dismissedCountry=code;delete state.searchCountry;persist();selectCountry('')};
+  countryPanel.querySelector('.country-clear').onclick=()=>{pinnedCountry=false;dismissedCountry=code;delete state.searchCountry;persist();selectCountry('')};
   countryPanel.hidden=false;
  }
+ window.selectMapCountry=(lat,lon)=>{
+  const code=visaData.iso2[countryAt(lat,((lon+180)%360+360)%360-180)];
+  if(!code)return false;
+  pinnedCountry=true;dismissedCountry='';state.searchCountry=code;persist();
+  closeSearch();selectCountry(code,true);
+  return true;
+ };
  if(visaIndexes.has(state.searchCountry)){selectedCountry=state.searchCountry;showCountryRoutes(selectedCountry);}
  function detectCountry(){
   if(!atlas)return;
+  if(pinnedCountry){drawCountryHighlight();return}
   if(atlas.getZoom()>=5){
    const center=atlas.getCenter(),code=visaData.iso2[countryAt(center.lat,((center.lng+180)%360+360)%360-180)]||'';
    if(code&&visaIndexes.has(code)&&code!==detectedCountry){
@@ -114,7 +129,7 @@
 
  function choose(p){
   if(!p)return;const roads=roadMode();closeSearch();menu(false);field.value='';
-  if(p.action==='country'){resetMap();state.searchCountry=p.id;persist();countryOnly=false;countryButton.setAttribute('aria-pressed','false');field.placeholder='Город, страна или место';selectCountry(p.id,true);flyTo([p.lat,p.lon],4);return}
+  if(p.action==='country'){resetMap();pinnedCountry=true;state.searchCountry=p.id;persist();countryOnly=false;countryButton.setAttribute('aria-pressed','false');field.placeholder='Город, страна или место';selectCountry(p.id,true);flyTo([p.lat,p.lon],4);return}
   if(roads){launchLoops({name:p.name,lat:p.lat,lon:p.lon});sync();return}
   resetMap();
   if(p.action==='site')openCatalogue(p.id);else if(p.action==='city')openCity(p.id);else open(data[p.id]);

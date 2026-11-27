@@ -285,6 +285,33 @@ const additionalRoutePhotos = [
   "Maxim Dmitriev · CC BY-SA 4.0"
  ]
 ];
+let verifiedRoadPhotos,verifiedRoadPhotosRequest;
+function loadVerifiedRoadPhotos(){
+ verifiedRoadPhotosRequest??=fetch('assets/road-photos/stops.json').then(response=>{
+  if(!response.ok)throw Error('road photos');
+  return response.json();
+ }).then(photos=>(verifiedRoadPhotos=photos)).catch(()=>{verifiedRoadPhotosRequest=null;return null});
+ return verifiedRoadPhotosRequest;
+}
+function verifiedStopPhoto(id,name){
+ const photos=verifiedRoadPhotos?.[id];
+ if(!photos||!Object.hasOwn(photos,name))return {};
+ const [photo,credit,license,author]=photos[name];
+ return {photo,credit,photoBy:[author,license].filter(Boolean).join(' · ')};
+}
+function retryCommonsPhoto(image){
+ if(image.dataset.retryPhoto)return false;
+ const url=new URL(image.src,location.href);
+ if(!['thumb.wikimedia.org','upload.wikimedia.org'].includes(url.hostname))return false;
+ const parts=url.pathname.split('/');
+ const thumb=parts.indexOf('thumb');
+ if(thumb===-1||parts.length!==thumb+5)return false;
+ parts.splice(thumb,1);
+ parts.pop();
+ image.dataset.retryPhoto='true';
+ image.src='https://upload.wikimedia.org'+parts.join('/');
+ return true;
+}
 let routePhotoIndex;
 function findRoutePhoto(p){
  if(p.photo)return [p.photo,p.credit,p.photoBy];
@@ -316,6 +343,7 @@ function routePhotoStrip(card){
  return photos.length?'<div class="loop-images route-photo-strip" aria-label="Фото остановок">'+photos.map(({p,i})=>loopPhoto(p,i)).join('')+'</div>':'';
 }
 document.addEventListener('error',e=>{
+ if(e.target.matches?.('.route-stop img,.route-photo img')&&retryCommonsPhoto(e.target))return;
  if(e.target.matches?.('.route-stop img')){e.target.parentElement.classList.remove('with-photo');e.target.remove();return}
  if(e.target.matches?.('.route-photo img')){e.target.hidden=true;e.target.parentElement.classList.add('no-photo')}
 },true);
