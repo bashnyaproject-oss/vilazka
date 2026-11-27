@@ -250,6 +250,8 @@ byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show
 
 if(scenicPage){
  if(countryFilter)countryFilter.onchange=list;
+ const filterToggle=byId('roadFilterToggle');
+ filterToggle.onclick=()=>filterToggle.setAttribute('aria-expanded',String(filterToggle.getAttribute('aria-expanded')!=='true'));
  byId('query').value=new URLSearchParams(location.search).get('q')||'';
  list();
  for(const [id,only] of [['photoRoads',true],['allRoads',false]]){
