@@ -149,6 +149,9 @@ function roadPreview(g){
  const path=points.map(([x,y])=>[(160+((x-minX)*cos-width/2)*scale).toFixed(1),(68-((y-minY)-height/2)*scale).toFixed(1)]);
  return '<svg class="road-preview" viewBox="0 0 320 136" role="img" aria-label="Линия по дорожной сети"><polyline points="'+path.map(p=>p.join(',')).join(' ')+'"/></svg>';
 }
+let roadCountries={};
+const countryNames=new Intl.DisplayNames(document.documentElement.lang||'ru',{type:'region'});
+const countryFilter=byId('roadCountry');
 let roadOrigin,visibleCount=48,lastFilter='',photosOnly=true;
 const scenicPage=document.documentElement.hasAttribute('data-scenic');
 async function loadWorldRoads(){
@@ -159,7 +162,8 @@ async function loadWorldRoads(){
   async function photosFrom(file){
    try{const reply=await fetch('assets/'+file);return reply.ok?await reply.json():{}}catch{return {}}
   }
-  const [pictures,nearbyPictures,covers,itineraries]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json')]);
+  const [pictures,nearbyPictures,covers,itineraries,countries]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json'),photosFrom('road-countries.json')]);
+  roadCountries=countries;
   for(const guide of guides){
    if(itineraries[guide.id])guide.itinerary=itineraries[guide.id];
   }
@@ -169,6 +173,12 @@ async function loadWorldRoads(){
    const picture=pictures[name.toLowerCase()]||nearbyPictures[name.toLowerCase()];
    const pictureCaption=picture?.[2]?['Фото рядом с дорогой · '+picture[4]+' м от линии',picture[3],picture[2]].filter(Boolean).join(' · '):'';
    guides.push({id,name,region,source,url,pic:picture?.[0],pictureSource:picture?.[1],pictureCaption,overview:region,why:'Линия показывает участок из указанного картографического источника.',places:[['Начало участка',y,x],['Конец участка',ey,ex]],geometry:[km,null,points]});
+  }
+  if(countryFilter){
+   const countriesInCatalog=new Set(guides.filter(savedRoad).map(g=>roadCountries[g.id]).filter(Boolean));
+   const options=[...countriesInCatalog].map(code=>[code,countryNames.of(code)]);
+   options.sort((a,b)=>a[1].localeCompare(b[1],document.documentElement.lang));
+   for(const [code,name] of options)countryFilter.add(new Option(name,code));
   }
   show();
  }catch{const status=byId('worldRoadStatus');if(status)status.textContent='Мировой каталог не загрузился. Доступна основная подборка.'}
@@ -193,9 +203,10 @@ function distanceToRoad(g){
 }
 function list(){
  const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
- const scenic=scenicPage,filter=q+'|'+access+'|'+roadOrigin+'|'+photosOnly;
+ const country=countryFilter?.value||'';
+ const scenic=scenicPage,filter=q+'|'+country+'|'+access+'|'+roadOrigin+'|'+photosOnly;
  if(filter!==lastFilter){visibleCount=48;lastFilter=filter;}
- const matching=guides.filter(g=>(!scenic||savedRoad(g))&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
+ const matching=guides.filter(g=>(!scenic||savedRoad(g))&&(!country||roadCountries[g.id]===country)&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
  const covered=scenic?matching.filter(guidePhoto):matching;
  const found=scenic&&photosOnly?covered:matching;
  if(scenic)found.sort(roadOrigin?(a,b)=>distanceToRoad(a)-distanceToRoad(b):(a,b)=>Number(Boolean(b.featured))-Number(Boolean(a.featured)));
@@ -236,6 +247,7 @@ document.addEventListener('error',e=>{if(e.target.tagName==='IMG'){const frame=e
 byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();
 
 if(scenicPage){
+ if(countryFilter)countryFilter.onchange=list;
  byId('query').value=new URLSearchParams(location.search).get('q')||'';
  list();
  for(const [id,only] of [['photoRoads',true],['allRoads',false]]){

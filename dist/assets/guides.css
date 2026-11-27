@@ -55,3 +55,18 @@ header>a:last-child{color:#d4c1ff}
 .road-gallery-grid figure{margin:0;min-width:0}
 .road-gallery-grid img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:12px;display:block}
 .road-gallery-grid figcaption{font-size:12px;color:#c6b7d6;margin-top:5px}
+
+.filters.road-toolbar {
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 4px;
+  overflow-x: auto;
+}
+.road-toolbar > * { flex-shrink: 0; }
+.road-toolbar input { flex: 1 0 160px; min-width: 160px; }
+.road-toolbar select { max-width: 220px; }
+.road-toolbar .road-photo-filters { margin: 0; }
+.road-toolbar button { white-space: nowrap; }
+#roadsNearbyStatus:empty { display: none; }
