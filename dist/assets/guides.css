@@ -107,3 +107,45 @@ header>a:last-child{color:#d4c1ff}
   }
   #roadFilterToggle[aria-expanded="true"] + #roadFilterOptions { display: grid; }
 }
+
+.guide-map-shell #guideMap { overflow: hidden; }
+.guide-map-shell #guideMapStatus { margin: 10px 0 14px; }
+.guide-map-shell .maplibregl-ctrl-group {
+  background: #1e1926;
+  border: 1px solid #ffffff30;
+  border-radius: 10px;
+}
+.guide-map-shell .maplibregl-ctrl-group button + button { border-color: #ffffff30; }
+.guide-map-shell .maplibregl-ctrl-group .maplibregl-ctrl-icon { filter: invert(.93); }
+.guide-map-shell .maplibregl-ctrl-attrib.maplibregl-compact { max-width: calc(100% - 18px); }
+.guide-route-controls { display: grid; gap: 8px; }
+.guide-route-controls .cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 46px;
+  margin: 0;
+  padding: 8px 11px;
+  border-radius: 12px;
+  line-height: 1.2;
+  text-align: center;
+}
+.guide-route-controls .cta[hidden] { display: none; }
+.guide-route-controls .guide-go { min-height: 52px; }
+.guide-route-controls .guide-map-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+.guide-route-controls .guide-map-actions .cta {
+  color: #f0e5ff;
+  background: #241c30;
+  border: 1px solid #c9b7fc45;
+  font-size: 14px;
+}
+.guide-route-controls svg { width: 19px; height: 19px; flex: 0 0 19px; }
+.guide-route-controls #guideTripStatus { margin: 0; }
+.guide-route-controls #guideTripStatus:empty { display: none; }
+@media (max-width: 600px) {
+ .guide-map-shell #guideMap { height: clamp(220px,38dvh,340px); }
+ #routeStops .phase ol { padding-left: 21px; }
+ #routeStops .guide-stop img { max-width: none; }
+}

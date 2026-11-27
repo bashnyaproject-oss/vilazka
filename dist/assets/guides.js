@@ -88,10 +88,11 @@ function showRoadMap(g){
  const bounds=new maplibregl.LngLatBounds();
  coordinates.forEach(point=>bounds.extend(point));
  try{guideMap=new maplibregl.Map({container,style:'https://tiles.openfreemap.org/styles/dark',bounds,
-  fitBoundsOptions:{padding:40,maxZoom:13},scrollZoom:false});}
+  fitBoundsOptions:{padding:40,maxZoom:13},scrollZoom:false,attributionControl:false});}
  catch{status.textContent='Карта недоступна. Остановки можно открыть по ссылкам ниже.';return}
  const map=guideMap,request=new AbortController();mapRequest=request;
  map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+ map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
  points.forEach(([name],i)=>{
   if(i===points.length-1&&coordinates[i].join(',')===coordinates[0].join(','))return;
   const mark=document.createElement('span');mark.className='guide-map-pin';mark.textContent=String(i+1);mark.title=name;
@@ -238,12 +239,24 @@ function renderPhases(g,verifiedPhotos){
  }
  return g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol></section>').join('');
 }
+function routeMapPanel(){
+ const icon=path=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>';
+ const mapIcon=icon('<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15m6-12v15"/>');
+ const carIcon=icon('<path d="m5 11 2-5h10l2 5M5 17v2m14-2v2M4 11h16v6H4zM7 14h2m6 0h2"/>');
+ const arrowIcon=icon('<path d="m4 11 16-7-7 16-2-7z"/>');
+ return '<section class="guide-map-shell"><h2>Карта маршрута</h2><div id="guideMap"></div>'+
+  '<p id="guideMapStatus" role="status">Строим путь по дорогам…</p>'+
+  '<div class="guide-route-controls"><button class="cta guide-go" id="guideGo" hidden>'+arrowIcon+'<span>Поехали</span></button>'+
+  '<div class="guide-map-actions"><a class="cta" href="/?openRoad=1" id="guideOpenMap" hidden>'+mapIcon+'<span>На общей карте</span></a>'+
+  '<a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>'+carIcon+'<span>Прокат авто у старта</span></a></div>'+
+  '<p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></div></section>';
+}
 function show(){
  mapRequest?.abort();guideMap?.remove();mapRequest=null;guideMap=null;
  const g=guides.find(g=>'#'+g.id===location.hash);
  byId('library').hidden=!!g;byId('article').hidden=!g;if(!g){list();return}
 
- byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?'<section class="guide-map-shell"><h2>Карта маршрута</h2><div id="guideMap"></div><p id="guideMapStatus" role="status">Строим путь по дорогам…</p><div class="guide-map-actions"><a class="cta" href="/?openRoad=1" id="guideOpenMap" hidden>Открыть на общей карте ↗</a><a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>Прокат авто у старта ↗</a></div><button class="cta guide-go" id="guideGo" hidden>Поехали</button><p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></section>':'')+'<div id="routeStops">'+renderPhases(g)+'</div>';window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showStopPhotos(g);
+ byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?routeMapPanel():'')+'<div id="routeStops">'+renderPhases(g)+'</div>';window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showStopPhotos(g);
 }
 document.addEventListener('error',e=>{if(e.target.tagName==='IMG'){const frame=e.target.closest('figure');if(frame)frame.hidden=true;else e.target.hidden=true}},true);
 byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();
