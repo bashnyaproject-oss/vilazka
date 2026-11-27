@@ -1,0 +1,872 @@
+{
+  "route-61": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/varanger/",
+    "places": [
+      [
+        "Hamningberg",
+        70.539972,
+        30.607588
+      ],
+      [
+        "Hamningberg restarea",
+        70.54163,
+        30.60227
+      ],
+      [
+        "Hamningberg Bird-watching hide",
+        70.5386401,
+        30.6320573
+      ],
+      [
+        "Steilneset",
+        70.36865,
+        31.092961
+      ],
+      [
+        "Domen",
+        70.323296,
+        31.040651
+      ],
+      [
+        "Bird watching Varanger",
+        70.073601,
+        29.738317
+      ],
+      [
+        "Mortensnes",
+        70.130492,
+        29.009442
+      ],
+      [
+        "Nesseby kirke",
+        70.14559409,
+        28.8631532
+      ],
+      [
+        "Gornitak",
+        70.17624391,
+        28.7140208
+      ],
+      [
+        "Varangerbotn",
+        70.173942,
+        28.567617
+      ]
+    ]
+  },
+  "route-62": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/havoysund/",
+    "places": [
+      [
+        "Havøysund",
+        70.992778,
+        24.654444
+      ],
+      [
+        "Havøysund Artwork",
+        70.99574167,
+        24.65481667
+      ],
+      [
+        "Selvika",
+        70.91438188,
+        24.60957875
+      ],
+      [
+        "Snefjord",
+        70.78760719,
+        24.606955
+      ],
+      [
+        "Lillefjord",
+        70.69444912,
+        24.67410824
+      ],
+      [
+        "Storberget",
+        70.612272,
+        24.719989
+      ],
+      [
+        "Kokelv",
+        70.6109328,
+        24.722849
+      ]
+    ]
+  },
+  "route-63": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/senja/",
+    "places": [
+      [
+        "Botnhamn",
+        69.505833,
+        17.902222
+      ],
+      [
+        "Mefjordvær",
+        69.520799,
+        17.439058
+      ],
+      [
+        "Ersfjordstranda",
+        69.47902626,
+        17.39420659
+      ],
+      [
+        "Tungeneset",
+        69.486956,
+        17.33325667
+      ],
+      [
+        "Bergsbotn",
+        69.42289027,
+        17.50425859
+      ],
+      [
+        "Gryllefjord",
+        69.362778,
+        17.053889
+      ]
+    ]
+  },
+  "route-64": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/andoya/",
+    "places": [
+      [
+        "Andenes",
+        69.324167,
+        16.1325
+      ],
+      [
+        "Kleivodden",
+        69.29753294,
+        15.99351398
+      ],
+      [
+        "Bukkekjerka",
+        69.10416104,
+        15.57320704
+      ],
+      [
+        "Bjørnskinn",
+        68.989779,
+        15.646872
+      ]
+    ]
+  },
+  "route-65": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/lofoten/",
+    "places": [
+      [
+        "Raftsundet",
+        68.456154,
+        15.203437
+      ],
+      [
+        "Grunnfør",
+        68.42124119,
+        14.56721148
+      ],
+      [
+        "Austnesfjorden",
+        68.31496695,
+        14.71419064
+      ],
+      [
+        "Gimsøystraumen",
+        68.26079972,
+        14.26994498
+      ],
+      [
+        "Gårdsvatnet",
+        68.27200593,
+        14.05627068
+      ],
+      [
+        "Torvdalshalsen",
+        68.26218928,
+        13.82648986
+      ],
+      [
+        "Eggum",
+        68.3081,
+        13.654321
+      ],
+      [
+        "Hauklandstranda",
+        68.1994244,
+        13.5321373
+      ],
+      [
+        "Skreda",
+        68.149847,
+        13.506961
+      ],
+      [
+        "Brunstranda",
+        68.103549,
+        13.28275
+      ],
+      [
+        "Rambergstranda",
+        68.09839399,
+        13.24625977
+      ],
+      [
+        "Akkarvikodden",
+        67.96265124,
+        13.15436927
+      ],
+      [
+        "Reinehalsen",
+        67.92818563,
+        13.08340025
+      ],
+      [
+        "Moskenes",
+        67.900209,
+        13.046522
+      ],
+      [
+        "Å",
+        67.880584,
+        12.978501
+      ]
+    ]
+  },
+  "route-66": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/helgelandskysten/",
+    "places": [
+      [
+        "Godøystraumen",
+        67.23986268,
+        14.71175316
+      ],
+      [
+        "Trælvikosen",
+        65.5045913,
+        12.299282
+      ],
+      [
+        "Torghatten",
+        65.395852,
+        12.097363
+      ],
+      [
+        "Sundshopen",
+        65.260182,
+        12.143691
+      ],
+      [
+        "Holm",
+        65.131221,
+        12.118199
+      ]
+    ]
+  },
+  "route-67": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/atlanterhavsvegen/",
+    "places": [
+      [
+        "Kårvåg",
+        63.011625,
+        7.425009
+      ],
+      [
+        "Geitøya",
+        63.021254,
+        7.382158
+      ],
+      [
+        "Eldhusøya",
+        63.018523,
+        7.365099
+      ],
+      [
+        "Myrbærholmbrua",
+        63.016902,
+        7.347161
+      ],
+      [
+        "Hågå",
+        63.007856,
+        7.296896
+      ],
+      [
+        "Farstadsanden",
+        62.980725,
+        7.153065
+      ],
+      [
+        "Askevågen",
+        62.96705,
+        7.036496
+      ],
+      [
+        "Kjeksa",
+        62.917509,
+        6.936262
+      ],
+      [
+        "Bud",
+        62.907265,
+        6.914241
+      ]
+    ]
+  },
+  "route-68": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/geiranger--trollstigen/",
+    "places": [
+      [
+        "Sogge bru",
+        62.53207,
+        7.736939
+      ],
+      [
+        "Trollstigen",
+        62.453301,
+        7.663136
+      ],
+      [
+        "Gudbrandsjuvet",
+        62.330758,
+        7.471132
+      ],
+      [
+        "Linge ferjekai",
+        62.284513,
+        7.187762
+      ],
+      [
+        "Ørnesvingen",
+        62.12626334,
+        7.16721732
+      ],
+      [
+        "Flydalsjuvet",
+        62.089302,
+        7.223597
+      ],
+      [
+        "Langvatnet",
+        62.014219,
+        7.393992
+      ]
+    ]
+  },
+  "route-69": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/gamle-strynefjellsvegen/",
+    "places": [
+      [
+        "Grotli",
+        62.013444,
+        7.630327
+      ],
+      [
+        "Videfossen",
+        61.940525,
+        7.274086
+      ],
+      [
+        "Øvstefoss",
+        61.93701546,
+        7.26015421
+      ],
+      [
+        "Videsæter",
+        61.937043,
+        7.264409
+      ]
+    ]
+  },
+  "route-70": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/rondane/",
+    "places": [
+      [
+        "Folldal gruver",
+        62.140835,
+        9.991443
+      ],
+      [
+        "Folldal",
+        62.1287,
+        10.000262
+      ],
+      [
+        "Strømbu",
+        61.921331,
+        10.053735
+      ],
+      [
+        "Kjøllen",
+        61.889865,
+        10.157547
+      ],
+      [
+        "Sohlbergplassen",
+        61.88052961,
+        10.18534477
+      ],
+      [
+        "Atnbrufossen Vannbruksmuseum",
+        61.85117623,
+        10.23388988
+      ],
+      [
+        "Muen",
+        61.682254,
+        10.125546
+      ]
+    ]
+  },
+  "route-71": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/sognefjellet/",
+    "places": [
+      [
+        "Lom",
+        61.831129,
+        8.554187
+      ],
+      [
+        "Liasanden",
+        61.67986219,
+        8.22536575
+      ],
+      [
+        "Vegaskjelet",
+        61.66540473,
+        8.18466321
+      ],
+      [
+        "Sognefjellshytta",
+        61.565212,
+        7.998841
+      ],
+      [
+        "Mefjellet",
+        61.55900909,
+        7.95567587
+      ],
+      [
+        "Oscarshaug",
+        61.508772,
+        7.818779
+      ],
+      [
+        "Nedre Oscarshaug",
+        61.50819353,
+        7.81149716
+      ],
+      [
+        "Gaupne",
+        61.395127,
+        7.303172
+      ]
+    ]
+  },
+  "route-72": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/valdresflye/",
+    "places": [
+      [
+        "Hindsæter",
+        61.618944,
+        8.972654
+      ],
+      [
+        "Gjende",
+        61.49518529,
+        8.80996192
+      ],
+      [
+        "Vargebakkane",
+        61.46443914,
+        8.8086129
+      ],
+      [
+        "Steinplassen",
+        61.40262512,
+        8.80822953
+      ],
+      [
+        "Flye 1389",
+        61.389507,
+        8.810563
+      ],
+      [
+        "Rjupa",
+        61.34313613,
+        8.81272871
+      ],
+      [
+        "Garli",
+        61.269397,
+        8.863413
+      ]
+    ]
+  },
+  "route-73": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/gaularfjellet/",
+    "places": [
+      [
+        "Moskog",
+        61.442148,
+        6.009575
+      ],
+      [
+        "Hestad",
+        61.331965,
+        5.935847
+      ],
+      [
+        "Likholefossen",
+        61.32854323,
+        6.27236158
+      ],
+      [
+        "Torsnesstølen",
+        61.336782,
+        6.434813
+      ],
+      [
+        "Utsikten",
+        61.35145674,
+        6.51817405
+      ],
+      [
+        "Balestrand",
+        61.210477,
+        6.528711
+      ]
+    ]
+  },
+  "route-74": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/aurlandsfjellet/",
+    "places": [
+      [
+        "Lærdalsøyri",
+        61.101395,
+        7.460039
+      ],
+      [
+        "Sluppen",
+        61.042815,
+        7.340112
+      ],
+      [
+        "Vedahaugane",
+        61.03176844,
+        7.32773954
+      ],
+      [
+        "Flotane",
+        61.00775251,
+        7.33157301
+      ],
+      [
+        "Stegastein",
+        60.90836182,
+        7.21279388
+      ],
+      [
+        "Aurlandsvangen",
+        60.910982,
+        7.191303
+      ]
+    ]
+  },
+  "route-75": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/hardanger/",
+    "places": [
+      [
+        "Granvin",
+        60.529691,
+        6.728418
+      ],
+      [
+        "Skjervsfossen",
+        60.588169,
+        6.634626
+      ],
+      [
+        "Kvanndal",
+        60.471182,
+        6.609585
+      ],
+      [
+        "Tyrvefjøra",
+        60.432768,
+        6.4424781
+      ],
+      [
+        "Espenes",
+        60.2899274,
+        6.6314188
+      ],
+      [
+        "Låtefossen",
+        59.94836158,
+        6.58365582
+      ],
+      [
+        "Låtefoss",
+        59.944362,
+        6.584351
+      ]
+    ]
+  },
+  "route-76": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/hardangervidda/",
+    "places": [
+      [
+        "Haugastøl",
+        60.511074,
+        7.851148
+      ],
+      [
+        "Vardestopp",
+        60.47827333,
+        7.826105
+      ],
+      [
+        "Ørteren",
+        60.4661631,
+        7.8140606
+      ],
+      [
+        "Vøringsfossen",
+        60.42669,
+        7.251631
+      ],
+      [
+        "Måbø Bridge rest area",
+        60.4229047,
+        7.2063874
+      ],
+      [
+        "Eidfjord",
+        60.455155,
+        7.092544
+      ]
+    ]
+  },
+  "route-77": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/ryfylke/",
+    "places": [
+      [
+        "Oanes",
+        58.914264,
+        6.077564
+      ],
+      [
+        "Høllesli",
+        58.935446,
+        6.095502
+      ],
+      [
+        "Ropeid",
+        59.485199,
+        6.21294
+      ],
+      [
+        "Høse bru",
+        59.48132549,
+        6.25974473
+      ],
+      [
+        "Lovra",
+        59.41982499,
+        6.21975395
+      ],
+      [
+        "Allmannajuvet",
+        59.65261189,
+        6.46475341
+      ],
+      [
+        "Juvo",
+        59.6530001,
+        6.792159
+      ],
+      [
+        "Flesefossen",
+        59.692027,
+        6.752236
+      ],
+      [
+        "Håra",
+        59.8138,
+        6.773779
+      ]
+    ]
+  },
+  "route-78": {
+    "source": "https://www.nasjonaleturistveger.no/en/routes/jaren/",
+    "places": [
+      [
+        "Bore",
+        58.791251,
+        5.596858
+      ],
+      [
+        "Borestranda",
+        58.7987905,
+        5.553825
+      ],
+      [
+        "Orrestranda",
+        58.740608,
+        5.517991
+      ],
+      [
+        "Refsnesstranda",
+        58.695138,
+        5.548782
+      ],
+      [
+        "Madland harbour",
+        58.587466,
+        5.638196
+      ],
+      [
+        "Friluftsfyret Kvassheim",
+        58.544365,
+        5.680811
+      ],
+      [
+        "Flekkefjord",
+        58.297222,
+        6.672724
+      ]
+    ]
+  },
+  "route-107": {
+    "source": "https://parks.canada.ca/pn-np/ab/banff/visit/promenadedesglaciers-icefieldsparkway",
+    "places": [
+      [
+        "Лейк-Луиз",
+        51.425,
+        -116.178
+      ],
+      [
+        "Bow Lake",
+        51.66444444,
+        -116.44861111
+      ],
+      [
+        "Пейто · поворот к озеру",
+        51.717,
+        -116.497
+      ],
+      [
+        "Peyto Lake",
+        51.72694444,
+        -116.52194444
+      ],
+      [
+        "Колумбийское ледниковое поле",
+        52.22,
+        -117.224
+      ],
+      [
+        "Athabasca Glacier",
+        52.19861111,
+        -117.24361111
+      ],
+      [
+        "Sunwapta Falls",
+        52.5322,
+        -117.6453
+      ],
+      [
+        "Athabasca Falls",
+        52.66416667,
+        -117.88361111
+      ],
+      [
+        "Джаспер",
+        52.873,
+        -118.082
+      ]
+    ]
+  },
+  "route-108": {
+    "source": "https://visitgreatoceanroad.org.au/Itineraries/great-ocean-road-essentials/",
+    "places": [
+      [
+        "Торки",
+        -38.332,
+        144.326
+      ],
+      [
+        "Anglesea",
+        -38.40638889,
+        144.18694444
+      ],
+      [
+        "Lorne",
+        -38.53333333,
+        143.96666667
+      ],
+      [
+        "Лорн",
+        -38.541,
+        143.975
+      ],
+      [
+        "Аполло-Бей",
+        -38.755,
+        143.669
+      ],
+      [
+        "Apollo Bay",
+        -38.75,
+        143.65
+      ],
+      [
+        "Двенадцать апостолов",
+        -38.664,
+        143.105
+      ],
+      [
+        "Loch Ard Gorge",
+        -38.64658333,
+        143.0705
+      ],
+      [
+        "Port Campbell",
+        -38.61666667,
+        142.98333333
+      ]
+    ]
+  },
+  "route-110": {
+    "source": "https://www.doc.govt.nz/globalassets/documents/getting-involved/consultations/2026/heritage-expeditions-limited/appendix-2-maps-of-locations-applying-for.pdf",
+    "places": [
+      [
+        "Те-Анау",
+        -45.415,
+        167.714
+      ],
+      [
+        "Миррор-Лейкс",
+        -45.022,
+        168.012
+      ],
+      [
+        "Lake Gunn",
+        -44.88333333,
+        168.08333333
+      ],
+      [
+        "Тоннель Хомера",
+        -44.763,
+        167.99
+      ],
+      [
+        "Милфорд-Саунд",
+        -44.671,
+        167.925
+      ]
+    ]
+  }
+}

@@ -80,7 +80,7 @@ function renderStop([name,lat,lon,description,url], verifiedPhotos={}){
 const savedRoad=g=>g.geometry||(g.places&&roadGeometry[g.places.map(([,lat,lon])=>lon.toFixed(5)+','+lat.toFixed(5)).join(';')]);
 let guideMap=null,mapRequest=null;
 function showRoadMap(g){
- const points=g.places?.filter(([,lat,lon])=>Number.isFinite(lat)&&Number.isFinite(lon));
+ const points=(g.itinerary?.places||g.places)?.filter(([,lat,lon])=>Number.isFinite(lat)&&Number.isFinite(lon));
  const container=byId('guideMap'),status=byId('guideMapStatus');
  if(!container||!points||points.length<2)return;
  if(typeof maplibregl==='undefined'){status.textContent='Карта недоступна. Остановки можно открыть по ссылкам ниже.';return}
@@ -159,7 +159,10 @@ async function loadWorldRoads(){
   async function photosFrom(file){
    try{const reply=await fetch('assets/'+file);return reply.ok?await reply.json():{}}catch{return {}}
   }
-  const [pictures,nearbyPictures,covers]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json')]);
+  const [pictures,nearbyPictures,covers,itineraries]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json')]);
+  for(const guide of guides){
+   if(itineraries[guide.id])guide.itinerary=itineraries[guide.id];
+  }
   galleryCovers=covers;
   for(const [id,name,region,source,url,km,points] of rows){
    const [x,y]=points[0],[ex,ey]=points.at(-1);
@@ -216,6 +219,10 @@ async function showStopPhotos(g){
  slot.innerHTML=renderPhases(g,index[g.id]);
 }
 function renderPhases(g,verifiedPhotos){
+ if(g.itinerary){
+  const {source,places}=g.itinerary;
+  return '<section class="phase"><h3>Остановки по пути</h3><ol>'+places.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol><a href="'+esc(source)+'" target="_blank" rel="noopener">Гид маршрута ↗</a></section>';
+ }
  return g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol></section>').join('');
 }
 function show(){
