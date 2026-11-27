@@ -162,17 +162,17 @@ async function loadWorldRoads(){
   async function photosFrom(file){
    try{const reply=await fetch('assets/'+file);return reply.ok?await reply.json():{}}catch{return {}}
   }
-  const [pictures,nearbyPictures,covers,itineraries,countries]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json'),photosFrom('road-countries.json')]);
+  const [pictures,nearbyPictures,covers,itineraries,countries,russianRoads]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json'),photosFrom('road-countries.json'),photosFrom('russia-scenic-roads.json')]);
   roadCountries=countries;
   for(const guide of guides){
    if(itineraries[guide.id])guide.itinerary=itineraries[guide.id];
   }
   galleryCovers=covers;
-  for(const [id,name,region,source,url,km,points] of rows){
+  for(const [id,name,region,source,url,km,points] of rows.concat(Array.isArray(russianRoads)?russianRoads:[])){
    const [x,y]=points[0],[ex,ey]=points.at(-1);
    const picture=pictures[name.toLowerCase()]||nearbyPictures[name.toLowerCase()];
    const pictureCaption=picture?.[2]?['Фото рядом с дорогой · '+picture[4]+' м от линии',picture[3],picture[2]].filter(Boolean).join(' · '):'';
-   guides.push({id,name,region,source,url,pic:picture?.[0],pictureSource:picture?.[1],pictureCaption,overview:region,why:'Линия показывает участок из указанного картографического источника.',places:[['Начало участка',y,x],['Конец участка',ey,ex]],geometry:[km,null,points]});
+   guides.push({id,name,region,source,url,itinerary:itineraries[id],pic:picture?.[0],pictureSource:picture?.[1],pictureCaption,overview:region,why:'Линия показывает участок из указанного картографического источника.',places:[['Начало участка',y,x],['Конец участка',ey,ex]],geometry:[km,null,points]});
   }
   if(countryFilter){
    const countriesInCatalog=new Set(guides.filter(savedRoad).map(g=>roadCountries[g.id]).filter(Boolean));
