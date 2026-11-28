@@ -531,12 +531,14 @@ function pickTransport(button){
  const leavingRoad=loopView.open||building||highlightRoads();
  if(loopView.open&&!stayInLoop)closeLoops();
  if(building)leaveTrip();
+ if(mode==='train'&&button.dataset.mode!=='train')hideRailTrips();
  mode=button.dataset.mode;document.body.dataset.transport=mode;
  if(mode==='all'){$('popRange').value='0';$('popRange').style.setProperty('--fill','0%');$('popValue').textContent='0 / 10';$('popCount').textContent='';$('popRange').setAttribute('aria-valuetext','Все места');}
  $('modes').querySelectorAll('button').forEach(el=>{el.classList.toggle('selected',el===button);el.setAttribute('aria-pressed',String(el===button))});
  if(stayInLoop){applyTransportLayer();return}
  active=null;airportSelection=null;storyId=-1;viewingSaved=false;
  closeLandmark();setDrawer(false);$('portal').hidden=true;render();applyTransportLayer();if(destination&&ticketMode())showTicketDestination(destination);else if(mode!=='all'||!leavingRoad)fitTransport();
+ if(mode==='train'){if(scenicLayer)setScenicLayer(false);showRailTrips()}
 }
 
 let scenicLayer=false,scenicRoads=null,scenicRoadsRequest;
@@ -603,6 +605,7 @@ async function setScenicLayer(enabled){
  scenicToggle.setAttribute('aria-pressed',String(enabled));
  placesToggle.setAttribute('aria-pressed',String(!enabled));
  if(changed&&enabled){
+  if(mode==='train')hideRailTrips();
   if(loopView.open)closeLoops();
   if(building)leaveTrip();
   if(picking)finishPick();
@@ -647,6 +650,11 @@ function renderPins(){
  if(loopView.open&&!loopView.picking){pinLayer.innerHTML=locationPin+loopMarkers(at);positionPins();return}
  if(building&&!pickStage){
   pinLayer.innerHTML=locationPin+stagePins(at);positionPins();return;
+ }
+ if(mode==='train'&&!$('railDeck').hidden){
+  $('nearby').hidden=true;
+  $('zoomHint').textContent=selectedRailTrip?selectedRailTrip[0]:'Живописные поезда';
+  pinLayer.innerHTML=locationPin+(selectedRailTrip?railTripPins(at):'');positionPins();return;
  }
  if(scenicLayer){
   $('nearby').hidden=true;
@@ -866,6 +874,7 @@ $('filters').onchange=e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
+ if(k.railPoint!==undefined){$('rail-point-'+k.railPoint)?.scrollIntoView({block:'nearest'});return}
  if(k.scenicRoad!==undefined&&scenicLayer){const road=scenicRoads?.[Number(k.scenicRoad)];if(road&&isGoldenRoad(road))openScenicRoad(road,true);return}
  if(k.ticketRoutes!==undefined&&ticketTarget){launchLoops(ticketTarget);return}
  if(k.routeStop!==undefined){const stop=loopView.cards[loopView.index]?.stops[Number(k.routeStop)];if(stop){loopView.details=true;drawLoopCard();$('loopDeck').querySelectorAll('.loop-detail li')[Number(k.routeStop)]?.scrollIntoView({block:'nearest'});}return}
@@ -1509,7 +1518,14 @@ function showLeg(){
  panel.innerHTML='<div class="panel"><button class="close" data-build="close" aria-label="Закрыть">×</button><small>Этап '+(selectedLeg+1)+' · точка прибытия</small><h2>'+safe(l.name)+'</h2><div class="chips">'+itinerary.legs.map((e,i)=>'<button data-leg="'+i+'" class="'+(i===selectedLeg?'selected':'')+'">'+(i+1)+'. '+safe(e.name)+'</button>').join('')+'</div><h3>Остановки по порядку</h3><ol><li>'+safe(l.name)+'</li>'+l.stops.map((s,i)=>'<li>'+safe(s.name)+' <button data-drop="'+i+'" aria-label="Убрать остановку">×</button></li>').join('')+'</ol>'+navigationLinks([l,...l.stops])+'<details class="trip-extra"><summary>Изменить остановки и параметры</summary><h3>Места рядом</h3><div class="near-picks">'+choices.slice(0,4).map(p=>'<button data-near="'+localPlaces(l).indexOf(p)+'"><strong>'+safe(p.name)+'</strong><small>'+p.km.toLocaleString('ru',{maximumFractionDigits:1})+' км</small><b>+</b></button>').join('')+'</div>'+(!choices.length?'<p class="note">В радиусе 70 км пока нет других мест в каталоге. Можно поставить свою остановку.</p>':'')+'<label>Все места в радиусе 70 км<select id="nearStop"><option value="">Выбери место</option>'+choices.map(p=>'<option value="'+safe(JSON.stringify([p.name,p.lat,p.lon]))+'">'+safe(p.name)+' · '+Math.round(p.km)+' км</option>').join('')+'</select></label><button class="action secondary" data-build="pin">Указать остановку на карте</button><button class="action" data-build="next">Добавить следующий этап</button><h3 id="fuelTotal">'+totals()+'</h3><p class="note">'+roadMessage+' · весь маршрут в одну сторону</p><div class="fuel"><label>Расход, л/100 км<input id="fuelRate" type="number" min=".1" step=".1" value="'+itinerary.consumption+'"></label><label>Цена топлива, €/л<input id="fuelPrice" type="number" min=".01" step=".01" value="'+itinerary.price+'"></label></div><h3>Сегодня в районе этапа</h3><p>'+safe(forecasts.get(legKey(l))||'Получаем прогноз…')+'</p><small>Open-Meteo</small><details><summary>Готовность · '+pack.filter(x=>itinerary.checks[x]).length+'/'+pack.length+'</summary>'+pack.map((x,i)=>'<label class="switch"><input type="checkbox" data-pack="'+i+'" '+(itinerary.checks[x]?'checked':'')+'>'+x+'</label>').join('')+'</details><button class="action secondary" data-build="remove">Убрать этап</button></details></div>';
  panel.querySelector('.trip-extra').open=!!checklistOpen;panel.querySelector('details details').open=!!packOpen;panel.scrollTop=scroll;
 }
-initVisa();initLoops();updateVisaMap();
+initVisa();initLoops();
+const openCarPlanner=$('tripBuilder').onclick;
+$('tripBuilder').onclick=()=>{
+ if(mode!=='train'){openCarPlanner();return}
+ if($('railDeck').hidden){if(scenicLayer)setScenicLayer(false);showRailTrips()}
+ else{hideRailTrips();renderPins()}
+};
+updateVisaMap();
 $('pickTip').onclick=()=>{if(destinationPicking){destinationPicking=false;map.classList.remove('choosing-destination');$('pickTip').hidden=true;if(!actualOrigin())$('portal').hidden=false;return}if(loopView.open){loopView.picking=false;$('pickTip').hidden=true;drawLoopCard();renderPins()}else if(itinerary.legs.length)enterTrip();else leaveTrip()};
 $('builder').onclick=e=>{
  const b=e.target.closest('button');if(!b)return;
