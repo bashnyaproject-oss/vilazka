@@ -1,5 +1,5 @@
 
-const railTrips = [
+const originalRailTrips = [
  ['Рускеальский экспресс','Россия · Карелия','https://visit-sortavala.ru/',
   ['6/64','Ruskeala_marble_quarry,_Karelia.jpg',960,'Aleksander Kaasik','by-sa/4.0',2],
   [['Старт','Вокзал Сортавала',61.6989,30.6779,'Здесь садимся на ретропоезд.'],
@@ -17,13 +17,36 @@ const railTrips = [
    ['По пути','Альп-Грюм',46.3744,10.0310,'Горная станция с видом на ледник Палю. Возможность выйти зависит от рейса.'],
    ['Финиш','Тирано',46.2163,10.1634,'Станция в долине Вальтеллина. После поезда можно погулять по городу.']]]
 ];
+const railTrips=originalRailTrips.map((trip,i)=>[...trip,['RU','NO','CH'][i]]).concat(additionalRailTrips);
+const railCountryNames=new Intl.DisplayNames(['ru'],{type:'region'});
+const railCountries=[...new Set(['IS',...railTrips.map(trip=>trip[5])])]
+ .sort((a,b)=>railCountryNames.of(a).localeCompare(railCountryNames.of(b),'ru'));
+let railCountry='';
 let selectedRailTrip = null;
 
+function railTripList() {
+ if(railCountry==='IS')return '<p>В Исландии нет пассажирских поездов. <a href="https://www.visiticeland.com/article/public-transport/" target="_blank" rel="noopener">Транспорт в Исландии ↗</a></p>';
+ return railTrips.map((route,i)=>{
+  if(railCountry&&route[5]!==railCountry)return '';
+  return '<button type="button" data-rail-trip="'+i+'">'+railPhoto(route,false)+
+   '<strong>'+safe(route[0])+'</strong><span>'+safe(route[1])+'</span><span>'+safe(route[4][0][1])+' → '+safe(route[4].find(p=>p[0].startsWith('Финиш'))[1])+'</span></button>';
+ }).join('');
+}
+function refreshRailTripList(deck) {
+ const list=deck.querySelector('.rail-list');
+ list.innerHTML=railTripList();
+ list.querySelectorAll('[data-rail-trip]').forEach(button=>button.onclick=()=>showRailTrips(Number(button.dataset.railTrip)));
+}
+
 function railPhoto(trip, credit) {
- const [directory,file,width,author,license,point]=trip[3];
+ if(!trip[3])return '<figure class="rail-photo-placeholder" aria-hidden="true">🚆</figure>';
+ const [directory,file,width,author,license,point,thumbnail,licenseLabel]=trip[3];
  const name=encodeURIComponent(file);
- const image='https://thumb.wikimedia.org/wikipedia/commons/thumb/'+directory+'/'+name+'/'+width+'px-'+name;
- return '<figure><img src="'+image+'" alt="'+safe(trip[4][point][1])+'">'+(credit?'<figcaption><a href="https://commons.wikimedia.org/wiki/File:'+name+'" target="_blank" rel="noopener">'+safe(author)+'</a> · <a href="https://creativecommons.org/licenses/'+license+'/" target="_blank" rel="noopener">CC '+license.toUpperCase().replace('/',' ')+'</a></figcaption>':'')+'</figure>';
+ const licenseUrl=license.startsWith('https:')?license:'https://creativecommons.org/licenses/'+license+'/';
+ const licenseText=licenseLabel||'CC '+license.toUpperCase().replace('/',' ');
+ const licenseCredit=license?'<a href="'+safe(licenseUrl)+'" target="_blank" rel="noopener">'+safe(licenseText)+'</a>':safe(licenseText);
+ const image=thumbnail||'https://thumb.wikimedia.org/wikipedia/commons/thumb/'+directory+'/'+name+'/'+width+'px-'+name;
+ return '<figure><img loading="lazy" src="'+safe(image)+'" alt="'+safe(thumbnail?file.replaceAll('_',' ').replace(/\.[^.]+$/,''):trip[4][point][1])+'">'+(credit?'<figcaption><a href="https://commons.wikimedia.org/wiki/File:'+name+'" target="_blank" rel="noopener">'+safe(author)+'</a> · '+licenseCredit+'</figcaption>':'')+'</figure>';
 }
 
 function showRailTrips(index=null) {
@@ -35,16 +58,19 @@ function showRailTrips(index=null) {
  const heading=trip?safe(trip[0]):'Живописные поезда';
  deck.innerHTML='<div class="rail-heading"><h2 id="railTitle">'+heading+'</h2><button type="button" data-rail-close aria-label="Закрыть">×</button></div>'+
  (trip?'<button class="rail-back" type="button" data-rail-back>← Все поездки</button><p>'+safe(trip[1])+'</p>'+
- '<ol>'+trip[4].map(([role,name,,,description],i)=>'<li id="rail-point-'+i+'"><span>'+safe(role)+'</span><strong>'+safe(name)+'</strong><p>'+safe(description)+'</p>'+(i===trip[3][5]?railPhoto(trip,true):'')+'</li>').join('')+'</ol>'+
+ '<ol>'+trip[4].map(([role,name,,,description],i)=>'<li id="rail-point-'+i+'"><span>'+safe(role)+'</span><strong>'+safe(name)+'</strong><p>'+safe(description)+'</p>'+(i===trip[3]?.[5]?railPhoto(trip,true):'')+'</li>').join('')+'</ol>'+
  '<button class="rail-fit" type="button" data-rail-fit>Показать все точки</button><a class="rail-source" href="'+trip[2]+'" target="_blank" rel="noopener">О маршруте ↗</a>':
- '<div class="rail-list">'+railTrips.map((route,i)=>'<button type="button" data-rail-trip="'+i+'">'+railPhoto(route,false)+
- '<strong>'+safe(route[0])+'</strong><span>'+safe(route[1])+'</span><span>'+safe(route[4][0][1])+' → '+safe(route[4].find(p=>p[0].startsWith('Финиш'))[1])+'</span></button>').join('')+'</div>');
+ '<label for="railCountry">Страна</label><select id="railCountry"><option value="">Все страны</option>'+railCountries.map(code=>'<option value="'+code+'"'+(code===railCountry?' selected':'')+'>'+safe(railCountryNames.of(code))+'</option>').join('')+'</select><div class="rail-list"></div>');
  deck.scrollTop=0;
- deck.querySelectorAll('img').forEach(img=>img.addEventListener('error',()=>{img.hidden=true},{once:true}));
+
  deck.querySelector('[data-rail-close]').onclick=()=>{hideRailTrips();renderPins();$('tripBuilder').focus()};
  deck.querySelector('[data-rail-back]')?.addEventListener('click',()=>showRailTrips());
  deck.querySelector('[data-rail-fit]')?.addEventListener('click',fitRailTrip);
- deck.querySelectorAll('[data-rail-trip]').forEach(button=>button.onclick=()=>showRailTrips(Number(button.dataset.railTrip)));
+ if(!trip){
+  const filter=deck.querySelector('#railCountry');
+  filter.onchange=()=>{railCountry=filter.value;refreshRailTripList(deck)};
+  refreshRailTripList(deck);
+ }
  renderPins();
  if(trip)fitRailTrip();
 }
