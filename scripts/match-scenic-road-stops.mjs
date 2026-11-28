@@ -14,6 +14,24 @@ if(process.argv[2]){
   places.push(['nps:'+id,name===type&&unit?name+' · '+unit:name,...geometry.coordinates,label,'US',source,'nps']);
  }
 }
+if (process.argv[3]) {
+ const sites = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+ const activities = new Set(['Viewing Scenery', 'Viewing Wildlife', 'Interpretive Areas', 'Visitor Centers', 'Trailhead', 'Picnicking', 'Beachcombing', 'Day Hiking']);
+ for (const { geometry, properties } of sites) {
+  const { recareaname: name, recareaid: id, markeractivity: activity, openstatus: status } = properties;
+  if (!name || !id || !geometry?.coordinates || !activities.has(activity) || !['open', 'none'].includes(status)) continue;
+  const source = 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_RecreationOpportunities_01/MapServer/0/query?where=recareaid%3D'+encodeURIComponent(id)+'&outFields=recareaname%2Cmarkeractivity%2Copenstatus&f=pjson';
+  places.push(['usfs:'+id, name, ...geometry.coordinates, activity, 'US', source, 'usfs']);
+ }
+}
+if (process.argv[4]) {
+ const { features } = JSON.parse(fs.readFileSync(process.argv[4], 'utf8'));
+ for (const { geometry, properties } of features) {
+  const { NAME: name, OBJECTID: id, WEBSITE_LINK: source } = properties;
+  if (!name || !id || !source || !geometry?.coordinates) continue;
+  places.push(['nms:'+id, name.replace(/, County [^,]+$/i, ''), ...geometry.coordinates, 'Исторический памятник', 'IE', source, 'nms']);
+ }
+}
 const roads = ['russia','europe','world'].flatMap(region=>JSON.parse(read(region+'-scenic-roads.json')));
 const countries = JSON.parse(read('road-countries.json'));
 const itineraries = JSON.parse(read('road-itineraries.json'));
