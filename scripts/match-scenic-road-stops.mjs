@@ -5,7 +5,7 @@ const root = new URL('../dist/assets/',import.meta.url);
 const read = name => fs.readFileSync(new URL(name,root),'utf8');
 const places = Array.from(vm.runInNewContext(read('world-places.js')+'\nworldPlaces'),place=>
  [...place.slice(0,6),'https://www.wikidata.org/wiki/'+place[0],'audiala']);
-if(process.argv[2]){
+if(process.argv[2] && process.argv[2] !== '-'){
  for(const {id,geometry,properties} of JSON.parse(fs.readFileSync(process.argv[2],'utf8')).features){
   const {POINAME:name,POITYPE:type,UNITCODE:unit}=properties;
   if(!name||!geometry?.coordinates)continue;
@@ -14,7 +14,7 @@ if(process.argv[2]){
   places.push(['nps:'+id,name===type&&unit?name+' · '+unit:name,...geometry.coordinates,label,'US',source,'nps']);
  }
 }
-if (process.argv[3]) {
+if (process.argv[3] && process.argv[3] !== '-') {
  const sites = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
  const activities = new Set(['Viewing Scenery', 'Viewing Wildlife', 'Interpretive Areas', 'Visitor Centers', 'Trailhead', 'Picnicking', 'Beachcombing', 'Day Hiking']);
  for (const { geometry, properties } of sites) {
@@ -24,12 +24,20 @@ if (process.argv[3]) {
   places.push(['usfs:'+id, name, ...geometry.coordinates, activity, 'US', source, 'usfs']);
  }
 }
-if (process.argv[4]) {
+if (process.argv[4] && process.argv[4] !== '-') {
  const { features } = JSON.parse(fs.readFileSync(process.argv[4], 'utf8'));
  for (const { geometry, properties } of features) {
   const { NAME: name, OBJECTID: id, WEBSITE_LINK: source } = properties;
   if (!name || !id || !source || !geometry?.coordinates) continue;
   places.push(['nms:'+id, name.replace(/, County [^,]+$/i, ''), ...geometry.coordinates, 'Исторический памятник', 'IE', source, 'nms']);
+ }
+}
+if (process.argv[5]) {
+ const landmarks = JSON.parse(fs.readFileSync(process.argv[5], 'utf8'));
+ for (const [id, name, lon, lat, category] of landmarks) {
+  if (!/^\d+$/.test(id) || !name || /\(historical\)/i.test(name) || !['Водопад', 'Пляж'].includes(category)) continue;
+  const source = 'https://edits.nationalmap.gov/apps/gaz-domestic/public/search/names/'+id;
+  places.push(['gnis:'+id, name, lon, lat, category, 'US', source, 'gnis']);
  }
 }
 const roads = ['russia','europe','world'].flatMap(region=>JSON.parse(read(region+'-scenic-roads.json')));
@@ -67,7 +75,7 @@ function match(line,country){
       const dx=(px-x)*sx,dy=(py-y)*sy;
       const t=Math.max(0,Math.min(1,(dx*vx+dy*vy)/(length*length)));
       const offset=Math.hypot(dx-t*vx,dy-t*vy);
-      if(offset>radius||offset>=(matches.get(id)?.offset??Infinity))continue;
+      if(offset>(p[7]==='gnis' ? .2 : radius)||offset>=(matches.get(id)?.offset??Infinity))continue;
       matches.set(id,{p,offset,at:travelled+t*length});
      }
     }
@@ -84,6 +92,7 @@ function match(line,country){
  }
  return chosen.sort((a,b)=>a.at-b.at);
 }
+const pSource = source => source.startsWith('https://edits.nationalmap.gov/');
 let updated=0,stops=0;
 const updatedCountries=new Set();
 for(const [id,,,,source,,line] of roads){
@@ -93,7 +102,7 @@ for(const [id,,,,source,,line] of roads){
  const [x,y]=line[0],[lon,lat]=line.at(-1);
  itineraries[id]={source,stopSources:[...new Set(found.map(({p})=>p[7]))],places:[
   ['Начало участка',y,x],
-  ...found.map(({p:[,name,px,py,category,,placeSource],offset})=>[name,py,px,category+' · ≈ '+Math.round(offset*1000)+' м от линии дороги по прямой',null,placeSource]),
+  ...found.map(({p:[,name,px,py,category,,placeSource],offset})=>[name,py,px,category+(pSource(placeSource)?' · ориентир, проверь доступ к месту':'')+' · ≈ '+Math.round(offset*1000)+' м от линии дороги по прямой',null,placeSource]),
   ['Конец участка',lat,lon]
  ]};
  updated++;
