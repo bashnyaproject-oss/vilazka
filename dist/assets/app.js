@@ -547,14 +547,14 @@ function loadScenicRoads(){
   if(!r.ok)throw Error(file);
   return r.json();
  }).catch(error=>{if(fallback===undefined)throw error;return fallback});
- scenicRoadsRequest=Promise.all([load('world-scenic-roads.json'),load('russia-scenic-roads.json',[]),load('road-itineraries.json',{}),load('road-countries.json',{})])
-  .then(([world,russia,itineraries,countries])=>{
+ scenicRoadsRequest=Promise.all([load('world-scenic-roads.json'),load('russia-scenic-roads.json',[]),load('europe-scenic-roads.json',[]),load('road-itineraries.json',{}),load('road-countries.json',{})])
+  .then(([world,russia,europe,itineraries,countries])=>{
    const curated=publishedDrives.flatMap((g,i)=>{
     const key=g.places.map(([,lat,lon])=>lon.toFixed(5)+','+lat.toFixed(5)).join(';');
     const geometry=roadGeometry[key],id='route-'+i;
     return geometry?[{id,name:g.name,geometry,places:itineraries[id]?.places||g.places}]:[];
    });
-   const imported=[...russia,...world].map(([id,name,,,,km,line])=>{
+   const imported=[...russia,...europe,...world].map(([id,name,,,,km,line])=>{
     const [x,y]=line[0],[ex,ey]=line.at(-1);
     return {id,name,geometry:[km,null,line],places:itineraries[id]?.places||[['Начало участка',y,x],['Конец участка',ey,ex]]};
    });
@@ -825,14 +825,20 @@ function limitChips(name,title,values,unit){
  const current=String(state[name]||'');if(current&&!values.includes(current))values.push(current);
  return '<fieldset class="limit-chips"><legend>'+title+'</legend>'+values.map(v=>'<label><input type="radio" name="'+name+'" value="'+safe(v)+'" '+(v===current?'checked':'')+'><span>'+(v?safe(v)+' '+unit:'Без лимита')+'</span></label>').join('')+'</fieldset>';
 }
+const profileNameKey='vilazka.profileName';
+function storedProfileName(){try{return localStorage.getItem(profileNameKey)||''}catch{return ''}}
 function showProfile(){
- $('dialog').innerHTML='<form class="panel" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><h2>Настройки поездок</h2>'+(localProfile()?'<small>'+safe(localProfile())+'</small>':'')+'<p>Настройки для визовой карты и роад-трипов. Сохраняются на этом устройстве.</p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><details id="secondPassport" '+(state.passport2?'open':'')+'><summary>Второй паспорт</summary><label>Страна второго паспорта<select name="passport2"><option value="">Не указан</option>'+entryOptions()+'</select></label></details><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label>'+limitChips('drive','Время за рулём в день',['2','3','4','5','6','8'],'ч')+limitChips('driveKm','Расстояние в день',['','100','200','300','500','700'],'км')+'<button class="action">Сохранить профиль</button></form>';
+ $('dialog').innerHTML='<form class="panel profile-settings" id="profileForm"><button type="button" class="close" data-dialog-close aria-label="Закрыть">×</button><div class="profile-banner"><h2>Профиль</h2><label>Имя<input name="displayName" autocomplete="name" maxlength="80" value="'+safe(storedProfileName())+'" placeholder="Как тебя зовут?"></label><label>Почта<input name="profileEmail" type="email" autocomplete="email" maxlength="254" value="'+safe(localProfile())+'" placeholder="you@example.com"></label><small>Этот профиль хранится на устройстве.</small></div><h3>Настройки поездок</h3><p id="profileSaveStatus" role="status"></p><label>СТРАНА ПАСПОРТА<select name="passport"><option value="">Не указан</option>'+entryOptions()+'</select></label><details id="secondPassport" '+(state.passport2?'open':'')+'><summary>Второй паспорт</summary><label>Страна второго паспорта<select name="passport2"><option value="">Не указан</option>'+entryOptions()+'</select></label></details><label>ЧТО ХОЧЕТСЯ УВИДЕТЬ<select name="taste"><option>Природа</option><option>Роад-трип</option><option>Город</option></select></label>'+limitChips('drive','Время за рулём в день',['2','3','4','5','6','8'],'ч')+limitChips('driveKm','Расстояние в день',['','100','200','300','500','700'],'км')+'<button class="action">Сохранить профиль</button></form>';
  const form=$('profileForm');
  for(const key of ['passport','passport2','taste','drive','driveKm'])form.elements[key].value=state[key]||'';
  if(!visaIndexes.has(state.passport))form.elements.passport.value='';
  form.onchange=()=>form.elements.passport2.setCustomValidity('');
  form.onsubmit=e=>{e.preventDefault();
  if(form.elements.passport2.value&&(!form.elements.passport.value||form.elements.passport.value===form.elements.passport2.value)){form.elements.passport2.setCustomValidity('Укажи два разных паспорта');form.elements.passport2.reportValidity();return}
+ try{
+  localStorage.setItem(profileNameKey,form.elements.displayName.value.trim());
+  localStorage.setItem(localProfileKey,form.elements.profileEmail.value.trim().toLowerCase());
+ }catch{$('profileSaveStatus').textContent='Не удалось сохранить профиль на этом устройстве.';return}
  for(const key of ['passport','passport2','taste','drive','driveKm'])state[key]=form.elements[key].value;
  if(visaRequested&&state.passport){state.visaLayer=true;$('visaLegend').open=true}visaRequested=false;persist();$('dialog').close();$('visaResult').innerHTML=$('visaCountry').value?entryInfo($('visaCountry').value):'';updateVisaMap();canvas?.draw();if(loopView.open)drawLoopCard();else render()};
  if(!$('dialog').open)$('dialog').showModal();
@@ -993,24 +999,29 @@ function requestLocation(focus){
  if(!geo||!window.isSecureContext){gpsStatus='unsupported';updateLocation();return}
  const policy=document.permissionsPolicy||document.featurePolicy;
  if(policy?.allowsFeature&&!policy.allowsFeature('geolocation')){gpsStatus='embedded';updateLocation();return}
- if(gps&&focus){flyTo(gps,Math.max(9,atlas?.getZoom()||0));renderPins()}
  const request=++geoRequest;
  gpsStatus='pending';updateLocation();
  const found=({coords})=>{
   if(request!==geoRequest)return;
+  if(!Number.isFinite(coords.latitude)||!Number.isFinite(coords.longitude))return rejected({code:2});
   gps=[coords.latitude,coords.longitude];gpsStatus='ready';
   if(state.origin==='auto')$('portal').hidden=true;
   render();
   if(focus)flyTo(gps,Math.max(9,atlas?.getZoom()||0));
   else if(!mapInteracted&&state.origin==='auto'&&!loopView.open&&!building&&!destinationPicking&&!picking)completeStart(gps,3.8);
  };
+ function rejected(error){
+  if(request!==geoRequest)return;
+  gpsStatus=error.code===1?'denied':error.code===3?'timeout':'failed';
+  updateLocation();$('startHint').textContent=$('locationText').textContent;
+ }
  function attempt(precise){
-  geo.getCurrentPosition(found,error=>{
+  try{geo.getCurrentPosition(found,error=>{
    if(request!==geoRequest)return;
    if(error.code!==1&&focus&&!precise){attempt(true);return}
-   gpsStatus=gps?'ready':error.code===1?'denied':error.code===3?'timeout':'failed';
-   updateLocation();$('startHint').textContent=$('locationText').textContent;
-  },{enableHighAccuracy:precise,timeout:precise?15000:7000,maximumAge:precise?0:120000});
+   rejected(error);
+  },{enableHighAccuracy:precise,timeout:precise?15000:8000,maximumAge:focus?0:60000})}
+  catch{rejected({code:2})}
  }
  attempt(false);
 }

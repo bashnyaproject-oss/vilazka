@@ -163,13 +163,13 @@ async function loadWorldRoads(){
   async function photosFrom(file){
    try{const reply=await fetch('assets/'+file);return reply.ok?await reply.json():{}}catch{return {}}
   }
-  const [pictures,nearbyPictures,covers,itineraries,countries,russianRoads]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json'),photosFrom('road-countries.json'),photosFrom('russia-scenic-roads.json')]);
+  const [pictures,nearbyPictures,covers,itineraries,countries,russianRoads,europeRoads]=await Promise.all([photosFrom('byway-photos.json'),photosFrom('nearby-road-photos.json'),photosFrom('road-photos/covers.json'),photosFrom('road-itineraries.json'),photosFrom('road-countries.json'),photosFrom('russia-scenic-roads.json'),photosFrom('europe-scenic-roads.json')]);
   roadCountries=countries;
   for(const guide of guides){
    if(itineraries[guide.id])guide.itinerary=itineraries[guide.id];
   }
   galleryCovers=covers;
-  for(const [id,name,region,source,url,km,points] of rows.concat(Array.isArray(russianRoads)?russianRoads:[])){
+  for(const [id,name,region,source,url,km,points] of rows.concat(Array.isArray(russianRoads)?russianRoads:[],Array.isArray(europeRoads)?europeRoads:[])){
    const [x,y]=points[0],[ex,ey]=points.at(-1);
    const picture=pictures[name.toLowerCase()]||nearbyPictures[name.toLowerCase()];
    const pictureCaption=picture?.[2]?['Фото рядом с дорогой · '+picture[4]+' м от линии',picture[3],picture[2]].filter(Boolean).join(' · '):'';

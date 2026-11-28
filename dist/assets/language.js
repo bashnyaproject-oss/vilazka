@@ -137,6 +137,8 @@
 Главные направления|Top destinations
 Направления|Destinations
 Роад-трип|Road trips
+Собрать поездку|Plan a trip
+Готовые путешествия|Ready-made trips
 Мои поездки|My trips
 Поездки|Trips
 Профиль|Profile

@@ -48,7 +48,7 @@
  function nearest(list,center){return list.map(p=>[p,kmBetween([center.lat,center.lng],[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1])}
  const countryPanel=$('countryRoads');
  const countryButton=document.createElement('button');
- countryButton.type='button';countryButton.className='country-picker';countryButton.textContent='◎';
+ countryButton.type='button';countryButton.className='country-picker';countryButton.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>';
  countryButton.title='Поиск страны';countryButton.setAttribute('aria-label','Поиск страны');countryButton.setAttribute('aria-pressed','false');
  field.closest('label').after(countryButton);
  let countryOnly=false,detectedCountry='',selectedCountry='',dismissedCountry='',countryOpen=false,pinnedCountry=false;

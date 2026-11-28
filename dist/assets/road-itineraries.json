@@ -1253,5 +1253,70 @@
         35.16666667
       ]
     ]
+  },
+  "drive-ro-transfagarasan": {
+    "source": "https://www.transfagarasan.travel/ghid/locatie/transfagarasan/",
+    "places": [
+      [
+        "Curtea de Argeș",
+        45.13916667,
+        24.67916667
+      ],
+      [
+        "Vidraru Dam",
+        45.36625,
+        24.6298
+      ],
+      [
+        "Bâlea Lake",
+        45.602,
+        24.617
+      ],
+      [
+        "Cârțișoara",
+        45.72388889,
+        24.57916667
+      ]
+    ]
+  },
+  "drive-md-orhei": {
+    "source": "https://orheiulvechi.com/en/tourism/",
+    "places": [
+      [
+        "Chișinău",
+        47.02277778,
+        28.83527778
+      ],
+      [
+        "Бутучены",
+        47.3018,
+        28.96731
+      ],
+      [
+        "Требужены",
+        47.3136,
+        28.97504
+      ]
+    ]
+  },
+  "drive-ro-transalpina": {
+    "source": "https://cabana-rares.ro/transalpina/",
+    "places": [
+      [
+        "Novaci, Romania",
+        45.18,
+        23.67
+      ],
+      [
+        "Rânca",
+        45.291337,
+        23.688927
+      ],
+      [
+        "Sebeș",
+        45.96,
+        23.57
+      ]
+    ]
   }
 }

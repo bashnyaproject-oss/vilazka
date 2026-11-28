@@ -1249,5 +1249,81 @@
       "Ted.ns",
       null
     ]
+  },
+  "drive-ro-transfagarasan": {
+    "Curtea de Argeș": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Man_Curtea_de_Arges.SV.jpg/960px-Man_Curtea_de_Arges.SV.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Man_Curtea_de_Arges.SV.jpg",
+      "CC BY 3.0",
+      "Alexandru Baboş Albabos",
+      null
+    ],
+    "Vidraru Dam": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Vidraru_Dam.jpg/960px-Vidraru_Dam.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Vidraru_Dam.jpg",
+      "CC BY-SA 2.5",
+      "Andrei Stroe",
+      null
+    ],
+    "Bâlea Lake": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/ROM_Cartisoara_Balea_Lac_17.jpg/960px-ROM_Cartisoara_Balea_Lac_17.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:ROM_Cartisoara_Balea_Lac_17.jpg",
+      "CC BY-SA 4.0",
+      "-wuppertaler",
+      null
+    ],
+    "Cârțișoara": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/CartisoaraSB_%2811%29.JPG/960px-CartisoaraSB_%2811%29.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:CartisoaraSB_(11).JPG",
+      "CC BY-SA 3.0",
+      "Țetcu Mircea Rareș",
+      null
+    ]
+  },
+  "drive-md-orhei": {
+    "Chișinău": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Consiliul_Municipal_Chi%C8%99in%C4%83u_%28cropped%29.jpg/960px-Consiliul_Municipal_Chi%C8%99in%C4%83u_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Consiliul_Municipal_Chi%C8%99in%C4%83u_(cropped).jpg",
+      "CC BY-SA 4.0",
+      "Rodion Gavriloi",
+      null
+    ],
+    "Бутучены": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Butuceni%2C_Orheiul_Vechi.jpg/960px-Butuceni%2C_Orheiul_Vechi.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Butuceni,_Orheiul_Vechi.jpg",
+      "CC0",
+      "Iurieph",
+      null
+    ],
+    "Требужены": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Casa_de_Cultur%C4%83_din_satul_Trebujeni.jpg/960px-Casa_de_Cultur%C4%83_din_satul_Trebujeni.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Casa_de_Cultur%C4%83_din_satul_Trebujeni.jpg",
+      "CC BY-SA 4.0",
+      "Vladikh",
+      null
+    ]
+  },
+  "drive-ro-transalpina": {
+    "Novaci, Romania": [
+      "https://upload.wikimedia.org/wikipedia/commons/9/98/Orasul-novaci-gorj-2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "https://commons.wikimedia.org/wiki/File:Orasul-novaci-gorj-2.jpg",
+      "CC BY-SA 4.0",
+      "Catalin Pilea",
+      null
+    ],
+    "Rânca": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/RO_GJ_DN67C_Transalpina_7.jpg/960px-RO_GJ_DN67C_Transalpina_7.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:RO_GJ_DN67C_Transalpina_7.jpg",
+      "CC BY-SA 2.5",
+      "Utilizator:Țetcu Mircea Rareș at ro.wikipedia",
+      null
+    ],
+    "Sebeș": [
+      "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Ansamblul_bisericii_evanghelice_din_Sebe%C8%99_4.jpg/960px-Ansamblul_bisericii_evanghelice_din_Sebe%C8%99_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "https://commons.wikimedia.org/wiki/File:Ansamblul_bisericii_evanghelice_din_Sebe%C8%99_4.jpg",
+      "CC BY-SA 4.0",
+      "Levente Nuber",
+      null
+    ]
   }
 }
