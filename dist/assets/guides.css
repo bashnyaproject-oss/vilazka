@@ -149,3 +149,10 @@ header>a:last-child{color:#d4c1ff}
  #routeStops .phase ol { padding-left: 21px; }
  #routeStops .guide-stop img { max-width: none; }
 }
+
+.road-ranking{display:flex;align-items:center;gap:10px;margin:12px 0;color:#d4cde0;font-size:14px}
+.road-ranking select{max-width:100%;min-height:40px;padding:7px 10px;background:#201a27;color:#f6f0ff;border:1px solid #62516f;border-radius:10px}
+.golden-road-summary{margin:16px 0;padding:14px 16px;border:1px solid #b490575e;border-radius:14px;background:#292118}
+.golden-road-summary h2,.golden-road-summary a{color:#f0ce93}
+.golden-road-summary h2{font-size:1.1rem;margin:0 0 8px}
+.golden-road-summary p{margin:5px 0}

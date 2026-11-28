@@ -139,6 +139,7 @@ function wireRoadLinks(g,geometry){
 }
 const info=g=>savedRoad(g)?savedRoad(g)[0]+' км'+(savedRoad(g)[1]==null?'':' · ≈ '+Math.floor(savedRoad(g)[1]/60)+' ч '+savedRoad(g)[1]%60+' мин'):g.distanceKm&&g.drivingMinutes?g.distanceKm+' км · '+Math.floor(g.drivingMinutes/60)+' ч '+g.drivingMinutes%60+' мин':g.days||g.groups?(g.days||g.groups).length+' дн.':g.places.length+' остановок';
 byId('access').innerHTML=roadOptions();
+byId('roadRanking')?.addEventListener('change',()=>{roadOrigin=null; if(byId('roadsNearby'))byId('roadsNearby').textContent='Рядом со мной';if(byId('roadsNearbyStatus'))byId('roadsNearbyStatus').textContent='';list()});
 function roadPreview(g){
  const points=savedRoad(g)?.[2];
  if(!points)return '';
@@ -207,17 +208,20 @@ function distanceToRoad(g){
 function list(){
  const q=byId('query').value.trim().toLowerCase(),access=byId('access').value;
  const country=countryFilter?.value||'';
- const scenic=scenicPage,filter=q+'|'+country+'|'+access+'|'+roadOrigin+'|'+photosOnly;
+ const scenic=scenicPage,ranking=byId('roadRanking')?.value||'balanced',filter=ranking+'|'+q+'|'+country+'|'+access+'|'+roadOrigin+'|'+photosOnly;
  if(filter!==lastFilter){visibleCount=48;lastFilter=filter;}
  const matching=guides.filter(g=>(!scenic||savedRoad(g))&&(!country||roadCountries[g.id]===country)&&(!access||(g.access||'unknown')===access)&&(g.name+' '+g.overview+' '+g.source).toLowerCase().includes(q));
  const covered=scenic?matching.filter(guidePhoto):matching;
  const found=scenic&&photosOnly?covered:matching;
- if(scenic)found.sort(roadOrigin?(a,b)=>distanceToRoad(a)-distanceToRoad(b):(a,b)=>Number(Boolean(b.featured))-Number(Boolean(a.featured)));
+ if(scenic){
+  const rank=g=>goldenRoadAudit[g.id]?.eligible?goldenRoadAudit[g.id].scores[ranking]:-1;
+  found.sort(roadOrigin?(a,b)=>distanceToRoad(a)-distanceToRoad(b):(a,b)=>rank(b)-rank(a)||Number(Boolean(b.featured))-Number(Boolean(a.featured)));
+ }
  if(scenic){
   byId('worldRoadStatus').textContent=covered.length+' с фото · '+matching.length+' всего';
   byId('moreWorldRoads').hidden=visibleCount>=found.length;
  }
- byId('grid').innerHTML=found.slice(0,scenic?visibleCount:undefined).map(g=>'<a class="tile" href="#'+g.id+'">'+(scenic?'<div class="road-tile-art">'+photo(g,'cover')+roadPreview(g)+'</div>':photo(g,'cover'))+'<small>'+esc(accessLabel(g))+' · '+info(g)+(roadOrigin&&scenic?' · '+Math.round(distanceToRoad(g))+' км до старта':'')+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
+ byId('grid').innerHTML=found.slice(0,scenic?visibleCount:undefined).map(g=>'<a class="tile" href="#'+g.id+'">'+(scenic?'<div class="road-tile-art">'+photo(g,'cover')+roadPreview(g)+'</div>':photo(g,'cover'))+'<small>'+(scenic&&goldenRoadAudit[g.id]?.eligible?'Золотой · '+goldenRoadAudit[g.id].scores[ranking]+'/100 · ':'')+esc(accessLabel(g))+' · '+info(g)+(roadOrigin&&scenic?' · '+Math.round(distanceToRoad(g))+' км до старта':'')+'</small><h2>'+esc(g.name)+'</h2></a>').join('')||'<p>Маршрутов по этому запросу пока нет.</p>';
 }
 const galleryRequests=new Map();
 function photoData(file){
@@ -251,12 +255,18 @@ function routeMapPanel(){
   '<a class="cta" href="/?openRoad=1" id="guideRentMap" hidden>'+carIcon+'<span>Прокат авто у старта</span></a></div>'+
   '<p id="guideTripStatus" role="status"></p><a href="/?trips=1" id="guideTripsLink" hidden>Мои поездки ↗</a></div></section>';
 }
+function goldenRoadSummary(g){
+ if(!scenicPage)return '';
+ const audit=goldenRoadAudit[g.id];
+ if(!audit?.eligible)return '';
+ return '<section class="golden-road-summary"><h2>Золотой маршрут</h2><p>Сбалансированная оценка '+audit.scores.balanced+'/100 · за виды '+audit.scores.scenic+'/100 · за повороты '+audit.scores.twisty+'/100</p><p>'+audit.turnDensity+'° поворота на км · '+audit.viewCount+' фото вдоль дороги · '+audit.withPhoto+' остановок с фото</p><p>'+(audit.surfaceSource?'<a href="'+esc(audit.surfaceSource)+'" target="_blank" rel="noopener">Асфальт по описанию маршрута ↗</a>':'Покрытие всего маршрута не подтверждено')+'</p></section>';
+}
 function show(){
  mapRequest?.abort();guideMap?.remove();mapRequest=null;guideMap=null;
  const g=guides.find(g=>'#'+g.id===location.hash);
  byId('library').hidden=!!g;byId('article').hidden=!g;if(!g){list();return}
 
- byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?routeMapPanel():'')+'<div id="routeStops">'+renderPhases(g)+'</div>';window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showStopPhotos(g);
+ byId('article').innerHTML='<a class="back" href="#">← Все маршруты</a><h1>'+esc(g.name)+'</h1>'+photo(g,'hero')+goldenRoadSummary(g)+'<p class="meta">'+esc(accessLabel(g))+' · '+info(g)+'</p><p>'+esc(g.overview)+'</p>'+(g.checkedAt?'<p>Кольцо рассчитано по дорожной сети · '+esc(g.checkedAt)+'</p>':'')+'<p>'+esc(g.how||g.why||'')+'</p>'+(g.surface?'<p>'+esc(g.surface)+'</p>':'')+(g.photoCredit?'<small>'+esc(g.photoCredit)+'</small>':'')+'<a class="cta" target="_blank" rel="noopener" href="'+esc(g.url)+'">Подробности о маршруте ↗</a>'+(g.places?.length>=2?routeMapPanel():'')+'<div id="routeStops">'+renderPhases(g)+'</div>';window.scrollTo(0,0);if(savedRoad(g))wireRoadLinks(g,savedRoad(g));showRoadMap(g);showStopPhotos(g);
 }
 document.addEventListener('error',e=>{if(e.target.tagName==='IMG'){const frame=e.target.closest('figure');if(frame)frame.hidden=true;else e.target.hidden=true}},true);
 byId('query').oninput=list;byId('access').onchange=list;window.onhashchange=show;show();

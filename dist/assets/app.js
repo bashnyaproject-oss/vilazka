@@ -575,14 +575,14 @@ function loadGoldenViews(){
 }
 function isGoldenRoad(road){
  const photos=verifiedRoadPhotos?.[road.id];
- return !!(goldenViews[road.id]?.length&&photos&&road.places.every(([name])=>Object.hasOwn(photos,name)&&photos[name]?.[0]));
+ return !!(goldenRoadAudit[road.id]?.eligible&&goldenViews[road.id]?.some(view=>Number.isFinite(view[4])&&view[4]<=500)&&photos&&road.places.every(([name])=>Object.hasOwn(photos,name)&&photos[name]?.[0]));
 }
 function openScenicRoad(road,fromCatalog=false){
  const [km,minutes,line]=road.geometry;
  const [[name,lat,lon],...stops]=road.places;
  const area={name,lat,lon,bases:[],crossBorder:false,...verifiedStopPhoto(road.id,name)};
  loopView.open=true;loopView.picking=false;loopView.details=false;loopView.area=area;loopView.index=0;
- loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(road.id,name)})),done:true,scenic:isGoldenRoad(road),views:goldenViews[road.id]||[],scenicMap:fromCatalog}];
+ loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(road.id,name)})),done:true,scenic:isGoldenRoad(road),audit:goldenRoadAudit[road.id],views:(goldenViews[road.id]||[]).filter(view=>Number.isFinite(view[4])&&view[4]<=500),scenicMap:fromCatalog}];
  pickTransport(document.querySelector('#modes [data-mode="car"]'));
  $('tripBuilder').setAttribute('aria-pressed','true');$('nearby').hidden=true;
  drawLoopCard();renderPins();paintRoute();
@@ -591,7 +591,7 @@ function openScenicRoad(road,fromCatalog=false){
   if(!photos||!loopView.open||loopView.cards[loopView.index]!==card)return;
   Object.assign(card.start,verifiedStopPhoto(road.id,card.start.name));
   for(const stop of card.stops)Object.assign(stop,verifiedStopPhoto(road.id,stop.name));
-  card.scenic=isGoldenRoad(road);card.views=card.scenic?goldenViews[road.id]:[];
+  card.scenic=isGoldenRoad(road);card.views=card.scenic?goldenViews[road.id].filter(view=>Number.isFinite(view[4])&&view[4]<=500):[];
   drawLoopCard();renderPins();paintRoute();
  }).catch(()=>{});
  if(road.rental){
