@@ -1,8 +1,27 @@
 import fs from 'node:fs';
+import vm from 'node:vm';
 
 const assets = new URL('../dist/assets/', import.meta.url);
 const read = file => JSON.parse(fs.readFileSync(new URL(file, assets), 'utf8'));
-const roads = ['russia-scenic-roads.json','europe-scenic-roads.json','world-scenic-roads.json'].flatMap(read);
+const roadFiles = ['russia-scenic-roads.json','europe-scenic-roads.json','world-scenic-roads.json'];
+const roads = roadFiles.flatMap(read);
+const context = vm.createContext({});
+const scripts = ['nearby-drives','published-routes','scenic-routes','tourism-routes','kazakhstan-routes','weekend-rings','batch-rings','road-geometry'];
+for(const script of scripts){
+ const file = new URL(script+'.js',assets);
+ vm.runInContext(fs.readFileSync(file,'utf8'),context,{filename:file.pathname,timeout:3000});
+}
+const {publishedDrives,roadGeometry} = vm.runInContext('({publishedDrives,roadGeometry})',context);
+const baseStops = new Map();
+for(const [index,drive] of publishedDrives.entries()){
+ const key = drive.places.map(([,lat,lon])=>lon.toFixed(5)+','+lat.toFixed(5)).join(';');
+ const geometry = roadGeometry[key];
+ if(!geometry) continue;
+ const id='route-'+index;
+ baseStops.set(id,drive.places);
+ roads.push([id,drive.name,null,drive.source,drive.url,geometry[0],geometry[2]]);
+}
+const countries = read('road-countries.json');
 const itineraries = read('road-itineraries.json');
 const views = read('road-photos/road-views.json');
 const photos = read('road-photos/stops.json');
@@ -39,14 +58,34 @@ function curvature(points) {
 }
 const score = (values,weights) => Math.round(values.reduce((sum,value,i)=>sum+value*weights[i],0));
 const audit = {};
+const report = new Map();
+const csv = value => '"'+String(value??'').replaceAll('"','""')+'"';
+const columns = ['id','name','country','source','km','geometry_points','length_difference_pct','turn_degrees_per_km','stops','stops_with_photos','roadside_photos','surface','golden','missing'];
+let repeatedIds = 0;
 for (const [id,name,,,url,km,line] of roads) {
- if (!views[id]?.length) continue;
- const {length,turnDensity}=curvature(line);
- const places=itineraries[id]?.places||[];
- const viewCount=new Set(views[id].filter(([,source,,,distance])=>source&&Number.isFinite(distance)&&distance<=500).map(([,source])=>source)).size;
+ if(report.has(id)){repeatedIds++;continue}
+ const validLine=Number.isFinite(km)&&km>0&&Array.isArray(line)&&line.length>=2&&line.every(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])&&Math.abs(p[0])<=180&&Math.abs(p[1])<=90);
+ const {length,turnDensity}=validLine?curvature(line):{length:0,turnDensity:NaN};
+ const places=itineraries[id]?.places||baseStops.get(id)||[];
+ const viewCount=new Set((views[id]||[]).filter(([,source,,,distance])=>source&&Number.isFinite(distance)&&distance<=500).map(([,source])=>source)).size;
  const withPhoto=places.filter(([name])=>photos[id]?.[name]?.[0]).length;
  const surface=surfaces[id]||['unknown',null];
- const eligible=places.length>=2&&withPhoto===places.length&&viewCount>0&&length/km>.9&&length/km<1.1&&line.length/km>=3;
+ const validLength=length/km>.9&&length/km<1.1;
+ const detailed=validLine&&validLength&&line.length/km>=3;
+ const stopPhotos=places.length>=2&&withPhoto===places.length;
+ const eligible=stopPhotos&&viewCount>0&&detailed;
+ const missing=[];
+ if(!validLine)missing.push('valid_geometry');
+ else if(!validLength)missing.push('length_match');
+ else if(!detailed)missing.push('detailed_geometry');
+ if(places.length<2)missing.push('itinerary');
+ else if(!stopPhotos)missing.push('stop_photos');
+ if(!viewCount)missing.push('roadside_photos');
+ if(surface[0]==='unknown')missing.push('surface');
+ const source=itineraries[id]?.source||url;
+ report.set(id,{missing,detailed,eligible,cells:[id,name,countries[id],source,km,line?.length,
+  validLine?Math.round((length/km-1)*1000)/10:null,detailed?Math.round(turnDensity):null,places.length,withPhoto,viewCount,surface[0],Number(eligible),missing.join('|')]});
+ if(!eligible) continue;
  // Landscape evidence is a photo proxy until elevation and land cover are available.
  const scenery=Math.min(1,.65+.175*Math.max(0,viewCount-1));
  const bends=Math.min(1,turnDensity/100);
@@ -57,4 +96,11 @@ for (const [id,name,,,url,km,line] of roads) {
   scores:{balanced:score(inputs,[50,35,10,5]),scenic:score(inputs,[70,15,10,5]),twisty:score(inputs,[20,65,10,5])}};
 }
 fs.writeFileSync(new URL('golden-road-audit.js',assets),'const goldenRoadAudit = '+JSON.stringify(audit,null,2)+';\n');
-console.table(Object.values(audit).map(r=>({name:r.name,gold:r.eligible,km:r.km,turns:r.turnDensity,surface:r.surface,balanced:r.scores.balanced,scenic:r.scores.scenic,twisty:r.scores.twisty})));
+const records=[...report.values()];
+fs.writeFileSync(new URL('../research/scenic-road-quality-audit.csv',import.meta.url),[columns,...records.map(r=>r.cells)].map(row=>row.map(csv).join(',')).join('\n')+'\n');
+const missingCounts={};
+for(const record of records)for(const field of record.missing)missingCounts[field]=(missingCounts[field]||0)+1;
+console.log(JSON.stringify({catalog:roads.length,uniqueRoutes:report.size,repeatedIds,
+ countries:new Set(records.map(r=>r.cells[2]).filter(Boolean)).size,
+ detailedGeometry:records.filter(r=>r.detailed).length,
+ golden:Object.keys(audit).length,missing:missingCounts},null,2));
