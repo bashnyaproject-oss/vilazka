@@ -66,19 +66,21 @@ for (const [id,name,,,url,km,line] of roads) {
  if(report.has(id)){repeatedIds++;continue}
  const validLine=Number.isFinite(km)&&km>0&&Array.isArray(line)&&line.length>=2&&line.every(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])&&Math.abs(p[0])<=180&&Math.abs(p[1])<=90);
  const {length,turnDensity}=validLine?curvature(line):{length:0,turnDensity:NaN};
- const places=itineraries[id]?.places||baseStops.get(id)||[];
+ const waypoints=itineraries[id]?.places||baseStops.get(id)||[];
+ const places=waypoints.filter(([name])=>name!=='Начало участка'&&name!=='Конец участка');
+ const hasItinerary=waypoints.length>=2&&places.length>0;
  const viewCount=new Set((views[id]||[]).filter(([,source,,,distance])=>source&&Number.isFinite(distance)&&distance<=500).map(([,source])=>source)).size;
  const withPhoto=places.filter(([name])=>photos[id]?.[name]?.[0]).length;
  const surface=surfaces[id]||['unknown',null];
  const validLength=length/km>.9&&length/km<1.1;
  const detailed=validLine&&validLength&&line.length/km>=3;
- const stopPhotos=places.length>=2&&withPhoto===places.length;
+ const stopPhotos=hasItinerary&&withPhoto===places.length;
  const eligible=stopPhotos&&viewCount>0&&detailed;
  const missing=[];
  if(!validLine)missing.push('valid_geometry');
  else if(!validLength)missing.push('length_match');
  else if(!detailed)missing.push('detailed_geometry');
- if(places.length<2)missing.push('itinerary');
+ if(!hasItinerary)missing.push('itinerary');
  else if(!stopPhotos)missing.push('stop_photos');
  if(!viewCount)missing.push('roadside_photos');
  if(surface[0]==='unknown')missing.push('surface');
