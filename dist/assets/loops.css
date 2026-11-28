@@ -85,3 +85,5 @@
 #rentalLayer::before{content:'○';margin-right:6px}
 #seasonDock #rentalLayer[aria-checked="true"]{background:#ddd0ff;color:#211632;border-color:#ddd0ff}
 #rentalLayer[aria-checked="true"]::before{content:'●'}
+
+#loopDeck .road-view-heading { margin: 10px 0 3px; color: #efd18a; font-size: 13px; }

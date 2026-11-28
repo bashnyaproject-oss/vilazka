@@ -335,12 +335,16 @@ function findRoutePhoto(p){
 function loopPhoto(p,i){
  const [url,credit,by]=findRoutePhoto(p);
  const image=url?'<img loading="lazy" decoding="async" src="'+safe(url)+'" alt="'+safe(p.name)+'">':'';
- return '<figure class="route-photo'+(url?'':' no-photo')+'">'+image+'<figcaption><b>'+(i+1)+'</b>'+safe(p.name)+'</figcaption>'+
+ return '<figure class="route-photo'+(url?'':' no-photo')+'">'+image+'<figcaption><b>'+(i===-1?'Старт':i===null?'':i+1)+'</b>'+safe(p.name)+'</figcaption>'+
  (credit?'<a aria-label="Источник фотографии" href="'+safe(credit)+'" target="_blank" rel="noopener">'+safe(by||'©')+'</a>':'')+'</figure>';
 }
 function routePhotoStrip(card){
- const photos=card.stops.map((p,i)=>({p,i})).filter(({p})=>findRoutePhoto(p)[0]);
- return photos.length?'<div class="loop-images route-photo-strip" aria-label="Фото остановок">'+photos.map(({p,i})=>loopPhoto(p,i)).join('')+'</div>':'';
+ const photos=card.stops.map((p,i)=>({p,i}));
+ if(card.scenic&&card.start)photos.unshift({p:card.start,i:-1});
+ const stops=photos.filter(({p})=>findRoutePhoto(p)[0]);
+ const views=card.scenic?(card.views||[]):[];
+ return (stops.length?'<div class="loop-images route-photo-strip" aria-label="Фото остановок">'+stops.map(({p,i})=>loopPhoto(p,i)).join('')+'</div>':'')+
+  (views.length?'<h3 class="road-view-heading">Виды по пути</h3><div class="loop-images route-photo-strip" aria-label="Виды по пути">'+views.map(([photo,credit,license,author])=>loopPhoto({name:'Вид вдоль дороги',photo,credit,photoBy:[author,license].filter(Boolean).join(' · ')},null)).join('')+'</div>':'');
 }
 document.addEventListener('error',e=>{
  if(e.target.matches?.('.route-stop img,.route-photo img')&&retryCommonsPhoto(e.target))return;
@@ -390,8 +394,15 @@ function loopFrame(){
  if(!c){flyTo(xy(area),7);return}
  const b=new (window.maplibregl?.LngLatBounds||OfflineBounds)();[area,c.start||area,...c.stops].forEach(p=>b.extend([p.lon,p.lat]));
  for(const point of c.line||[])b.extend(point);
- const mobile=innerWidth<680,w=map.clientWidth,h=map.clientHeight;
- atlas.fitBounds(b,{padding:{left:28,right:mobile?28:Math.min(500,w*.43),top:Math.min(150,h*.24),bottom:mobile?Math.min(265,h*.38):55},maxZoom:11,duration:reduced.matches?0:350});
+ const w=map.clientWidth,h=map.clientHeight;
+ if(!w||!h)return;
+ const mobile=innerWidth<=760,viewport=map.getBoundingClientRect(),panel=$('loopDeck').getBoundingClientRect();
+ const left=Math.min(28,w*.08),top=Math.min(150,h*.24);
+ const right=mobile?left:Math.min(w-left-32,Math.max(left,viewport.right-panel.left+12));
+ const bottom=mobile?Math.min(h-top-32,Math.max(28,viewport.bottom-panel.top+12)):Math.min(55,h*.15);
+ atlas.resize?.();
+ atlas.fitBounds(b,{padding:{left,right,top,bottom},maxZoom:11,duration:reduced.matches?0:350});
+
 }
 function allowsStop(area,lat,lon){return area.crossBorder||Boolean(area.country&&countryAt(lat,lon)===area.country)}
 function setLoopArea(lat,lon,name,crossBorder=false,generated=false){

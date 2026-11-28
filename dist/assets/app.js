@@ -563,21 +563,35 @@ function loadScenicRoads(){
   }).catch(error=>{scenicRoadsRequest=null;throw error});
  return scenicRoadsRequest;
 }
+let goldenViews={},goldenViewsRequest;
+function loadGoldenViews(){
+ goldenViewsRequest??=fetch('assets/road-photos/road-views.json').then(response=>{
+  if(!response.ok)throw Error('road views');
+  return response.json();
+ }).then(views=>(goldenViews=views)).catch(error=>{goldenViewsRequest=null;throw error});
+ return goldenViewsRequest;
+}
+function isGoldenRoad(road){
+ const photos=verifiedRoadPhotos?.[road.id];
+ return !!(goldenViews[road.id]?.length&&photos&&road.places.every(([name])=>Object.hasOwn(photos,name)&&photos[name]?.[0]));
+}
 function openScenicRoad(road,fromCatalog=false){
  const [km,minutes,line]=road.geometry;
  const [[name,lat,lon],...stops]=road.places;
- const area={name,lat,lon,bases:[],crossBorder:false};
+ const area={name,lat,lon,bases:[],crossBorder:false,...verifiedStopPhoto(road.id,name)};
  loopView.open=true;loopView.picking=false;loopView.details=false;loopView.area=area;loopView.index=0;
- loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(road.id,name)})),done:true,scenic:true,scenicMap:fromCatalog}];
+ loopView.cards=[{title:road.name,start:area,source:'/roads.html#'+encodeURIComponent(road.id),publisher:'Карточка дороги',line,distanceKm:km,durationHours:minutes==null?null:minutes/60,length:km+' км'+(minutes==null?'':' · ≈ '+hours(minutes*60)),stops:stops.map(([name,lat,lon])=>({name,lat,lon,...verifiedStopPhoto(road.id,name)})),done:true,scenic:isGoldenRoad(road),views:goldenViews[road.id]||[],scenicMap:fromCatalog}];
  pickTransport(document.querySelector('#modes [data-mode="car"]'));
  $('tripBuilder').setAttribute('aria-pressed','true');$('nearby').hidden=true;
  drawLoopCard();renderPins();paintRoute();
  const card=loopView.cards[0];
- if(!verifiedRoadPhotos)loadVerifiedRoadPhotos().then(photos=>{
+ if(!card.scenic)Promise.all([loadVerifiedRoadPhotos(),loadGoldenViews()]).then(([photos])=>{
   if(!photos||!loopView.open||loopView.cards[loopView.index]!==card)return;
+  Object.assign(card.start,verifiedStopPhoto(road.id,card.start.name));
   for(const stop of card.stops)Object.assign(stop,verifiedStopPhoto(road.id,stop.name));
-  drawLoopCard();
- });
+  card.scenic=isGoldenRoad(road);card.views=card.scenic?goldenViews[road.id]:[];
+  drawLoopCard();renderPins();paintRoute();
+ }).catch(()=>{});
  if(road.rental){
   flyTo([lat,lon],12);
   window.addEventListener('load',()=>{const toggle=$('rentalLayer');if(toggle.getAttribute('aria-checked')!=='true')toggle.click()},{once:true});
@@ -596,14 +610,16 @@ async function setScenicLayer(enabled){
   active=null;closeLandmark();setDrawer(false);$('nearby').hidden=true;$('detail').hidden=true;$('portal').hidden=true;clearRoute();
  }else if(changed&&loopView.open&&loopView.cards[loopView.index]?.scenicMap)closeLoops();
  if(changed){render();paintRoute()}
- if(!scenicLayer||scenicRoads)return;
- try{await loadScenicRoads();if(scenicLayer)renderPins()}
+ if(!scenicLayer)return;
+ try{const [,,photos]=await Promise.all([loadScenicRoads(),loadGoldenViews(),loadVerifiedRoadPhotos()]);if(!photos)throw Error('road photos');if(scenicLayer)renderPins()}
  catch{if(scenicLayer)$('zoomHint').textContent='Дороги не загрузились. Нажми «Лучшие дороги», чтобы повторить.'}
 }
 scenicToggle.onclick=()=>setScenicLayer(true);
 placesToggle.onclick=()=>setScenicLayer(false);
 function scenicRoadPins(at){
- return (scenicRoads||[]).map(({name,geometry},i)=>{
+ return (scenicRoads||[]).map((road,i)=>{
+  if(!isGoldenRoad(road))return '';
+  const {name,geometry}=road;
   const line=geometry[2],[lon,lat]=line[Math.floor(line.length/2)];
   const {x,y}=atlas.project([lon,lat]);
   if(x<-24||x>map.clientWidth+24||y<-24||y>map.clientHeight+24)return '';
@@ -634,7 +650,7 @@ function renderPins(){
  }
  if(scenicLayer){
   $('nearby').hidden=true;
-  $('zoomHint').textContent=scenicRoads?'Лучшие дороги · нажми на точку':'Загружаем лучшие дороги…';
+  $('zoomHint').textContent=scenicRoads&&verifiedRoadPhotos&&Object.keys(goldenViews).length?'Лучшие дороги · нажми на точку':'Загружаем лучшие дороги…';
   pinLayer.innerHTML=locationPin+scenicRoadPins(at);positionPins();return;
  }
  const groups=[],minorDots=[];
@@ -844,7 +860,7 @@ $('filters').onchange=e=>{
 document.addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const k=b.dataset;
- if(k.scenicRoad!==undefined&&scenicLayer){const road=scenicRoads?.[Number(k.scenicRoad)];if(road)openScenicRoad(road,true);return}
+ if(k.scenicRoad!==undefined&&scenicLayer){const road=scenicRoads?.[Number(k.scenicRoad)];if(road&&isGoldenRoad(road))openScenicRoad(road,true);return}
  if(k.ticketRoutes!==undefined&&ticketTarget){launchLoops(ticketTarget);return}
  if(k.routeStop!==undefined){const stop=loopView.cards[loopView.index]?.stops[Number(k.routeStop)];if(stop){loopView.details=true;drawLoopCard();$('loopDeck').querySelectorAll('.loop-detail li')[Number(k.routeStop)]?.scrollIntoView({block:'nearest'});}return}
  if(b.closest('#seasonList')){if(loopView.open)closeLoops();if(building)leaveTrip();$('seasonMenu').hidden=true;$('recommend').setAttribute('aria-expanded','false')}
@@ -1258,8 +1274,9 @@ function bootOffline(){
   zoomOut(){z=Math.max(1,z-1);refresh()},
   fitBounds(b,o){
    const west=b.getWest(),east=b.getEast(),north=b.getNorth(),south=b.getSouth();
-   center=[(west+east)/2,(north+south)/2];
-   z=Math.max(1,Math.min(o.maxZoom,Math.log2(Math.min(Math.max(55,el.clientWidth-135)/Math.max(.1,east-west),Math.max(65,el.clientHeight-180)/Math.max(.1,north-south))/1.5)));refresh();
+   const {left=0,right=0,top=0,bottom=0}=typeof o.padding==='number'?{left:o.padding,right:o.padding,top:o.padding,bottom:o.padding}:o.padding||{};
+   z=Math.max(1,Math.min(o.maxZoom,Math.log2(Math.min(Math.max(32,el.clientWidth-left-right)/Math.max(.001,east-west),Math.max(32,el.clientHeight-top-bottom)/Math.max(.001,north-south))/1.5)));
+   center=[(west+east)/2+(right-left)/(2*scale()),(north+south)/2+(top-bottom)/(2*scale())];refresh();
   }
  };
  canvas={draw};

@@ -132,7 +132,7 @@ function wireRoadLinks(g,geometry){
   const link=byId(id);if(!link)continue;
   link.hidden=false;
   link.onclick=event=>{
-   try{sessionStorage.setItem('vilazka.openRoad',JSON.stringify({name:g.name,id:g.id,geometry,places:g.places,rental}));}
+   try{sessionStorage.setItem('vilazka.openRoad',JSON.stringify({name:g.name,id:g.id,geometry,places:g.itinerary?.places||g.places,rental}));}
    catch{event.preventDefault();byId('guideMapStatus').textContent='Не удалось открыть маршрут на главной карте.'}
   };
  }
