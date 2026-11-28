@@ -102,3 +102,30 @@
   }
   #loopDeck .travel-links a:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
+
+@media(max-width:760px){
+ :root{--phone-sheet:calc(var(--phone-bottom) + 70px)}
+ body #phoneTabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:#101010}
+ #phoneTabs :is(button,a.guides-nav){
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-width:0;height:54px;padding:4px 2px;border:0;border-radius:13px;
+  font:600 11px/1.1 system-ui;color:#eee;text-align:center;text-decoration:none;
+ }
+ #phoneTabs button[aria-pressed=true]{color:#141612}
+ #phoneTabs svg{width:20px;height:20px;flex:none}
+ #phoneTabs a:focus-visible{outline:2px solid #cbdcc7}
+ #mobileTop #originTools{position:static;margin-top:7px;flex-wrap:wrap;gap:6px}
+ #mobileTop #originTools button{min-width:0}
+ #mobileTop #location.origin-caption{
+  position:static;display:block;min-height:0;max-width:100%;margin:2px 0 0;padding:0 3px;
+ }
+ #mobileTop #location.origin-caption:empty,.phone-roads #mobileTop #location.origin-caption,
+ #mobileTop.searching :is(#originTools,#location.origin-caption),body:has(#mobileSettings:not([hidden])) #mobileTop :is(#originTools,#location.origin-caption,#countryRoads){display:none}
+ #mobileTop #countryRoads{margin-top:6px}
+ #mobileTop .country-route-list{max-height:min(37dvh,320px)}
+ #mobilePlaces:not([hidden]){bottom:var(--phone-sheet)}
+ body:has(#railDeck:not([hidden]),#loopDeck:not([hidden]),#countryRoads:not([hidden]) .country-route-body:not([hidden])) #mobilePlaces{display:none}
+ #map #railDeck{bottom:var(--phone-sheet);max-height:44dvh}
+ body:has(#railDeck:not([hidden]),#loopDeck:not([hidden]),#builder:not([hidden]),#landmark:not([hidden]),#detail:not([hidden])) .map-tools{display:none}
+ .phone-roads #map .map-tools{top:auto;bottom:var(--phone-sheet)}
+}

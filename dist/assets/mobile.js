@@ -2,7 +2,9 @@
 (()=>{
  const size=matchMedia('(max-width: 760px)'), field=$('mobileQuery'),results=$('mobileResults'),settings=$('mobileSettings');
  const modes=$('modes'),seasons=$('seasonDock');
- const anchors=[modes,seasons].map(el=>{const marker=document.createComment('desktop control');el.before(marker);return marker});
+ const originTools=$('originTools'),locationCaption=$('location');
+ const movable=[modes,seasons,originTools,locationCaption];
+ const anchors=movable.map(el=>{const marker=document.createComment('desktop control');el.before(marker);return marker});
  const normalize=s=>s.toLocaleLowerCase('ru').replace(/ё/g,'е');
  let entries,shortlist=[],lastCamera='',timer;
  const ruCountries=new Intl.DisplayNames(['ru'],{type:'region'}),enCountries=new Intl.DisplayNames(['en'],{type:'region'});
@@ -163,8 +165,8 @@
  function schedule(){sync();clearTimeout(timer);timer=setTimeout(()=>{detectCountry();nearby()},140)}
  window.refreshPhoneMap=schedule;
  function setup(){
-  if(size.matches){$('phoneControls').append(modes,seasons);sync();schedule()}
-  else{[modes,seasons].forEach((el,i)=>anchors[i].after(el));menu(false);closeSearch();document.body.classList.remove('phone-roads')}
+  if(size.matches){$('phoneControls').append(modes,seasons);results.before(originTools,locationCaption);sync();schedule()}
+  else{movable.forEach((el,i)=>anchors[i].after(el));menu(false);closeSearch();document.body.classList.remove('phone-roads')}
  }
  $('phoneMap').onclick=()=>{closeSearch();menu(false);resetMap();lastCamera='';schedule()};
  $('phoneRoads').onclick=()=>{menu(false);closeSearch();if(!loopView.open){
