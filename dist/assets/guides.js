@@ -71,11 +71,11 @@ function photo(g,cls){
  return image?'<figure class="guide-image '+cls+'"><img loading="lazy" decoding="async" alt="'+esc(g.name)+'" src="'+esc(image.url)+'">'+
  (cls==='hero'&&image.credit?'<figcaption><a target="_blank" rel="noopener" href="'+esc(image.credit)+'">Источник фотографии ↗</a>'+(image.caption?' · '+esc(image.caption):'')+'</figcaption>':'')+'</figure>':'';
 }
-function renderStop([name,lat,lon,description,url], verifiedPhotos={}){
+function renderStop([name,lat,lon,description,url,placeSource], verifiedPhotos={}){
  const verified=Object.hasOwn(verifiedPhotos,name)?verifiedPhotos[name]:null;
  const image=verified?{url:verified[0],credit:verified[1],caption:[verified[3],verified[2]].filter(Boolean).join(' · ')}:stopPhoto([name,lat,lon,description,url]);
  return '<li class="guide-stop">'+(image?'<figure><img loading="lazy" alt="'+esc(name)+'" src="'+esc(image.url)+'">'+(image.credit?'<figcaption><a href="'+esc(image.credit)+'" target="_blank" rel="noopener">Источник фото ↗</a>'+ (image.caption?' · '+esc(image.caption):'')+'</figcaption>':'')+'</figure>':'')+
- '<div><a target="_blank" rel="noopener" href="'+mapLink(lat+','+lon)+'">'+esc(name)+' ↗</a>'+(description?'<p>'+esc(description)+'</p>':'')+'</div></li>';
+ '<div><a target="_blank" rel="noopener" href="'+mapLink(lat+','+lon)+'">'+esc(name)+' ↗</a>'+(description?'<p>'+esc(description)+'</p>':'')+(placeSource?'<small><a href="'+esc(placeSource)+'" target="_blank" rel="noopener">Источник точки ↗</a></small>':'')+'</div></li>';
 }
 const savedRoad=g=>g.geometry||(g.places&&roadGeometry[g.places.map(([,lat,lon])=>lon.toFixed(5)+','+lat.toFixed(5)).join(';')]);
 let guideMap=null,mapRequest=null;
@@ -238,8 +238,10 @@ async function showStopPhotos(g){
 }
 function renderPhases(g,verifiedPhotos){
  if(g.itinerary){
-  const {source,places}=g.itinerary;
-  return '<section class="phase"><h3>Остановки по пути</h3><ol>'+places.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol><a href="'+esc(source)+'" target="_blank" rel="noopener">Гид маршрута ↗</a></section>';
+  const {source,places,stopSources}=g.itinerary;
+  const credits=(stopSources?.includes('audiala')?'<p><a href="https://audiala.com/" target="_blank" rel="noopener">Data by Audiala</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></p>':'')+
+   (stopSources?.includes('nps')?'<p>Данные остановок · National Park Service</p>':'');
+  return '<section class="phase"><h3>Остановки по пути</h3><ol>'+places.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol><a href="'+esc(source)+'" target="_blank" rel="noopener">Источник дороги ↗</a>'+credits+'</section>';
  }
  return g.days?g.days.map(([title,note,q],i)=>'<section class="phase"><small>День '+(i+1)+'</small><h3>'+esc(title)+'</h3><p>'+esc(note)+'</p>'+(q?'<a target="_blank" rel="noopener" href="'+mapLink(q)+'">Место на карте ↗</a>':'')+'</section>').join(''):(g.groups||[g.places]).map((group,i)=>'<section class="phase"><h3>'+(g.groups?'День '+(i+1):'Остановки по порядку')+'</h3><ol>'+group.map(stop=>renderStop(stop,verifiedPhotos)).join('')+'</ol></section>').join('');
 }
